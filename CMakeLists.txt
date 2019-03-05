@@ -75,11 +75,12 @@ if (log4cxx_FOUND)
 endif(log4cxx_FOUND)
 
 if (LofarCommon_FOUND)
-	include_directories(${LofarCommon_COMMON_INCLUDE_DIRS})
+	include_directories(${LofarCommon_INCLUDE_DIRS})
 endif(LofarCommon_FOUND)
 
 if (CASACORE_FOUND)
 	include_directories(${CASACORE_INCLUDE_DIRS})
+        add_definitions(-DHAVE_AIPSPP)
 endif(CASACORE_FOUND)
 if (ASKAP_FOUND)
 	include_directories(${ASKAP_INCLUDE_DIRS})
@@ -124,7 +125,10 @@ add_library(askap_scimath
 ./utils/PaddingUtils.cc
 ./utils/MultiDimPosIter.cc
 ./fft/FFTWrapper.cc
-
+./lsqr_solver/LSQRSolver.cc
+./lsqr_solver/MathUtils.cc
+./lsqr_solver/ModelDamping.cc
+./lsqr_solver/SparseMatrix.cc
 )
 
 install (FILES
@@ -188,6 +192,16 @@ install (FILES
 ./fft/FFTWrapper.h
 DESTINATION include/askap/scimath/fft 
 
+)
+install (FILES
+	
+lsqr_solver/GlobalTypedefs.h
+lsqr_solver/LSQRSolver.h
+lsqr_solver/MathUtils.h
+lsqr_solver/ModelDamping.h
+lsqr_solver/SparseMatrix.h
+
+DESTINATION include/askap/scimath/lqsr_solver
 )
 
 target_link_libraries(
