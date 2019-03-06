@@ -56,12 +56,15 @@ endif(ENABLE_SHARED)
 
 
 # find packages
-#find_package(Boost REQUIRED COMPONENTS system signals program_options thread chrono )
-#find_package(LofarCommon REQUIRED)
-#find_package(log4cxx REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system signals program_options thread chrono )
+find_package(LofarCommon REQUIRED)
+find_package(log4cxx REQUIRED)
 find_package(Casacore REQUIRED COMPONENTS  ms images mirlib coordinates fits lattices measures scimath scimath_f tables casa)
 find_package(Askap)
+find_package(Imagemath)
 find_package(LofarBlob)
+find_package(FFTW)
+find_package(GSL)
 
 # include directories
 include_directories( ${CMAKE_SOURCE_DIR} )
@@ -82,13 +85,25 @@ if (CASACORE_FOUND)
 	include_directories(${CASACORE_INCLUDE_DIRS})
         add_definitions(-DHAVE_AIPSPP)
 endif(CASACORE_FOUND)
+
 if (ASKAP_FOUND)
 	include_directories(${ASKAP_INCLUDE_DIRS})
 endif(ASKAP_FOUND)
+
+if (IMAGEMATH_FOUND)
+	include_directories(${IMAGEMATH_INCLUDE_DIRS})
+	message(STATUS ${IMAGEMATH_INCLUDE_DIRS})
+
+endif(IMAGEMATH_FOUND)
+
 if (LofarBlob_FOUND)
 	include_directories(${LofarBlob_INCLUDE_DIRS})
 endif(LofarBlob_FOUND)
 # add the libraries
+
+if (FFTW_FOUND)
+	include_directories(${FFTW_INCLUDE_DIRS})
+endif(FFTW_FOUND)
 
 add_library(askap_scimath
 
@@ -208,9 +223,13 @@ target_link_libraries(
 	askap_scimath
 	${CASACORE_LIBRARIES}
 	${ASKAP_LIBRARY}
+	${IMAGEMATH_LIBRARY}
 	${log4cxx_LIBRARY}
 	${Boost_LIBRARIES}
 	${LofarCommon_LIBRARY}
+	${LofarBlob_LIBRARY}
+	${FFTW_LIBRARIES}
+	${GSL_LIBRARIES}
 )
 
 install (
