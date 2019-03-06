@@ -22,7 +22,7 @@
 ///
 
 // ASKAPsoft includes
-#include <AskapTestRunner.h>
+#include <askap/AskapTestRunner.h>
 
 // Test includes
 #include <MultiDimArrayPlaneIterTest.h>

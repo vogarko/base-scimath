@@ -65,6 +65,7 @@ find_package(Imagemath)
 find_package(LofarBlob)
 find_package(FFTW)
 find_package(GSL)
+find_package(CPPUnit)
 
 # include directories
 include_directories( ${CMAKE_SOURCE_DIR} )
@@ -104,6 +105,10 @@ endif(LofarBlob_FOUND)
 if (FFTW_FOUND)
 	include_directories(${FFTW_INCLUDE_DIRS})
 endif(FFTW_FOUND)
+
+if (CPPUNIT_FOUND)
+	include_directories(${CPPUNIT_INCLUDE_DIRS})
+endif (CPPUNIT_FOUND)
 
 add_library(askap_scimath
 
@@ -239,5 +244,32 @@ LIBRARY DESTINATION lib
 ARCHIVE DESTINATION lib
 LIBRARY PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
-
+add_executable( 
+	tutils 
+	tests/utils/tutils.cc
+)
+target_include_directories(
+	tutils
+	PRIVATE
+	tests/utils/
+)
+target_link_libraries(
+	tutils
+	${CASACORE_LIBRARIES}
+	${ASKAP_LIBRARY}
+	${IMAGEMATH_LIBRARY}
+	${log4cxx_LIBRARY}
+	${Boost_LIBRARIES}
+	${LofarCommon_LIBRARY}
+	${LofarBlob_LIBRARY}
+	${FFTW_LIBRARIES}
+	${GSL_LIBRARIES}
+	${CPPUNIT_LIBRARIES}
+	askap_scimath
+)
+	
+install (
+TARGETS tutils
+DESTINATION bin
+)
 
