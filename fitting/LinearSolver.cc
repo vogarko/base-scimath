@@ -174,7 +174,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
     std::vector<std::pair<string, int> > indices(names.size());
     {
       std::vector<std::pair<string, int> >::iterator it = indices.begin();
-      for (vector<string>::const_iterator cit=names.begin(); cit!=names.end(); ++cit,++it)
+      for (std::vector<string>::const_iterator cit=names.begin(); cit!=names.end(); ++cit,++it)
       {
         ASKAPDEBUGASSERT(it != indices.end());
         it->second = nParameters;
@@ -508,7 +508,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
 // Solving A^T Q^-1 V = (A^T Q^-1 A) P
      
 // Find all the free parameters
-      vector<string> names(params.freeNames());
+      std::vector<string> names(params.freeNames());
       if (names.size() == 0) {
           // list of parameters is empty, will solve for all 
           // unknowns in the equation 

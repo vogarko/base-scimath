@@ -424,9 +424,9 @@ namespace askap
 			}
 		}
 
-		vector<string> Params::names() const
+		std::vector<string> Params::names() const
 		{
-			vector<string> names;
+			std::vector<string> names;
 			for(std::map<string,bool>::const_iterator iter = itsFree.begin();
 					iter != itsFree.end(); iter++)
 			{
@@ -435,9 +435,9 @@ namespace askap
 			return names;
 		}
 
-		vector<string> Params::freeNames() const
+		std::vector<string> Params::freeNames() const
 		{
-			vector<string> names;
+			std::vector<string> names;
 			for(std::map<string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
 			{
 				if(isFree(iter->first)) names.push_back(iter->first);
@@ -445,9 +445,9 @@ namespace askap
 			return names;
 		}
 
-		vector<string> Params::fixedNames() const
+		std::vector<string> Params::fixedNames() const
 		{
-			vector<string> names;
+			std::vector<string> names;
 			for(std::map<string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
 			{
 				if(!isFree(iter->first)) names.push_back(iter->first);
@@ -455,11 +455,11 @@ namespace askap
 			return names;
 		}
 
-		vector<string> Params::completions(const std::string& pattern, const bool useAll) const
+		std::vector<string> Params::completions(const std::string& pattern, const bool useAll) const
 		{
 			casa::Regex regex(casa::Regex::fromPattern(pattern+"*"));
 			casa::Regex sub(casa::Regex::fromPattern(pattern));
-			vector<string> completions;
+			std::vector<string> completions;
 			uint ncomplete=0;
 			for(std::map<string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
 			{
@@ -513,10 +513,10 @@ namespace askap
             const size_t showAtEnd = 5;
             ASKAPDEBUGASSERT(lengthLimit > showAtEnd);
             
-			vector<string> names(params.names());
+			std::vector<string> names(params.names());
 			
 			size_t counter = 1;			
-			for(vector<string>::const_iterator it = names.begin(); it != names.end(); ++it,++counter)
+			for(std::vector<string>::const_iterator it = names.begin(); it != names.end(); ++it,++counter)
 			{
 				os << *it << " : ";
 				if(params.isScalar(*it))
@@ -658,7 +658,7 @@ bool Params::isChanged(const std::string &name, const ChangeMonitor &cm) const
        for (LOFAR::ParameterSet::const_iterator ci = parset.begin();
             ci != parset.end();++ci) {
             try {
-               vector<double> vec = parset.getDoubleVector(ci->first);
+               std::vector<double> vec = parset.getDoubleVector(ci->first);
                casa::Vector<double> arr(vec.size());
                std::copy(vec.begin(),vec.end(),arr.cbegin());
                params.add(ci->first, arr);
