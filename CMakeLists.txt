@@ -253,32 +253,25 @@ LIBRARY DESTINATION lib
 ARCHIVE DESTINATION lib
 LIBRARY PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
-add_executable( 
-	tutils 
-	tests/utils/tutils.cc
-)
-target_include_directories(
-	tutils
-	PRIVATE
-	tests/utils/
-)
-target_link_libraries(
-	tutils
-	${CASACORE_LIBRARIES}
-	${ASKAP_LIBRARY}
-	${IMAGEMATH_LIBRARY}
-	${log4cxx_LIBRARY}
-	${Boost_LIBRARIES}
-	${LofarCommon_LIBRARY}
-	${LofarBlob_LIBRARY}
-	${FFTW_LIBRARIES}
-	${GSL_LIBRARIES}
-	${CPPUNIT_LIBRARIES}
-	askap_scimath
-)
-	
-install (
-TARGETS tutils
-DESTINATION bin
-)
+
+if (CPPUNIT_FOUND)
+	add_executable(
+		tutils
+		tests/utils/tutils.cc
+	)
+	target_include_directories(
+		tutils
+		PRIVATE
+		tests/utils/
+	)
+	target_link_libraries(
+		tutils
+		askap_scimath
+		${CPPUNIT_LIBRARIES}
+	)
+	install (
+	TARGETS tutils
+	DESTINATION bin
+	)
+endif()
 
