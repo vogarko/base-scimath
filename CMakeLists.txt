@@ -68,6 +68,11 @@ message(STATUS ${IMAGEMATH_INCLUDE_DIRS})
 include_directories(${LofarBlob_INCLUDE_DIRS})
 include_directories(${FFTW_INCLUDE_DIRS})
 
+if (CASACORE3 OR CXX11)
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
 if (CPPUNIT_FOUND)
 	include_directories(${CPPUNIT_INCLUDE_DIRS})
 endif (CPPUNIT_FOUND)
