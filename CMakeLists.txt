@@ -68,7 +68,7 @@ message(STATUS ${IMAGEMATH_INCLUDE_DIRS})
 include_directories(${LofarBlob_INCLUDE_DIRS})
 include_directories(${FFTW_INCLUDE_DIRS})
 
-if (GSL_VERSION NOT VERSION_LESS 2.0)
+if (NOT GSL_VERSION VERSION_LESS 2.0)
 	add_definitions(-DHAVE_GSL2)
 endif()
 
