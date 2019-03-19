@@ -68,6 +68,10 @@ message(STATUS ${IMAGEMATH_INCLUDE_DIRS})
 include_directories(${LofarBlob_INCLUDE_DIRS})
 include_directories(${FFTW_INCLUDE_DIRS})
 
+if (GSL_VERSION NOT VERSION_LESS 2.0)
+	add_definitions(-DHAVE_GSL2)
+endif()
+
 if (CASACORE3 OR CXX11)
 	set(CMAKE_CXX_STANDARD 11)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)

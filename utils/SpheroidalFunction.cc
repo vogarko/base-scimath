@@ -111,15 +111,27 @@ double SpheroidalFunction::sumLegendreSeries(const double x, const int m) const
    ASKAPASSERT(m>=0);
    ASKAPASSERT(itsCoeffs.nelements()>1);
    const int nOrders = int(itsCoeffs.nelements())*2 + (itsREven ? 0 : 1);
+#ifdef HAVE_GSL2
    double *vals = new double[gsl_sf_legendre_array_n(nOrders+m)];
+#else
+   double *vals = new double[nOrders+1];
+#endif // HAVE_GSL2
            
+#ifdef HAVE_GSL2
    const int status = gsl_sf_legendre_array(GSL_SF_LEGENDRE_SPHARM, nOrders + m, x, vals);
+#else
+   const int status = gsl_sf_legendre_sphPlm_array(nOrders + m, m, x, vals);
+#endif // HAVE_GSL2
    double result = 0.;
    for (casa::uInt elem = 0; elem<itsCoeffs.nelements(); ++elem) {
         const int r = 2*elem + (itsREven ? 0 : 1);
         //const int l = r + m;
         ASKAPASSERT(r < nOrders + 1);
+#ifdef HAVE_GSL2
         result += itsCoeffs[elem]*vals[gsl_sf_legendre_array_index(r+m,m)];
+#else
+        result += itsCoeffs[elem]*vals[r];
+#endif // HAVE_GSL2
    }
            
    delete[](vals);
