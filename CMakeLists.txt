@@ -1,8 +1,6 @@
-project(base-scimath)
+cmake_minimum_required (VERSION 3.1.0)
 
-cmake_minimum_required (VERSION 2.6.0)
-include(CheckCXXCompilerFlag)
-include(CheckCCompilerFlag)
+project(base-scimath VERSION 0.0.1 LANGUAGES C CXX)
 
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/askap-cmake)
@@ -12,30 +10,9 @@ else ()
     execute_process(COMMAND git clone https://bitbucket.csiro.au/scm/askapsdp/askap-cmake.git
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif ()
-
-
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/askap-cmake")
 
-set(PROJECT_VERSION_MAJOR 0)
-set(PROJECT_VERSION_MINOR 0)
-set(PROJECT_VERSION_PATCH 1)
-set(PROJECT_VERSION_REVISION 1)
-set(PROJECT_VERSION
-  "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 option (CXX11 "Compile as C++11 if possible" YES)
-
-# Detect if the compiler supports C++11 if we want to use it.
-if (CXX11)
-    check_cxx_compiler_flag(-std=c++11 HAS_CXX11)
-    if (HAS_CXX11)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-      set(CXX11 ON)
-    else()
-	    message(STATUS "CASA_BUILD requires a c++11 compatible compiler")
-      option(CXX11 "" NO)
-    endif()
-endif()
-
 option (ENABLE_SHARED "Build shared libraries" YES)
 option (ENABLE_RPATH "Include rpath in executables and shared libraries" YES)
 
@@ -90,6 +67,15 @@ include_directories(${IMAGEMATH_INCLUDE_DIRS})
 message(STATUS ${IMAGEMATH_INCLUDE_DIRS})
 include_directories(${LofarBlob_INCLUDE_DIRS})
 include_directories(${FFTW_INCLUDE_DIRS})
+
+if (NOT GSL_VERSION VERSION_LESS 2.0)
+	add_definitions(-DHAVE_GSL2)
+endif()
+
+if (CASACORE3 OR CXX11)
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
 
 if (CPPUNIT_FOUND)
 	include_directories(${CPPUNIT_INCLUDE_DIRS})
