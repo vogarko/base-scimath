@@ -116,7 +116,7 @@ double SpheroidalFunction::sumLegendreSeries(const double x, const int m) const
 #else
    double *vals = new double[nOrders+1];
 #endif // HAVE_GSL2
-           
+
 #ifdef HAVE_GSL2
    const int status = gsl_sf_legendre_array(GSL_SF_LEGENDRE_SPHARM, nOrders + m, x, vals);
 #else
@@ -133,9 +133,9 @@ double SpheroidalFunction::sumLegendreSeries(const double x, const int m) const
         result += itsCoeffs[elem]*vals[r];
 #endif // HAVE_GSL2
    }
-           
+
    delete[](vals);
-   ASKAPCHECK(status == GSL_SUCCESS, "Error calculating associated Legendre functions, status="<<status);           
+   ASKAPCHECK(status == GSL_SUCCESS, "Error calculating associated Legendre functions, status="<<status);
    return result;
 }
 
