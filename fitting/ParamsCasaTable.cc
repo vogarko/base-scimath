@@ -149,16 +149,16 @@ namespace askap
 
       for (size_t rownr=0; rownr<itsTable.nrow(); ++rownr)
       {
-        casa::String name;
+        casacore::String name;
         nameCol.get(rownr, name);
-        casa::Array<double> value;
+        casacore::Array<double> value;
         valCol.get(rownr, value);
 
-        casa::Vector<String> axesNames;
+        casacore::Vector<String> axesNames;
         axesCol.get(rownr, axesNames);
-        casa::Vector<double> start;
+        casacore::Vector<double> start;
         startCol.get(rownr, start);
-        casa::Vector<double> end;
+        casacore::Vector<double> end;
         endCol.get(rownr, end);
         Axes ax;
         for (size_t i=0; i<axesNames.nelements(); ++i)
@@ -179,9 +179,9 @@ namespace askap
       }
     };
 
-    casa::Vector<casa::String> ParamsCasaTable::toCasaString(const std::vector<std::string>& s)
+    casacore::Vector<casacore::String> ParamsCasaTable::toCasaString(const std::vector<std::string>& s)
     {
-      casa::Vector<casa::String> result(s.size());
+      casacore::Vector<casacore::String> result(s.size());
       for (size_t i=0; i<s.size(); ++i)
       {
         result(i)=s[i];
@@ -189,7 +189,7 @@ namespace askap
       return result;
     }
 
-    std::vector<std::string> ParamsCasaTable::toStdString(const casa::Vector<casa::String>& s)
+    std::vector<std::string> ParamsCasaTable::toStdString(const casacore::Vector<casacore::String>& s)
     {
       std::vector<std::string> result(s.nelements());
       for (size_t i=0; i<s.nelements(); ++i)
@@ -231,12 +231,12 @@ namespace askap
 
         Axes ax(ip.axes(*it));
         axesCol.put(rownr, toCasaString(ax.names()));
-        startCol.put(rownr, casa::Vector<double>(ax.start()));
-        endCol.put(rownr, casa::Vector<double>(ax.end()));
+        startCol.put(rownr, casacore::Vector<double>(ax.start()));
+        endCol.put(rownr, casacore::Vector<double>(ax.end()));
 
         domainCol.put(rownr, toCasaString(domain.names()));
-        domainStartCol.put(rownr, casa::Vector<double>(domain.start()));
-        domainEndCol.put(rownr, casa::Vector<double>(domain.end()));
+        domainStartCol.put(rownr, casacore::Vector<double>(domain.start()));
+        domainEndCol.put(rownr, casacore::Vector<double>(domain.end()));
 
         freeCol.put(rownr, ip.isFree(*it));
 

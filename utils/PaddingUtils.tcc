@@ -44,12 +44,12 @@ namespace scimath {
 /// @param[in] shape required shape
 /// @return extracted subarray
 template<typename T>
-casa::Array<T> PaddingUtils::centeredSubArray(casa::Array<T> &source, 
-                                                   const casa::IPosition &shape)
+casacore::Array<T> PaddingUtils::centeredSubArray(casacore::Array<T> &source, 
+                                                   const casacore::IPosition &shape)
 {
-  const casa::IPosition srcShape = source.shape();
+  const casacore::IPosition srcShape = source.shape();
   ASKAPDEBUGASSERT(shape.nelements() == srcShape.nelements());
-  casa::IPosition blc(shape), trc(shape);
+  casacore::IPosition blc(shape), trc(shape);
   for (size_t i=0;i<blc.nelements();++i) {
        blc[i] = srcShape[i]/2 - shape[i]/2;
        ASKAPCHECK(blc[i]>=0, "A bigger array is requested from centeredSubArray, dimension "<<i<<
@@ -76,7 +76,7 @@ casa::Array<T> PaddingUtils::centeredSubArray(casa::Array<T> &source,
 /// @param[in] padding padding factor (should be a positive number)
 /// @return extracted subarray
 template<typename T>
-casa::Array<T> PaddingUtils::extract(casa::Array<T> &source, const float padding)
+casacore::Array<T> PaddingUtils::extract(casacore::Array<T> &source, const float padding)
 {
    return centeredSubArray(source, unpadShape(source.shape(),padding));
 }
@@ -91,12 +91,12 @@ casa::Array<T> PaddingUtils::extract(casa::Array<T> &source, const float padding
 /// @note At the moment, clipping can only happen on the first two axes and the inner subarray must be 
 /// two-dimensional
 template<typename T>
-void PaddingUtils::clip(casa::Array<T> & source, const casa::IPosition &size)
+void PaddingUtils::clip(casacore::Array<T> & source, const casacore::IPosition &size)
 {
-   const casa::IPosition shape = source.shape();
+   const casacore::IPosition shape = source.shape();
    ASKAPDEBUGASSERT(shape.nelements()>=2);
    ASKAPASSERT(size.nelements() >= 2);
-   casa::IPosition end(shape);
+   casacore::IPosition end(shape);
    for (uint index=0;index<end.nelements();++index) {
         ASKAPDEBUGASSERT(end[index]>=1);
         end[index]--;
@@ -104,7 +104,7 @@ void PaddingUtils::clip(casa::Array<T> & source, const casa::IPosition &size)
 
        if (shape[0]>size[0]+1) {
            // need clipping along the first axis
-           casa::IPosition start(shape.nelements(),0);
+           casacore::IPosition start(shape.nelements(),0);
            end[0] = (shape[0]-size[0])/2-1;
            end[1] = shape[1]-1; // although this step is strictly speaking unnecessary
            source(start,end).set(0.); 
@@ -116,7 +116,7 @@ void PaddingUtils::clip(casa::Array<T> & source, const casa::IPosition &size)
        
        if (shape[1]>size[1]+1) {
            // need clipping along the second axis
-           casa::IPosition start(shape.nelements(),0);
+           casacore::IPosition start(shape.nelements(),0);
            start[0]=(shape[0]-size[0])/2;
            end[0]=(shape[0]+size[0])/2;
            if (start[0]<0) {

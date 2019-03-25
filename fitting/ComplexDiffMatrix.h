@@ -7,7 +7,7 @@
 /// treated independently. However, it is better to retain a basic matrix
 /// algebra to ensure the code is clear. This class also treats well a
 /// possible degenerate dimension (polarisation). Theoretically, 
-/// casa::Matrix<ComplexDiff> could be used instead of this class. However,
+/// casacore::Matrix<ComplexDiff> could be used instead of this class. However,
 /// having a separate class allows, in principle, to handle maps of the 
 /// parameters at the matrix level and don't duplicate the map search 
 /// unnecessarily. Such functionality is in the future plans, but it is
@@ -65,7 +65,7 @@ namespace scimath {
 /// treated independently. However, it is better to retain a basic matrix
 /// algebra to ensure the code is clear. This class also treats well a
 /// possible degenerate dimension (polarisation). Theoretically, 
-/// casa::Matrix<ComplexDiff> could be used instead of this class. However,
+/// casacore::Matrix<ComplexDiff> could be used instead of this class. However,
 /// having a separate class allows, in principle, to handle maps of the 
 /// parameters at the matrix level and don't duplicate the map search 
 /// unnecessarily. Such functionality is in the future plans, but it is
@@ -105,15 +105,15 @@ struct ComplexDiffMatrix {
          itsNRows(nrow), itsNColumns(1), itsElements(nrow, val),
          itsParameterMapInvalid(true) {}
          
-   /// @brief constructor from casa::Matrix
+   /// @brief constructor from casacore::Matrix
    /// @param[in] matr input matrix
    template<typename T>
-   inline ComplexDiffMatrix(const casa::Matrix<T> &matr);    
+   inline ComplexDiffMatrix(const casacore::Matrix<T> &matr);    
 
-   /// @brief constructor from casa::Vector
+   /// @brief constructor from casacore::Vector
    /// @param[in] vec input matrix
    template<typename T>
-   inline ComplexDiffMatrix(const casa::Vector<T> &vec);    
+   inline ComplexDiffMatrix(const casacore::Vector<T> &vec);    
    
    /// @brief set all element to a given value
    /// @param[in] val value

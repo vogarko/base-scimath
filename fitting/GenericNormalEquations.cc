@@ -58,8 +58,8 @@ using namespace askap;
 using namespace askap::scimath;
 using namespace LOFAR;
 
-using casa::product;
-using casa::transpose;
+using casacore::product;
+using casacore::transpose;
 
 /// @brief a default constructor
 /// @details It creates an empty normal equations class
@@ -196,7 +196,7 @@ void GenericNormalEquations::mergeParameter(const std::string &par,
 /// The normal matrix to be integrated with this class is given in the form
 /// of map of matrices (effectively a sparse matrix). Each element of the map
 /// corresponds to a cross- or parallel term in the normal equations. Data
-/// vector is given simply as a casa::Vector, rather than the map of vectors,
+/// vector is given simply as a casacore::Vector, rather than the map of vectors,
 /// because only one parameter is concerned here. If a parameter with the given
 /// name doesn't exist, the method adds it to both normal matrix and data vector,
 /// populating correctly all required cross-terms with 0-matrices of an 
@@ -205,7 +205,7 @@ void GenericNormalEquations::mergeParameter(const std::string &par,
 /// @param[in] inNM input normal matrix
 /// @param[in] inDV input data vector 
 void GenericNormalEquations::addParameter(const std::string &par, 
-           const MapOfMatrices &inNM, const casa::Vector<double>& inDV)
+           const MapOfMatrices &inNM, const casacore::Vector<double>& inDV)
 {
 
   // before processing this row, check that the columns already exist as rows
@@ -216,12 +216,12 @@ void GenericNormalEquations::addParameter(const std::string &par,
           std::map<std::string, MapOfMatrices>::iterator
                   newRowIt = itsNormalMatrix.insert(std::make_pair(
                                  nmColIt->first,MapOfMatrices())).first;
-          const casa::uInt rowParDim = nmColIt->second.ncolumn(); 
+          const casacore::uInt rowParDim = nmColIt->second.ncolumn(); 
           // set all of the new parameter columns to zero
           std::map<std::string, MapOfMatrices>::iterator newColIt;
           for (newColIt = itsNormalMatrix.begin();
                      newColIt != itsNormalMatrix.end(); ++newColIt) {
-              casa::uInt colParDim;
+              casacore::uInt colParDim;
               if (newColIt->first == newRowIt->first) {
                   // this is the new parameter.
                   colParDim = rowParDim; 
@@ -230,11 +230,11 @@ void GenericNormalEquations::addParameter(const std::string &par,
                   colParDim = parameterDimension(newColIt->second);
               }
               newRowIt->second.insert(std::make_pair(newColIt->first,
-                  casa::Matrix<double>(rowParDim, colParDim, 0.)));
+                  casacore::Matrix<double>(rowParDim, colParDim, 0.)));
               // fill in the symmetric term
               if (newRowIt->first != newColIt->first) {
                   newColIt->second.insert(std::make_pair(newRowIt->first,
-                      casa::Matrix<double>(colParDim, rowParDim, 0.)));
+                      casacore::Matrix<double>(colParDim, rowParDim, 0.)));
               }
           }
       }
@@ -269,10 +269,10 @@ void GenericNormalEquations::addParameter(const std::string &par,
       ASKAPCHECK(inDV.shape() == dvIt->second.shape(),
                "shape mismatch for data vector, parameter: "<<dvIt->first<<
                ". "<<inDV.shape()<<" != "<<dvIt->second.shape());
-      // we have to instantiate explicitly a casa::Vector object because
+      // we have to instantiate explicitly a casacore::Vector object because
       // otherwise, for some reason, the compiler can't figure out the type 
       // properly at the += operator. Exploit reference semantics - no copying!
-      casa::Vector<double> destVec = dvIt->second;
+      casacore::Vector<double> destVec = dvIt->second;
       destVec += inDV; // add up a vector  
   } else {
       itsDataVector.insert(std::make_pair(par, inDV));
@@ -289,11 +289,11 @@ void GenericNormalEquations::addParameter(const std::string &par,
 /// all elements).
 /// @param[in] nmRow a row of the sparse normal matrix to work with
 /// @return dimension of the corresponding parameter
-casa::uInt GenericNormalEquations::parameterDimension(const MapOfMatrices &nmRow)
+casacore::uInt GenericNormalEquations::parameterDimension(const MapOfMatrices &nmRow)
 {
   const MapOfMatrices::const_iterator it = nmRow.begin();
   ASKAPDEBUGASSERT(it != nmRow.end());
-  const casa::uInt dim = it->second.nrow();
+  const casacore::uInt dim = it->second.nrow();
 #ifdef ASKAP_DEBUG
   for (MapOfMatrices::const_iterator cur = it; cur != nmRow.end(); ++cur) {
        ASKAPASSERT(cur->second.nrow() == dim);
@@ -323,7 +323,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
   }
   ASKAPDEBUGASSERT(pxp.nPol() == cdm.nRow());
   ASKAPDEBUGASSERT(cdm.nRow() == cdm.nColumn());
-  const casa::uInt nDataPoints = pxp.nPol();
+  const casacore::uInt nDataPoints = pxp.nPol();
   
   // iterate over all parameters (rows of the normal matrix)
   for (ComplexDiffMatrix::parameter_iterator iterRow = cdm.paramBegin(); 
@@ -333,28 +333,28 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
       
        // data vector buffer for this row (size of 2 - all parameters are complex)
        // elements correspond to real and imaginary part derivatives of projected residual
-       casa::Vector<double> dataVector(2,0.);       
+       casacore::Vector<double> dataVector(2,0.);       
        
        // the first loop is over polarisations, essentially summing over
        // data points in the calculation of normal matrix
-       for (casa::uInt p = 0; p<nDataPoints; ++p) {
+       for (casacore::uInt p = 0; p<nDataPoints; ++p) {
             
             // two inner loops are from matrix multiplication of cdm to a vector
             // for Y and A^T parts in the product forming the element of the data
             // vector (projected). We can optimise this for speed later, if proved to be a problem.
-            for (casa::uInt p1 = 0; p1<nDataPoints; ++p1) {
+            for (casacore::uInt p1 = 0; p1<nDataPoints; ++p1) {
                       
                  const ComplexDiff &cd1 = cdm(p,p1);
-                 const casa::DComplex rowParDerivRe1 = cd1.derivRe(*iterRow);
-                 const casa::DComplex rowParDerivIm1 = cd1.derivIm(*iterRow);
-                 const casa::DComplex measProduct = pxp.getModelMeasProduct(p1,p);
+                 const casacore::DComplex rowParDerivRe1 = cd1.derivRe(*iterRow);
+                 const casacore::DComplex rowParDerivIm1 = cd1.derivIm(*iterRow);
+                 const casacore::DComplex measProduct = pxp.getModelMeasProduct(p1,p);
                  dataVector[0] += real(conj(rowParDerivRe1) * measProduct);
                  dataVector[1] += real(conj(rowParDerivIm1) * measProduct);
                                             
-                 for (casa::uInt p2 = 0; p2<nDataPoints; ++p2) {
+                 for (casacore::uInt p2 = 0; p2<nDataPoints; ++p2) {
                       const ComplexDiff &cd2 = cdm(p,p2);
-                      const casa::DComplex val2 = cd2.value();
-                      const casa::DComplex modelProduct = pxp.getModelProduct(p1,p2);
+                      const casacore::DComplex val2 = cd2.value();
+                      const casacore::DComplex modelProduct = pxp.getModelProduct(p1,p2);
                       dataVector[0] -= real(conj(rowParDerivRe1) * val2 * modelProduct);
                       dataVector[1] -= real(conj(rowParDerivIm1) * val2 * modelProduct);
                  }
@@ -381,29 +381,29 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
             // buffer for the element of normal matrix
             // treat all parameters as complex here to simplify the logic
             // (and they're complex anyway) -> 2x2 matrix
-            casa::Matrix<casa::Double> nmElementBuf(2,2,0.);
+            casacore::Matrix<casacore::Double> nmElementBuf(2,2,0.);
             // the first loop is over polarisations, essentially summing over
             // data points in the calculation of normal matrix
-            for (casa::uInt p = 0; p<nDataPoints; ++p) {
+            for (casacore::uInt p = 0; p<nDataPoints; ++p) {
             
                  // two inner loops are from matrix multiplication of cdm to a vector
                  // for A and A^T parts in the product forming the element of the normal
                  // matrix. We can optimise this for speed later, if proved to be a problem.
-                 for (casa::uInt p1 = 0; p1<nDataPoints; ++p1) {
+                 for (casacore::uInt p1 = 0; p1<nDataPoints; ++p1) {
                       
                       const ComplexDiff &cd1 = cdm(p,p1);
-                      const casa::DComplex rowParDerivRe1 = cd1.derivRe(*iterRow);
-                      //const casa::DComplex colParDerivRe1 = cd1.derivRe(*iterCol);
-                      const casa::DComplex rowParDerivIm1 = cd1.derivIm(*iterRow);
-                      //const casa::DComplex colParDerivIm1 = cd1.derivIm(*iterCol);
+                      const casacore::DComplex rowParDerivRe1 = cd1.derivRe(*iterRow);
+                      //const casacore::DComplex colParDerivRe1 = cd1.derivRe(*iterCol);
+                      const casacore::DComplex rowParDerivIm1 = cd1.derivIm(*iterRow);
+                      //const casacore::DComplex colParDerivIm1 = cd1.derivIm(*iterCol);
                                             
-                      for (casa::uInt p2 = 0; p2<nDataPoints; ++p2) {
+                      for (casacore::uInt p2 = 0; p2<nDataPoints; ++p2) {
                            const ComplexDiff &cd2 = cdm(p,p2);
-                           //const casa::DComplex rowParDerivRe2 = cd2.derivRe(*iterRow);
-                           const casa::DComplex colParDerivRe2 = cd2.derivRe(*iterCol);
-                           //const casa::DComplex rowParDerivIm2 = cd2.derivIm(*iterRow);
-                           const casa::DComplex colParDerivIm2 = cd2.derivIm(*iterCol);
-                           const casa::DComplex modelProduct = pxp.getModelProduct(p1,p2);
+                           //const casacore::DComplex rowParDerivRe2 = cd2.derivRe(*iterRow);
+                           const casacore::DComplex colParDerivRe2 = cd2.derivRe(*iterCol);
+                           //const casacore::DComplex rowParDerivIm2 = cd2.derivIm(*iterRow);
+                           const casacore::DComplex colParDerivIm2 = cd2.derivIm(*iterCol);
+                           const casacore::DComplex modelProduct = pxp.getModelProduct(p1,p2);
                            nmElementBuf(0,0) += real(conj(rowParDerivRe1) * colParDerivRe2 * modelProduct);
                            nmElementBuf(0,1) += real(conj(rowParDerivRe1) * colParDerivIm2 * modelProduct);
                            nmElementBuf(1,0) += real(conj(rowParDerivIm1) * colParDerivRe2 * modelProduct);
@@ -428,7 +428,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
 void GenericNormalEquations::add(const DesignMatrix& dm)
 {
   std::set<string> names=dm.parameterNames();
-  const casa::uInt nDataSet=dm.residual().size();
+  const casacore::uInt nDataSet=dm.residual().size();
   if (!nDataSet) {
       return; // nothing to process
   }
@@ -445,7 +445,7 @@ void GenericNormalEquations::add(const DesignMatrix& dm)
        ASKAPDEBUGASSERT(residualIt != dm.residual().end());
        ASKAPDEBUGASSERT(derivMatricesIt->ncolumn());
        
-       casa::Vector<double> dataVector; // data vector buffer for this row 
+       casacore::Vector<double> dataVector; // data vector buffer for this row 
        
        // it looks unnecessary from the first glance to fill the map
        // of matrices for the whole row. However, the design matrix can
@@ -469,7 +469,7 @@ void GenericNormalEquations::add(const DesignMatrix& dm)
       
        // now add up all other data points
        ++derivMatricesIt;
-       for(casa::uInt dataPoint = 1; derivMatricesIt != derivMatrices.end() ;
+       for(casacore::uInt dataPoint = 1; derivMatricesIt != derivMatrices.end() ;
                                ++dataPoint,++derivMatricesIt) {
            dataVector += dvElement(*derivMatricesIt, *residualIt);
           
@@ -494,9 +494,9 @@ void GenericNormalEquations::add(const DesignMatrix& dm)
 /// @param[in] dataPoint a sequence number of the data point, for which 
 /// the derivatives are returned
 /// @return matrix of derivatives
-const casa::Matrix<double>& 
+const casacore::Matrix<double>& 
      GenericNormalEquations::extractDerivatives(const DesignMatrix &dm,
-             const std::string &par, casa::uInt dataPoint)
+             const std::string &par, casacore::uInt dataPoint)
 {
   const DMAMatrix &derivMatrices = dm.derivative(par);
   // there is no benefit here from introducing an iterator as
@@ -514,15 +514,15 @@ const casa::Matrix<double>&
 /// @param[in] matrix1 the first element of a sparse normal matrix
 /// @param[in] matrix2 the second element of a sparse normal matrix
 /// @return a product of matrix1 transposed to matrix2
-casa::Matrix<double> GenericNormalEquations::nmElement(const casa::Matrix<double> &matrix1,
-               const casa::Matrix<double> &matrix2)
+casacore::Matrix<double> GenericNormalEquations::nmElement(const casacore::Matrix<double> &matrix1,
+               const casacore::Matrix<double> &matrix2)
 {
   ASKAPDEBUGASSERT(matrix1.ncolumn() && matrix2.ncolumn());
   ASKAPDEBUGASSERT(matrix1.nrow() == matrix2.nrow());
   if (matrix1.ncolumn() == 1 && matrix2.ncolumn() == 1) {
-      const casa::Vector<double> &m1ColVec = matrix1.column(0);
-      const casa::Vector<double> &m2ColVec = matrix2.column(0);
-      return casa::Matrix<double>(1,1,sum(m1ColVec*m2ColVec));
+      const casacore::Vector<double> &m1ColVec = matrix1.column(0);
+      const casacore::Vector<double> &m2ColVec = matrix2.column(0);
+      return casacore::Matrix<double>(1,1,sum(m1ColVec*m2ColVec));
   }
   
   // at least one of the matrices is non-degenerate
@@ -538,14 +538,14 @@ casa::Matrix<double> GenericNormalEquations::nmElement(const casa::Matrix<double
 /// vector, where A is the whole design matrix)
 /// @param[in] dm an element of the design matrix
 /// @param[in] dv an element of the data vector
-casa::Vector<double> GenericNormalEquations::dvElement(const casa::Matrix<double> &dm,
-              const casa::Vector<double> &dv)
+casacore::Vector<double> GenericNormalEquations::dvElement(const casacore::Matrix<double> &dm,
+              const casacore::Vector<double> &dv)
 {
   ASKAPDEBUGASSERT(dm.ncolumn() && dv.nelements());
   ASKAPDEBUGASSERT(dm.nrow() == dv.nelements());
   if (dm.ncolumn() == 1) {
-      const casa::Vector<double> &dmColVec = dm.column(0);
-      return casa::Vector<double>(1, sum(dmColVec*dv));
+      const casacore::Vector<double> &dmColVec = dm.column(0);
+      return casacore::Vector<double>(1, sum(dmColVec*dv));
   }
   // dm is non-degenerate
   return product(transpose(dm), dv);
@@ -558,8 +558,8 @@ casa::Vector<double> GenericNormalEquations::dvElement(const casa::Matrix<double
 /// @param[in] normalmatrix Normal Matrix for this parameter
 /// @param[in] datavector Data vector for this parameter
 void GenericNormalEquations::add(const string& name, 
-                               const casa::Matrix<double>& normalmatrix,
-                               const casa::Vector<double>& datavector)
+                               const casacore::Matrix<double>& normalmatrix,
+                               const casacore::Vector<double>& datavector)
 {
   MapOfMatrices tempSparseMatrix;
   tempSparseMatrix[name] = normalmatrix;
@@ -576,13 +576,13 @@ void GenericNormalEquations::add(const string& name,
 /// matrix has a shape of [1,1].
 /// @param[in] par1 the name of the first parameter
 /// @param[in] par2 the name of the second parameter
-const casa::Matrix<double>& GenericNormalEquations::normalMatrix(const std::string &par1, 
+const casacore::Matrix<double>& GenericNormalEquations::normalMatrix(const std::string &par1, 
                           const std::string &par2) const
 {
-  std::map<string,std::map<string, casa::Matrix<double> > >::const_iterator cIt1 = 
+  std::map<string,std::map<string, casacore::Matrix<double> > >::const_iterator cIt1 = 
                                    itsNormalMatrix.find(par1);
   ASKAPCHECK(cIt1 != itsNormalMatrix.end(), "Missing first parameter "<<par1<<" is requested from the normal matrix");
-  std::map<string, casa::Matrix<double> >::const_iterator cIt2 = 
+  std::map<string, casacore::Matrix<double> >::const_iterator cIt2 = 
                                    cIt1->second.find(par2);
   ASKAPCHECK(cIt2 != cIt1->second.end(), "Missing second parameter "<<par2<<" is requested from the normal matrix");
   return cIt2->second;                             
@@ -596,9 +596,9 @@ const casa::Matrix<double>& GenericNormalEquations::normalMatrix(const std::stri
 /// data vector are, in general, matrices, not scalar. For the scalar 
 /// parameter each element of data vector is a vector of unit length.
 /// @param[in] par the name of the parameter of interest
-const casa::Vector<double>& GenericNormalEquations::dataVector(const std::string &par) const
+const casacore::Vector<double>& GenericNormalEquations::dataVector(const std::string &par) const
 {
-  std::map<string, casa::Vector<double> >::const_iterator cIt = 
+  std::map<string, casacore::Vector<double> >::const_iterator cIt = 
                                            itsDataVector.find(par);
   ASKAPCHECK(cIt != itsDataVector.end(),"Parameter "<<par<<" is not found in the normal equations");
   return cIt->second;                                  

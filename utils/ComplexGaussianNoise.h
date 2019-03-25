@@ -48,20 +48,20 @@ struct ComplexGaussianNoise
   /// squared here because the mean is always zero)
   /// @param[in] seed1 a first seed to initialize the random generator
   /// @param[in] seed2 a second seed to initialize the random generator 
-  explicit ComplexGaussianNoise(double variance, casa::Int seed1 = 0, 
-                                            casa::Int seed2 = 10);
+  explicit ComplexGaussianNoise(double variance, casacore::Int seed1 = 0, 
+                                            casacore::Int seed2 = 10);
 
   /// @brief main method to obtain a random complex number.
   /// @details It runs the generator twice for real and imaginary part,
   /// composes a complex number and returns it.
   /// @return a random complex number
-  casa::Complex operator()() const;
+  casacore::Complex operator()() const;
   
 private:
   /// @brief random number generator
-  mutable casa::MLCG itsGen;
+  mutable casacore::MLCG itsGen;
   /// @brief random number distrubiton
-  mutable casa::Normal itsNoiseGen;
+  mutable casacore::Normal itsNoiseGen;
 }; // ComplexGaussianNoise
 
 } // namespace scimath

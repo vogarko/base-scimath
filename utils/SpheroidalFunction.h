@@ -78,7 +78,7 @@ struct SpheroidalFunction {
    /// @param[in] c parameter c of the spheroidal function (bandwidth or a measure of the support size in our case)
    /// @param[in] alpha parameter alpha of the spheroidal function (weighting exponent in our case)
    /// @param[in] nterms number of terms in the decomposition
-   SpheroidalFunction(const double c, const double alpha, const casa::uInt nterms = 16);
+   SpheroidalFunction(const double c, const double alpha, const casacore::uInt nterms = 16);
    
    /// @brief copy constructor to deal with casa vector
    /// @param[in] other an instance to copy from
@@ -112,7 +112,7 @@ protected:
    /// those corresponding to a single eigenvector associated with the smallest eigenvalue, so
    /// n in Smn is always equal to m and itsREven is always true. In addition m = alpha. It is
    /// passed as an additional parameter for generality.  
-   void fillHelperMatrix(casa::Matrix<double> &B, const double c, const int m) const;
+   void fillHelperMatrix(casacore::Matrix<double> &B, const double c, const int m) const;
   
    /// @brief coefficients in Legendre series
    /// @details This method solves eigenvalue problem and obtains eigenvector corresponding to
@@ -122,11 +122,11 @@ protected:
    /// @return eigenvalue
    /// @note an exception is thrown if there is an error solving eigensystem. itsCoeffs vector is resized
    /// to match the input matrix and filled with coefficients for Legendre series 
-   double fillLegendreCoeffs(const casa::Matrix<double> &B);
+   double fillLegendreCoeffs(const casacore::Matrix<double> &B);
    
 private:
    /// @brief coefficients of the Legendre function series
-   casa::Vector<double> itsCoeffs;
+   casacore::Vector<double> itsCoeffs;
    
    /// @brief true, if series starts from r=0, false if from r=1 (n-m of Smn is even or odd)
    bool itsREven;

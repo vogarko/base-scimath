@@ -133,15 +133,15 @@ namespace askap
 		void Params::add(const std::string& name, const double ip)
 		{
 			ASKAPCHECK(!has(name), "Parameter " + name + " already exists");
-			casa::Array<double> ipArray(casa::IPosition(1,1));
-			ipArray(casa::IPosition(1,0))=ip;
+			casacore::Array<double> ipArray(casacore::IPosition(1,1));
+			ipArray(casacore::IPosition(1,0))=ip;
 			itsArrays[name]=ipArray.copy();
 			itsFree[name]=true;
 			itsAxes[name]=Axes();
             notifyAboutChange(name);
 		}
 
-		void Params::add(const std::string& name, const casa::Array<double>& ip)
+		void Params::add(const std::string& name, const casacore::Array<double>& ip)
 		{
 			ASKAPCHECK(!has(name), "Parameter " + name + " already exists");
 			itsArrays[name]=ip.copy();
@@ -150,7 +150,7 @@ namespace askap
             notifyAboutChange(name);
 		}
 
-		void Params::add(const std::string& name, const casa::Array<double>& ip,
+		void Params::add(const std::string& name, const casacore::Array<double>& ip,
 				const Axes& axes)
 		{
 			ASKAPCHECK(!has(name), "Parameter " + name + " already exists");
@@ -166,11 +166,11 @@ namespace askap
         /// 2 filled with real and imaginary part.
         /// @param[in] name parameter name
         /// @param[in] value a value of the parameter to be added
-        void Params::add(const std::string &name, const casa::Complex &value)
+        void Params::add(const std::string &name, const casacore::Complex &value)
         {
-            casa::Array<double> buf(casa::IPosition(1,2));
-            buf(casa::IPosition(1,0)) = real(value);
-            buf(casa::IPosition(1,1)) = imag(value);
+            casacore::Array<double> buf(casacore::IPosition(1,2));
+            buf(casacore::IPosition(1,0)) = real(value);
+            buf(casacore::IPosition(1,1)) = imag(value);
             add(name,buf);
         }
 		
@@ -179,12 +179,12 @@ namespace askap
         /// vector (translated to vector of real numbers twice the size)
         /// @param[in] name parameter name
         /// @param[in] value a value of the paramter to be added
-        void Params::addComplexVector(const std::string &name, const casa::Vector<casa::Complex> &value)
+        void Params::addComplexVector(const std::string &name, const casacore::Vector<casacore::Complex> &value)
         {
-           casa::Array<double> buf(casa::IPosition(1,2*value.nelements()));
-           casa::IPosition index(1,0);           
-           for (casa::uInt elem = 0; elem < value.nelements(); ++elem,++index(0)) {
-                const casa::Complex val = value[elem];
+           casacore::Array<double> buf(casacore::IPosition(1,2*value.nelements()));
+           casacore::IPosition index(1,0);           
+           for (casacore::uInt elem = 0; elem < value.nelements(); ++elem,++index(0)) {
+                const casacore::Complex val = value[elem];
                 buf(index) = real(val);
                 ++index(0);
                 buf(index) = imag(val);                
@@ -196,15 +196,15 @@ namespace askap
 		void Params::add(const std::string& name, const double ip, const Axes& axes)
 		{
 			ASKAPCHECK(!has(name), "Parameter " + name + " already exists");
-			casa::Array<double> ipArray(casa::IPosition(1,1));
-			ipArray(casa::IPosition(1,0))=ip;
+			casacore::Array<double> ipArray(casacore::IPosition(1,1));
+			ipArray(casacore::IPosition(1,0))=ip;
 			itsArrays[name]=ipArray.copy();
 			itsFree[name]=true;
 			itsAxes[name]=axes;
 			notifyAboutChange(name);
 		}
 
-		void Params::update(const std::string& name, const casa::Array<double>& ip)
+		void Params::update(const std::string& name, const casacore::Array<double>& ip)
 		{
 			ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
 			itsArrays[name]=ip.copy();
@@ -218,18 +218,18 @@ namespace askap
         /// the shape of the given value (i.e. give blc = IPosition(4,0,0,1,0) to update only channel 0, 
         /// polarisation 1 plane)
         /// @param[in] name name of the parameter to be added
-        /// const casa::Array<double>& value
+        /// const casacore::Array<double>& value
         /// @param[in] value an array with replacement values
         /// @param[in] blc where to insert the new values to
-        void Params::update(const std::string &name, const casa::Array<double> &value, 
-                            const casa::IPosition &blc)
+        void Params::update(const std::string &name, const casacore::Array<double> &value, 
+                            const casacore::IPosition &blc)
         {
            ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
            ASKAPDEBUGASSERT(value.shape().nelements() == blc.nelements());
-           casa::Array<double> &arr = itsArrays[name];
-           casa::IPosition trc(value.shape());
+           casacore::Array<double> &arr = itsArrays[name];
+           casacore::IPosition trc(value.shape());
            trc += blc;
-           for (casa::uInt i=0; i<trc.nelements(); ++i) {
+           for (casacore::uInt i=0; i<trc.nelements(); ++i) {
                 ASKAPDEBUGASSERT(trc[i]>0);
                 trc[i]--;
                 ASKAPDEBUGASSERT(trc[i]<arr.shape()[i]);
@@ -248,7 +248,7 @@ namespace askap
         /// @param[in] name name of the parameter to be added
         /// @param[in] shape required shape of the parameter
         /// @param[in] axes optional axes of the parameter
-        void Params::add(const std::string &name, const casa::IPosition &shape, const Axes &axes)
+        void Params::add(const std::string &name, const casacore::IPosition &shape, const Axes &axes)
         {
          	ASKAPCHECK(!has(name), "Parameter " + name + " already exists");
 			itsArrays[name].resize(shape);
@@ -264,11 +264,11 @@ namespace askap
         /// 2 filled with real and imaginary part.
         /// @param[in] name parameter name
         /// @param[in] value a value of the parameter to be added
-        void Params::update(const std::string &name, const casa::Complex &value)
+        void Params::update(const std::string &name, const casacore::Complex &value)
         {
-            casa::Array<double> buf(casa::IPosition(1,2));
-            buf(casa::IPosition(1,0)) = real(value);
-            buf(casa::IPosition(1,1)) = imag(value);
+            casacore::Array<double> buf(casacore::IPosition(1,2));
+            buf(casacore::IPosition(1,0)) = real(value);
+            buf(casacore::IPosition(1,1)) = imag(value);
             update(name,buf);
         }
 		
@@ -277,12 +277,12 @@ namespace askap
         /// vector (translated to vector of real numbers twice the size)
         /// @param[in] name parameter name
         /// @param[in] value a value of the paramter to be updated
-        void Params::updateComplexVector(const std::string &name, const casa::Vector<casa::Complex> &value) 
+        void Params::updateComplexVector(const std::string &name, const casacore::Vector<casacore::Complex> &value) 
         {
-           casa::Array<double> buf(casa::IPosition(1,2*value.nelements()));
-           casa::IPosition index(1,0);           
-           for (casa::uInt elem = 0; elem < value.nelements(); ++elem,++index(0)) {
-                const casa::Complex val = value[elem];
+           casacore::Array<double> buf(casacore::IPosition(1,2*value.nelements()));
+           casacore::IPosition index(1,0);           
+           for (casacore::uInt elem = 0; elem < value.nelements(); ++elem,++index(0)) {
+                const casacore::Complex val = value[elem];
                 buf(index) = real(val);
                 ++index(0);
                 buf(index) = imag(val);                
@@ -293,8 +293,8 @@ namespace askap
 		void Params::update(const std::string& name, const double ip)
 		{
 			ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
-			casa::Array<double> ipArray(casa::IPosition(1,1));
-			ipArray(casa::IPosition(1,0))=ip;
+			casacore::Array<double> ipArray(casacore::IPosition(1,1));
+			ipArray(casacore::IPosition(1,0))=ip;
 			itsArrays[name]=ipArray.copy();
 			itsFree[name]=true;
 			notifyAboutChange(name);
@@ -316,13 +316,13 @@ namespace askap
 			return value(name).nelements()==1;
 		}
 
-		const casa::Array<double>& Params::value(const std::string& name) const
+		const casacore::Array<double>& Params::value(const std::string& name) const
 		{
 			ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
 			return itsArrays.find(name)->second;
 		}
 
-		casa::Array<double>& Params::value(const std::string& name)
+		casacore::Array<double>& Params::value(const std::string& name)
 		{
 			ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
 			notifyAboutChange(name);
@@ -333,7 +333,7 @@ namespace askap
 		{
 			ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
 			ASKAPCHECK(isScalar(name), "Parameter " + name + " is not scalar");
-			return value(name)(casa::IPosition(1,0));
+			return value(name)(casacore::IPosition(1,0));
 		}
 		
 		/// @brief Return the value for the complex-valued parameter (const)
@@ -346,35 +346,35 @@ namespace askap
         /// incompatible.
         /// @param[in] name Name of the parameter
         /// @return value of the parameter
-        casa::Complex Params::complexValue(const std::string &name) const
+        casacore::Complex Params::complexValue(const std::string &name) const
 		{
 		    ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
-			const casa::Array<double> &arrVal = value(name);
+			const casacore::Array<double> &arrVal = value(name);
 			ASKAPCHECK(arrVal.nelements() != 0 && arrVal.nelements()<3 &&
 			            arrVal.ndim() ==1, "Parameter " + name + 
 			            " cannot be converted to a complex number");
 			if (arrVal.nelements() == 1) {
-			    return arrVal(casa::IPosition(1,0));
+			    return arrVal(casacore::IPosition(1,0));
 			} 
-			return casa::Complex(arrVal(casa::IPosition(1,0)), 
-			                     arrVal(casa::IPosition(1,1))); 
+			return casacore::Complex(arrVal(casacore::IPosition(1,0)), 
+			                     arrVal(casacore::IPosition(1,1))); 
 		}
 		
 		/// @brief obtain parameter as a complex vector
         /// @details Complex vectors are represented as real vectors with twice the size.
         /// @param[in] name parameter name
         /// @return complex vector
-        casa::Vector<casa::Complex> Params::complexVectorValue(const std::string &name) const
+        casacore::Vector<casacore::Complex> Params::complexVectorValue(const std::string &name) const
         {
 		    ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
-			const casa::Array<double> &arrVal = value(name);
+			const casacore::Array<double> &arrVal = value(name);
 			ASKAPCHECK(arrVal.nelements() % 2 == 0, "Parameter "<<name<<
 			           " has an odd number of elements, unable to convert to complex vector");
-			casa::Vector<casa::Complex> result(arrVal.nelements() / 2);
+			casacore::Vector<casacore::Complex> result(arrVal.nelements() / 2);
 			// just to have vector interface, casa array copy has reference semantics
-			casa::Vector<double> vecVal(arrVal);
-			for (casa::uInt elem = 0, outElem = 0; outElem < result.nelements(); ++outElem,elem+=2) {
-			     const casa::Complex val(static_cast<float>(vecVal[elem]), static_cast<float>(vecVal[elem+1]));
+			casacore::Vector<double> vecVal(arrVal);
+			for (casacore::uInt elem = 0, outElem = 0; outElem < result.nelements(); ++outElem,elem+=2) {
+			     const casacore::Complex val(static_cast<float>(vecVal[elem]), static_cast<float>(vecVal[elem+1]));
 			     result[outElem] = val;
 			}
             return result;
@@ -457,16 +457,16 @@ namespace askap
 
 		std::vector<string> Params::completions(const std::string& pattern, const bool useAll) const
 		{
-			casa::Regex regex(casa::Regex::fromPattern(pattern+"*"));
-			casa::Regex sub(casa::Regex::fromPattern(pattern));
+			casacore::Regex regex(casacore::Regex::fromPattern(pattern+"*"));
+			casacore::Regex sub(casacore::Regex::fromPattern(pattern));
 			std::vector<string> completions;
 			uint ncomplete=0;
 			for(std::map<string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
 			{
-				if(casa::String(iter->first).matches(regex))
+				if(casacore::String(iter->first).matches(regex))
 				{
                                    if (useAll || iter->second) {
-				       casa::String complete(iter->first);
+				       casacore::String complete(iter->first);
 				       complete.gsub(sub, "");
 				       completions.push_back(complete);
 				       ncomplete++;
@@ -525,9 +525,9 @@ namespace askap
 				}
 				else
 				{
-					const casa::Array<double> &arrVal = params.value(*it);
+					const casacore::Array<double> &arrVal = params.value(*it);
 					os << " (array : shape " << arrVal.shape()<<" max abs. value: "<<
-                                           casa::max(casa::abs(arrVal));
+                                           casacore::max(casacore::abs(arrVal));
 					if (arrVal.nelements() == 2 && arrVal.ndim() == 1) {
 					    os<<" or complex: "<<params.complexValue(*it);
 					}
@@ -613,7 +613,7 @@ bool Params::isChanged(const std::string &name, const ChangeMonitor &cm) const
 
 		// These are the items that we need to write to and read from a blob stream
 		// note itsChangeMonitors is not written to blob deliberately
-		// std::map<std::string, casa::Array<double> > itsArrays;
+		// std::map<std::string, casacore::Array<double> > itsArrays;
 		// std::map<std::string, Axes> itsAxes;
 		// std::map<std::string, bool> itsFree;
 
@@ -659,7 +659,7 @@ bool Params::isChanged(const std::string &name, const ChangeMonitor &cm) const
             ci != parset.end();++ci) {
             try {
                std::vector<double> vec = parset.getDoubleVector(ci->first);
-               casa::Vector<double> arr(vec.size());
+               casacore::Vector<double> arr(vec.size());
                std::copy(vec.begin(),vec.end(),arr.cbegin());
                params.add(ci->first, arr);
             }

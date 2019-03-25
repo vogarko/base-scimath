@@ -48,14 +48,14 @@ struct PaddingUtils {
   /// @param[in] target target array to alter, the source will be converted to Complex and stored in the 
   /// inner quarter of the target
   /// @param[in] source input array
-  static void inject(casa::Lattice<casa::Complex>& target, casa::Lattice<float>& source);
+  static void inject(casacore::Lattice<casacore::Complex>& target, casacore::Lattice<float>& source);
       
   /// @brief Extract target from the center quarter of the source 
   /// @details
   /// @param[in] target target array to save the reslt, a real part of the inner quarter of the the source array 
   /// will be extracted
   /// @param[in] source input array
-  static void extract(casa::Lattice<float>& target, casa::Lattice<casa::Complex>& source);  
+  static void extract(casacore::Lattice<float>& target, casacore::Lattice<casacore::Complex>& source);  
   
   /// @brief Extract a centered subarray of a given shape
   /// @details This helper method is used for faceted imaging with padding (and overlap) of facets.
@@ -64,7 +64,7 @@ struct PaddingUtils {
   /// @param[in] shape required shape
   /// @return extracted subarray
   template<typename T>
-  static casa::Array<T> centeredSubArray(casa::Array<T> &source, const casa::IPosition &shape);  
+  static casacore::Array<T> centeredSubArray(casacore::Array<T> &source, const casacore::IPosition &shape);  
   
   /// @brief Extract a centered subarray, which is a given factor smaller
   /// @details Most padding applications in the ASKAPsoft require operations on just two
@@ -75,7 +75,7 @@ struct PaddingUtils {
   /// @param[in] padding padding factor (should be a positive number)
   /// @return extracted subarray
   template<typename T>
-  static casa::Array<T> extract(casa::Array<T> &source, const float padding);
+  static casacore::Array<T> extract(casacore::Array<T> &source, const float padding);
   
   /// @brief helper method to get shape before padding
   /// @details Most padding applications in the ASKAPsoft require operations on just two
@@ -83,7 +83,7 @@ struct PaddingUtils {
   /// @param[in] shape shape of the padded array
   /// @param[in] padding padding factor (should be a positive number)
   /// @return shape before padding
-  static casa::IPosition unpadShape(const casa::IPosition &shape, const float padding);
+  static casacore::IPosition unpadShape(const casacore::IPosition &shape, const float padding);
   
   /// @brief clip outer edges
   /// @details To make padding effective we need to fill the outer edges with zeros after non-linear
@@ -95,7 +95,7 @@ struct PaddingUtils {
   /// @note At the moment, clipping can only happen on the first two axes and the inner subarray must be 
   /// two-dimensional
   template<typename T>
-  static void clip(casa::Array<T> & source, const casa::IPosition &size);
+  static void clip(casacore::Array<T> & source, const casacore::IPosition &size);
   
   /// @brief helper method to get padded shape
   /// @details Most padding applications in the ASKAPsoft require operations on just two
@@ -103,7 +103,7 @@ struct PaddingUtils {
   /// @param[in] shape shape of the original array
   /// @param[in] padding padding factor
   /// @return shape of the padded array
-  static casa::IPosition paddedShape(const casa::IPosition &shape, const float padding);
+  static casacore::IPosition paddedShape(const casacore::IPosition &shape, const float padding);
   
   /// @brief padding with fft
   /// @details Sometimes it is necessary to do padding in the other domain. This routine 
@@ -115,7 +115,7 @@ struct PaddingUtils {
   /// is thrown (in debug mode). 
   /// @param[in] in input array 
   /// @param[in] out output array (should already be resized to a desired size) 
-  static void fftPad(const casa::Array<double>& in, casa::Array<double>& out);
+  static void fftPad(const casacore::Array<double>& in, casacore::Array<double>& out);
   
   /// @brief padding with fft
   /// @details This variant of the method is intended for the case where internal padding is used.
@@ -127,7 +127,7 @@ struct PaddingUtils {
   /// @param[in] in input array 
   /// @param[in] out output array (should already be resized to a desired size) 
   /// @param[in] factor additional padding of the output array
-  static void fftPad(const casa::Array<double>& in, casa::Array<double>& out, float factor);
+  static void fftPad(const casacore::Array<double>& in, casacore::Array<double>& out, float factor);
   
 };
 

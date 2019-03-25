@@ -99,10 +99,10 @@ namespace askap
         /// Set threshold: if the absolute value of the maximum residual is less
         /// than this number, iteration will stop.
         /// @param threshold Quantity
-        void setThreshold(const casa::Quantity& threshold=casa::Quantity(0.0, "Jy"));
+        void setThreshold(const casacore::Quantity& threshold=casacore::Quantity(0.0, "Jy"));
 
         /// Return threshold
-        const casa::Quantity& threshold() const;
+        const casacore::Quantity& threshold() const;
 
       private:
         /// Algorithm name
@@ -120,7 +120,7 @@ namespace askap
         /// Verbose output?
         bool itsVerbose;
         /// Threshold
-        casa::Quantity itsThreshold;
+        casacore::Quantity itsThreshold;
     };
 
   }

@@ -46,7 +46,7 @@ namespace scimath {
 /// parameter class use loadImageParameter method
 /// @param[in] imagename name of the output image file
 /// @param[in] arr input array
-void saveAsCasaImage(const std::string &imagename, const casa::Array<casa::Float> &arr);
+void saveAsCasaImage(const std::string &imagename, const casacore::Array<casacore::Float> &arr);
 
 
 } // namespace scimath

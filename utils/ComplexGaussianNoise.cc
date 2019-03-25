@@ -38,8 +38,8 @@ namespace scimath {
 /// squared here because the mean is always zero)
 /// @param[in] seed1 a first seed to initialize the random generator
 /// @param[in] seed2 a second seed to initialize the random generator 
-ComplexGaussianNoise::ComplexGaussianNoise(double variance, casa::Int seed1, 
-                                            casa::Int seed2) :
+ComplexGaussianNoise::ComplexGaussianNoise(double variance, casacore::Int seed1, 
+                                            casacore::Int seed2) :
     itsGen(seed1, seed2), itsNoiseGen(&itsGen,0.,variance)
 {
 }
@@ -48,9 +48,9 @@ ComplexGaussianNoise::ComplexGaussianNoise(double variance, casa::Int seed1,
 /// @details It runs the generator twice for real and imaginary part,
 /// composes a complex number and returns it.
 /// @return a random complex number
-casa::Complex ComplexGaussianNoise::operator()() const
+casacore::Complex ComplexGaussianNoise::operator()() const
 {
-  return casa::Complex(itsNoiseGen(),itsNoiseGen());
+  return casacore::Complex(itsNoiseGen(),itsNoiseGen());
 }
 
 

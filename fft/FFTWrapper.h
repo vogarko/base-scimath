@@ -43,25 +43,25 @@ namespace askap
         /// @param vec Complex vector
         /// @param forward Forward transform?
         /// @ingroup fft
-        void fft(casa::Vector<casa::DComplex>& vec, const bool forward);
+        void fft(casacore::Vector<casacore::DComplex>& vec, const bool forward);
 
         /// @brief 1-D inplace transform
         /// @param vec Complex vector
         /// @param forward Forward transform?
         /// @ingroup fft
-        void fft(casa::Vector<casa::Complex>& vec, const bool forward);
+        void fft(casacore::Vector<casacore::Complex>& vec, const bool forward);
 
         /// @brief FFT first two axes only
         /// @param arr Complex array
         /// @param forward Forward transform?
         /// @ingroup fft
-        void fft2d(casa::Array<casa::Complex>& arr, const bool forward);
+        void fft2d(casacore::Array<casacore::Complex>& arr, const bool forward);
 
         /// @brief FFT first two axes only
         /// @param arr Complex array
         /// @param forward Forward transform?
         /// @ingroup fft
-        void fft2d(casa::Array<casa::DComplex>& arr, const bool forward);
+        void fft2d(casacore::Array<casacore::DComplex>& arr, const bool forward);
     }
 }
 #endif

@@ -65,7 +65,7 @@ public:
    /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
    /// @note The arrays are left uninitialised after this constructor, their size have to be changed 
    /// before they can be used
-   explicit PolXProducts(const casa::uInt npol);
+   explicit PolXProducts(const casacore::uInt npol);
    
    /// @brief constructor initialising arrays
    /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
@@ -73,7 +73,7 @@ public:
    /// @param[in] doZero if true (default), the buffer arrays are filled with zeros. 
    /// @note This version of the constructor does initialise the arrays to the requested size and by default
    /// fills them with zeros.
-   PolXProducts(const casa::uInt npol, const casa::IPosition &shape, const bool doZero = true);
+   PolXProducts(const casacore::uInt npol, const casacore::IPosition &shape, const bool doZero = true);
    
    /// @brief asignment operator to ensure reference semantics
    /// @param[in] other object to reference from
@@ -92,7 +92,7 @@ public:
    /// @param[in] pos position vector for all axes except the last one (polarisation). The vector size
    /// should be the dimension of arrays minus 1.
    /// @return the one dimensional slice at the given position
-   PolXProducts slice(const casa::IPosition &pos);
+   PolXProducts slice(const casacore::IPosition &pos);
    
    /// @brief obtain the slice at the given position
    /// @details This method makes a slice of the underlying arrays along the polarisation axis 
@@ -101,7 +101,7 @@ public:
    /// @param[in] pos position vector for all axes except the last one (polarisation). The vector size
    /// should be the dimension of arrays minus 1.
    /// @return the one dimensional slice at the given position
-   PolXProducts roSlice(const casa::IPosition &pos) const;   
+   PolXProducts roSlice(const casacore::IPosition &pos) const;   
    
    /// @brief obtain the slice at the given position
    /// @details This is a specialisation of the method which makes a slice of the underlying arrays along 
@@ -110,8 +110,8 @@ public:
    /// @param[in] x first coordinate
    /// @param[in] y second coordinate
    /// @return the one dimensional slice at the given position
-   inline PolXProducts slice(const casa::uInt x, const casa::uInt y) 
-     { return slice(casa::IPosition(2, casa::Int(x), casa::Int(y)));}
+   inline PolXProducts slice(const casacore::uInt x, const casacore::uInt y) 
+     { return slice(casacore::IPosition(2, casacore::Int(x), casacore::Int(y)));}
    
    /// @brief obtain the slice at the given position
    /// @details This specialisation works with 3-dimensional buffers (x,y + polarisation dimension) and takes
@@ -119,8 +119,8 @@ public:
    /// @param[in] x first coordinate
    /// @param[in] y second coordinate
    /// @return the one dimensional slice at the given position
-   inline PolXProducts roSlice(const casa::uInt x, const casa::uInt y) const
-     { return roSlice(casa::IPosition(2, casa::Int(x), casa::Int(y)));}
+   inline PolXProducts roSlice(const casacore::uInt x, const casacore::uInt y) const
+     { return roSlice(casacore::IPosition(2, casacore::Int(x), casacore::Int(y)));}
    
    
    /// @brief resize the arrays storing products
@@ -129,14 +129,14 @@ public:
    /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
    /// @param[in] shape shape of the arrays without polarisation dimension which is always added last
    /// @param[in] doZero if true (default), the buffer arrays are filled with zeros. 
-   void resize(const casa::uInt npol, const casa::IPosition &shape, const bool doZero = true);
+   void resize(const casacore::uInt npol, const casacore::IPosition &shape, const bool doZero = true);
    
    /// @brief resize without changing the number of polarisations
    /// @details This method is equivalent to the previous one, but the dimensionality of the visibility
    /// vector is not changed.
    /// @param[in] shape shape of the arrays without polarisation dimension which is always added last
    /// @param[in] doZero if true (default), the buffer arrays are filled with zeros. 
-   void resize(const casa::IPosition &shape, const bool doZero = true);
+   void resize(const casacore::IPosition &shape, const bool doZero = true);
    
    /// @brief reset buffers to zero
    /// @details This method resets accumulation without changing the dimensions
@@ -153,7 +153,7 @@ public:
    /// @param[in] pol1 first polarisation coordinate of the pair forming the product
    /// @param[in] pol2 second polarisation coordinate of the pair forming the product
    /// @return the value of cross-product
-   casa::Complex getModelProduct(const casa::uInt x, const casa::uInt y, const casa::uInt pol1, const casa::uInt pol2) const;
+   casacore::Complex getModelProduct(const casacore::uInt x, const casacore::uInt y, const casacore::uInt pol1, const casacore::uInt pol2) const;
     
    /// @brief obtain the value for model visibility cross-products
    /// @details This version of the method deals with the slice which only has polarisation dimension.
@@ -162,7 +162,7 @@ public:
    /// @param[in] pol1 first polarisation coordinate of the pair forming the product
    /// @param[in] pol2 second polarisation coordinate of the pair forming the product
    /// @return the value of cross-product
-   casa::Complex getModelProduct(const casa::uInt pol1, const casa::uInt pol2) const;
+   casacore::Complex getModelProduct(const casacore::uInt pol1, const casacore::uInt pol2) const;
 
    /// @brief obtain the value for cross-products between model and measured visibilities
    /// @details This version of the method is intended to be used if the underlying arrays are
@@ -173,7 +173,7 @@ public:
    /// @param[in] pol1 first polarisation coordinate of the pair forming the product
    /// @param[in] pol2 second polarisation coordinate of the pair forming the product
    /// @return the value of cross-product
-   casa::Complex getModelMeasProduct(const casa::uInt x, const casa::uInt y, const casa::uInt pol1, const casa::uInt pol2) const;
+   casacore::Complex getModelMeasProduct(const casacore::uInt x, const casacore::uInt y, const casacore::uInt pol1, const casacore::uInt pol2) const;
     
    /// @brief obtain the value for cross-products between model and measured visibilities
    /// @details This version of the method deals with the slice which only has polarisation dimension.
@@ -182,7 +182,7 @@ public:
    /// @param[in] pol1 first polarisation coordinate of the pair forming the product
    /// @param[in] pol2 second polarisation coordinate of the pair forming the product
    /// @return the value of cross-product
-   casa::Complex getModelMeasProduct(const casa::uInt pol1, const casa::uInt pol2) const;
+   casacore::Complex getModelMeasProduct(const casacore::uInt pol1, const casacore::uInt pol2) const;
    
    /// @brief add to the products buffer
    /// @details The real usage of the product buffers is to sum these products over the dataset. 
@@ -194,8 +194,8 @@ public:
    /// @param[in] pol2 second polarisation coordinate of the pair forming the product
    /// @param[in] modelProduct a complex number to add to the modelProduct buffer   
    /// @param[in] modelMeasProduct a complex number to add to the modelMeasProduct buffer   
-   void add(const casa::uInt x, const casa::uInt y, const casa::uInt pol1, const casa::uInt pol2, 
-            const casa::Complex modelProduct, const casa::Complex modelMeasProduct);
+   void add(const casacore::uInt x, const casacore::uInt y, const casacore::uInt pol1, const casacore::uInt pol2, 
+            const casacore::Complex modelProduct, const casacore::Complex modelMeasProduct);
             
    /// @brief add to the model product buffer
    /// @details The real usage of the model product buffer. This method encapsulates
@@ -207,8 +207,8 @@ public:
    /// @param[in] pol2 second polarisation coordinate of the pair forming the product
    /// @param[in] modelProduct a complex number to add to the modelProduct buffer   
    /// @note to avoid bugs with unnecessary addition we enforce here that pol1>=pol2
-   void addModelProduct(const casa::uInt x, const casa::uInt y, const casa::uInt pol1, 
-            const casa::uInt pol2, const casa::Complex modelProduct);   
+   void addModelProduct(const casacore::uInt x, const casacore::uInt y, const casacore::uInt pol1, 
+            const casacore::uInt pol2, const casacore::Complex modelProduct);   
 
    /// @brief add to the model product buffer
    /// @details The real usage of the model product buffer. This method encapsulates
@@ -218,7 +218,7 @@ public:
    /// @param[in] pol2 second polarisation coordinate of the pair forming the product
    /// @param[in] modelProduct a complex number to add to the modelProduct buffer   
    /// @note to avoid bugs with unnecessary addition we enforce here that pol1>=pol2
-   void addModelProduct(const casa::uInt pol1, const casa::uInt pol2, const casa::Complex modelProduct);   
+   void addModelProduct(const casacore::uInt pol1, const casacore::uInt pol2, const casacore::Complex modelProduct);   
    
    /// @brief add to the model and measured product buffer
    /// @details The real usage of the model and measured product buffer. This method encapsulates
@@ -231,8 +231,8 @@ public:
    /// @param[in] modelMeasProduct a complex number to add to the modelMeasProduct buffer   
    /// @note For cross-products between model and measured data any combination of pol1 and
    /// pol2 is allowed (i.e. there is no restriction that pol1>=pol2)
-   void addModelMeasProduct(const casa::uInt x, const casa::uInt y, const casa::uInt pol1, 
-            const casa::uInt pol2, const casa::Complex modelMeasProduct);   
+   void addModelMeasProduct(const casacore::uInt x, const casacore::uInt y, const casacore::uInt pol1, 
+            const casacore::uInt pol2, const casacore::Complex modelMeasProduct);   
 
    /// @brief add to the model and measured product buffer
    /// @details The real usage of the model and measured product buffer. This method encapsulates
@@ -243,12 +243,12 @@ public:
    /// @param[in] modelMeasProduct a complex number to add to the modelMeasProduct buffer   
    /// @note For cross-products between model and measured data any combination of pol1 and
    /// pol2 is allowed (i.e. there is no restriction that pol1>=pol2)
-   void addModelMeasProduct(const casa::uInt pol1, const casa::uInt pol2, const casa::Complex modelMeasProduct);   
+   void addModelMeasProduct(const casacore::uInt pol1, const casacore::uInt pol2, const casacore::Complex modelMeasProduct);   
    
    
    /// @brief obtain number of polarisations
    /// @return the number of polarisations
-   inline casa::uInt nPol() const { return itsNPol; }
+   inline casacore::uInt nPol() const { return itsNPol; }
 
 protected:   
    /// @brief setup a slicer for a given position
@@ -258,7 +258,7 @@ protected:
    /// should be the dimension of arrays minus 1.
    /// @param[in] forMeasProduct if true the last dimension of the array is assumed to be npol squared
    /// @return an instance of the slicer object
-   casa::Slicer getSlicer(const casa::IPosition &pos, bool forMeasProduct) const;      
+   casacore::Slicer getSlicer(const casacore::IPosition &pos, bool forMeasProduct) const;      
 
    /// @brief polarisation index for a given pair of polarisations
    /// @details We need to keep track of cross-polarisation products. These cross-products are
@@ -269,23 +269,23 @@ protected:
    /// @param[in] pol1 polarisation of the first visibility
    /// @param[in] pol2 polarisation of the second visibility
    /// @return an index into plane of itsModelProducts and itsModelMeasProducts
-   casa::uInt polToIndex(casa::uInt pol1, casa::uInt pol2) const;
+   casacore::uInt polToIndex(casacore::uInt pol1, casacore::uInt pol2) const;
 
    /// @brief polarisations corresponding to a given index
    /// @details We need to keep track of cross-polarisation products. These cross-products are
    /// kept alongside with the parallel-hand products in the same cube. This method is 
    /// a reverse to polToIndex and translates an index back to two polarisation products
-   std::pair<casa::uInt,casa::uInt> indexToPol(casa::uInt index) const; 
+   std::pair<casacore::uInt,casacore::uInt> indexToPol(casacore::uInt index) const; 
    
 private:
    /// @brief number of polarisations (i.e. dimension of visibility vector)
-   casa::uInt itsNPol;     
+   casacore::uInt itsNPol;     
    
    /// @brief products of components of model visibility
-   casa::Array<casa::Complex> itsModelProducts;
+   casacore::Array<casacore::Complex> itsModelProducts;
    
    /// @brief products of components of model visibility by measured visibility
-   casa::Array<casa::Complex> itsModelMeasProducts;   
+   casacore::Array<casacore::Complex> itsModelMeasProducts;   
 };
 
 } // namespace scimath

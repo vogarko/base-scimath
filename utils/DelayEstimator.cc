@@ -51,12 +51,12 @@ DelayEstimator::DelayEstimator(const double resolution) : itsResolution(resoluti
 /// @brief estimate delay for a given spectrum
 /// @param[in] vis (visibility) spectrum
 /// @return delay in seconds
-double DelayEstimator::getDelay(const casa::Vector<casa::Complex> &vis) const
+double DelayEstimator::getDelay(const casacore::Vector<casacore::Complex> &vis) const
 {
    ASKAPASSERT(itsResolution != 0.);
    ASKAPASSERT(vis.nelements() > 1);
    std::vector<float> phases(vis.nelements());
-   const float threshold = 3 * casa::C::pi / 2;
+   const float threshold = 3 * casacore::C::pi / 2;
 
    // unambiguate phases
    PhaseUnwrapper<float> phu(threshold);
@@ -97,13 +97,13 @@ double DelayEstimator::getDelay(const casa::Vector<casa::Complex> &vis) const
    // bandpass shape cannot be approximated by a line. the absolute value of the correlation coefficient
    const double phaseVariance = sy2 - sy * sy;
    if (phaseVariance > 0.) {
-       const double chi2 = phaseVariance - 2 * coeff * coeffNumerator + casa::square(coeff) * chanVariance;
+       const double chi2 = phaseVariance - 2 * coeff * coeffNumerator + casacore::square(coeff) * chanVariance;
        // abs value of correlation coefficient: fabs(coeffNumerator / sqrt(chanVariance * phaseVariance));
        // atan2 is just a convenient non-linear function to map an inverse into [0,1] range and avoid issues
        // with infinities
-       itsQuality = atan2(1., chi2)  * casa::C::_2_pi;
+       itsQuality = atan2(1., chi2)  * casacore::C::_2_pi;
        // calculate delay based on the fitted slope
-       return coeff / 2. / casa::C::pi / itsResolution;
+       return coeff / 2. / casacore::C::pi / itsResolution;
    }
    // degenerate case - zero delay
    itsQuality = 1.;
@@ -115,18 +115,18 @@ double DelayEstimator::getDelay(const casa::Vector<casa::Complex> &vis) const
 /// present. However, it only gives a rough estimate
 /// @param[in] vis (visibility) spectrum
 /// @return delay in seconds
-double DelayEstimator::getDelayWithFFT(const casa::Vector<casa::Complex> &vis) const
+double DelayEstimator::getDelayWithFFT(const casacore::Vector<casacore::Complex> &vis) const
 {
   ASKAPASSERT(itsResolution != 0.);
    
   // create a copy explicitly due to reference semantics of casa arrays
-  casa::Vector<casa::Complex> lags(vis.copy());
+  casacore::Vector<casacore::Complex> lags(vis.copy());
   scimath::fft(lags, true);
   // search for a peak lag
-  casa::uInt peakLagChan = lags.nelements(); 
+  casacore::uInt peakLagChan = lags.nelements(); 
   float peakAmp = -1.;
   float meanAmp = 0.;
-  for (casa::uInt chan = 0; chan < lags.nelements(); ++chan) {
+  for (casacore::uInt chan = 0; chan < lags.nelements(); ++chan) {
        const float curAmp = abs(lags[chan]);
        meanAmp += curAmp;
        if (peakAmp < curAmp) {
@@ -138,11 +138,11 @@ double DelayEstimator::getDelayWithFFT(const casa::Vector<casa::Complex> &vis) c
   meanAmp -= peakAmp;
   if (lags.nelements() > 1) {
       const double bandwidth = vis.nelements() * itsResolution;
-      const double delay =  (static_cast<casa::Int>(peakLagChan) - static_cast<casa::Int>(vis.nelements()) / 2)  / bandwidth;
+      const double delay =  (static_cast<casacore::Int>(peakLagChan) - static_cast<casacore::Int>(vis.nelements()) / 2)  / bandwidth;
       meanAmp /= double(lags.nelements() - 1);
       ASKAPDEBUGASSERT(meanAmp >= 0.);
       // atan2 is a convenient function to map a ratio of two non-negative numbers to the [0,1] interval 
-      itsQuality = atan2(peakAmp, meanAmp) * casa::C::_2_pi;
+      itsQuality = atan2(peakAmp, meanAmp) * casacore::C::_2_pi;
       ASKAPDEBUGASSERT(itsQuality >= 0.);
       ASKAPDEBUGASSERT(itsQuality <= 1.);      
       return delay;

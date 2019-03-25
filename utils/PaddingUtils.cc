@@ -51,19 +51,19 @@ using namespace askap::scimath;
 /// @param[in] target target array to alter, the source will be converted to Complex and stored in the 
 /// inner quarter of the target
 /// @param[in] source input array
-void PaddingUtils::inject(casa::Lattice<casa::Complex>& target, casa::Lattice<float>& source)
+void PaddingUtils::inject(casacore::Lattice<casacore::Complex>& target, casacore::Lattice<float>& source)
 {
   target.set(0.0);
-  casa::IPosition corner(target.shape().nelements(),0);
+  casacore::IPosition corner(target.shape().nelements(),0);
   ASKAPDEBUGASSERT(corner.nelements()>=2);
   ASKAPDEBUGASSERT(target.shape()(0) == source.shape()(0)*2);
   ASKAPDEBUGASSERT(target.shape()(1) == source.shape()(1)*2);
       
   corner(0) = target.shape()(0)/4;
   corner(1) = target.shape()(1)/4;
-  casa::Slicer slicer(corner, source.shape());
-  casa::SubLattice<casa::Complex> inner(target, slicer, casa::True);
-  inner.copyData(casa::LatticeExpr<casa::Complex>(toComplex(source)));
+  casacore::Slicer slicer(corner, source.shape());
+  casacore::SubLattice<casacore::Complex> inner(target, slicer, casacore::True);
+  inner.copyData(casacore::LatticeExpr<casacore::Complex>(toComplex(source)));
 }
       
 /// @brief Extract target from the center quarter of the source 
@@ -71,18 +71,18 @@ void PaddingUtils::inject(casa::Lattice<casa::Complex>& target, casa::Lattice<fl
 /// @param[in] target target array to save the reslt, a real part of the inner quarter of the the source array 
 /// will be extracted
 /// @param[in] source input array
-void PaddingUtils::extract(casa::Lattice<float>& target, casa::Lattice<casa::Complex>& source)
+void PaddingUtils::extract(casacore::Lattice<float>& target, casacore::Lattice<casacore::Complex>& source)
 {
   target.set(0.0);
-  casa::IPosition corner(source.shape().nelements(),0);
+  casacore::IPosition corner(source.shape().nelements(),0);
   ASKAPDEBUGASSERT(corner.nelements()>=2);
   ASKAPDEBUGASSERT(source.shape()(0) == target.shape()(0)*2);
   ASKAPDEBUGASSERT(source.shape()(1) == target.shape()(1)*2);
   corner(0) = source.shape()(0)/4;
   corner(1) = source.shape()(1)/4;
-  casa::Slicer slicer(corner, target.shape());
-  casa::SubLattice<casa::Complex> inner(source, slicer, casa::True);
-  target.copyData(casa::LatticeExpr<float>(real(inner)));
+  casacore::Slicer slicer(corner, target.shape());
+  casacore::SubLattice<casacore::Complex> inner(source, slicer, casacore::True);
+  target.copyData(casacore::LatticeExpr<float>(real(inner)));
 }
 
 
@@ -92,9 +92,9 @@ void PaddingUtils::extract(casa::Lattice<float>& target, casa::Lattice<casa::Com
 /// @param[in] shape shape of the original array
 /// @param[in] padding padding factor
 /// @return shape of the padded array
-casa::IPosition PaddingUtils::paddedShape(const casa::IPosition &shape, const float padding)
+casacore::IPosition PaddingUtils::paddedShape(const casacore::IPosition &shape, const float padding)
 {
-  casa::IPosition result(shape);
+  casacore::IPosition result(shape);
   ASKAPDEBUGASSERT(result.nelements()>=2);
   ASKAPDEBUGASSERT(padding>0);
   result(0) = int(result(0) * padding);
@@ -112,7 +112,7 @@ casa::IPosition PaddingUtils::paddedShape(const casa::IPosition &shape, const fl
 /// is thrown (in debug mode)
 /// @param[in] in input array 
 /// @param[in] out output array (should already be resized to a desired size) 
-void PaddingUtils::fftPad(const casa::Array<double>& in, casa::Array<double>& out)
+void PaddingUtils::fftPad(const casacore::Array<double>& in, casacore::Array<double>& out)
 {
   ASKAPDEBUGASSERT(in.shape().nelements()>=2);    
   const int inx=in.shape()(0);
@@ -133,19 +133,19 @@ void PaddingUtils::fftPad(const casa::Array<double>& in, casa::Array<double>& ou
              "Attempting to pad to a rectangular array smaller on one axis");
   if (onx<inx) {
       // no fft padding required, the output array is smaller.
-      casa::Array<double> tempIn(in); // in is a conceptual const array here
+      casacore::Array<double> tempIn(in); // in is a conceptual const array here
       out = centeredSubArray(tempIn,out.shape()).copy();
       return;
   }
       
       
   /// Make an iterator that returns plane by plane
-  casa::ReadOnlyArrayIterator<double> inIt(in, 2);
-  casa::ArrayIterator<double> outIt(out, 2);
+  casacore::ReadOnlyArrayIterator<double> inIt(in, 2);
+  casacore::ArrayIterator<double> outIt(out, 2);
   while (!inIt.pastEnd()&&!outIt.pastEnd()) {
-         casa::Matrix<casa::DComplex> inPlane(inx, iny);
-         casa::Matrix<casa::DComplex> outPlane(onx, ony);
-         casa::convertArray(inPlane, inIt.array());
+         casacore::Matrix<casacore::DComplex> inPlane(inx, iny);
+         casacore::Matrix<casacore::DComplex> outPlane(onx, ony);
+         casacore::convertArray(inPlane, inIt.array());
          outPlane.set(0.0);
          fft2d(inPlane, false);
          for (int iy=0; iy<iny; ++iy) {
@@ -155,10 +155,10 @@ void PaddingUtils::fftPad(const casa::Array<double>& in, casa::Array<double>& ou
          }
          
          fft2d(outPlane, true);
-         const casa::Array<casa::DComplex> constOutPlane(outPlane);
-         casa::Array<double> outArray(outIt.array());
+         const casacore::Array<casacore::DComplex> constOutPlane(outPlane);
+         casacore::Array<double> outArray(outIt.array());
 	
-         casa::real(outArray, constOutPlane);
+         casacore::real(outArray, constOutPlane);
 	
          inIt.next();
          outIt.next();
@@ -175,15 +175,15 @@ void PaddingUtils::fftPad(const casa::Array<double>& in, casa::Array<double>& ou
 /// @param[in] in input array 
 /// @param[in] out output array (should already be resized to a desired size) 
 /// @param[in] factor additional padding of the output array
-void PaddingUtils::fftPad(const casa::Array<double>& in, casa::Array<double>& out, float factor)
+void PaddingUtils::fftPad(const casacore::Array<double>& in, casacore::Array<double>& out, float factor)
 {
   ASKAPDEBUGASSERT(factor>0);
-  const casa::IPosition shape = paddedShape(out.shape(),factor);
+  const casacore::IPosition shape = paddedShape(out.shape(),factor);
   if (shape.isEqual(out.shape())) {
       // factor == 1 case, by comparing shapes we can avoid problems with rounding off errors
       fftPad(in,out);
   } else {
-      casa::Array<double> tempOut(shape);
+      casacore::Array<double> tempOut(shape);
       fftPad(in,tempOut);
       out = centeredSubArray(tempOut,out.shape()).copy();
   }
@@ -195,11 +195,11 @@ void PaddingUtils::fftPad(const casa::Array<double>& in, casa::Array<double>& ou
 /// @param[in] shape shape of the padded array
 /// @param[in] padding padding factor (should be a positive number)
 /// @return shape before padding
-casa::IPosition PaddingUtils::unpadShape(const casa::IPosition &shape, const float padding)
+casacore::IPosition PaddingUtils::unpadShape(const casacore::IPosition &shape, const float padding)
 {
    ASKAPDEBUGASSERT(shape.nelements()>=2);
    ASKAPDEBUGASSERT(padding>0);
-   casa::IPosition outShape(shape);
+   casacore::IPosition outShape(shape);
    // form desired shape
    for (size_t dim=0; dim<2; ++dim) {
         outShape(dim) = int(outShape(dim) / padding);

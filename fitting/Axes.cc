@@ -69,7 +69,7 @@ namespace askap
 				itsEnd=other.itsEnd;
 				itsDirectionAxis.reset();
 				if (other.hasDirection()) {
-				   itsDirectionAxis.reset(new casa::DirectionCoordinate(other.directionAxis()));
+				   itsDirectionAxis.reset(new casacore::DirectionCoordinate(other.directionAxis()));
 				} 
 			}
 			return *this;
@@ -80,7 +80,7 @@ namespace askap
 		       itsEnd(other.itsEnd)
 		{
             if (other.hasDirection()) {
-                itsDirectionAxis.reset(new casa::DirectionCoordinate(other.directionAxis()));
+                itsDirectionAxis.reset(new casacore::DirectionCoordinate(other.directionAxis()));
             }
 		}
 
@@ -173,7 +173,7 @@ namespace askap
 		/// @brief form vector of stokes enums from STOKES axis
         /// @return vector of stokes enums
         /// @note An axis names STOKES must be present, otherwise an exception will be thrown
-        casa::Vector<casa::Stokes::StokesTypes> Axes::stokesAxis() const
+        casacore::Vector<casacore::Stokes::StokesTypes> Axes::stokesAxis() const
         {
            ASKAPCHECK(has("STOKES"), "Stokes axis must be present in the axes object to be able to use stokesAxis");
            const int index = order("STOKES");
@@ -199,9 +199,9 @@ namespace askap
                 }
                 ++nPol;
            }           
-           casa::Vector<casa::Stokes::StokesTypes> result(nPol,casa::Stokes::Undefined);
+           casacore::Vector<casacore::Stokes::StokesTypes> result(nPol,casacore::Stokes::Undefined);
            for (size_t pol = 0; pol<result.nelements(); ++pol) {
-                result[pol] = casa::Stokes::StokesTypes(packedPol[pol]);
+                result[pol] = casacore::Stokes::StokesTypes(packedPol[pol]);
            }
            return result;    
         }
@@ -211,7 +211,7 @@ namespace askap
         /// @details This is a reverse operation to extractStokesAxis. If the STOKES axis
         /// already exists, the values are updated.
         /// @param[in] stokes a vector of stokes enums
-        void Axes::addStokesAxis(const casa::Vector<casa::Stokes::StokesTypes> &stokes)
+        void Axes::addStokesAxis(const casacore::Vector<casacore::Stokes::StokesTypes> &stokes)
         {
             ASKAPCHECK(stokes.nelements()<=4, "Only up to 4 polarisation products are supported");
             ASKAPCHECK(stokes.nelements()>0, "Unable to add stokes axis using an empty stokes vector");
@@ -237,7 +237,7 @@ namespace askap
 		
 		/// @brief extract parameters of the direction axis
         /// @return a const reference to casacore's DirectionCoordinate object
-        const casa::DirectionCoordinate& Axes::directionAxis() const
+        const casacore::DirectionCoordinate& Axes::directionAxis() const
         {
             ASKAPCHECK(hasDirection(), "Direction axis does not exist in this particular Axes object");
             return *itsDirectionAxis; 
@@ -247,9 +247,9 @@ namespace askap
         /// @details This method is reverse to directionAxis. It adds or updates direction 
         /// coordinate. 
         /// @param[in] dc direction coordinate
-        void Axes::addDirectionAxis(const casa::DirectionCoordinate &dc)
+        void Axes::addDirectionAxis(const casacore::DirectionCoordinate &dc)
 		{
-		    itsDirectionAxis.reset(new casa::DirectionCoordinate(dc));
+		    itsDirectionAxis.reset(new casacore::DirectionCoordinate(dc));
 		}
 
 		std::ostream& operator<<(std::ostream& os, const Axes& axes)
@@ -263,8 +263,8 @@ namespace askap
 				<< std::endl;
 			}
 			if (axes.hasDirection()) {
-			    const casa::DirectionCoordinate& dir = axes.directionAxis();
-			    casa::MVDirection refval;
+			    const casacore::DirectionCoordinate& dir = axes.directionAxis();
+			    casacore::MVDirection refval;
 			    ASKAPCHECK(dir.toWorld(refval,dir.referencePixel()), "Malformed direction coordinate - conversion failed");
 			    os <<"Direction axis with increments "<<dir.increment()<<" and reference pixel "<<
 			         dir.referencePixel()<<" at "<<printDirection(refval)<<std::endl;
@@ -280,7 +280,7 @@ namespace askap
 		    os.putStart("Axes",BLOBVERSION);       
 			os << axes.itsNames << axes.itsStart << axes.itsEnd << axes.hasDirection();
 			if (axes.hasDirection()) {
-			    const casa::DirectionCoordinate& dir = axes.directionAxis();
+			    const casacore::DirectionCoordinate& dir = axes.directionAxis();
 			    os<<dir.referenceValue()<<dir.increment()<<dir.linearTransform()<<dir.referencePixel()<<
 			        dir.worldAxisUnits();
 			}
@@ -298,16 +298,16 @@ namespace askap
 			bool hasDirection = false;
 			is >> hasDirection;
 			if (hasDirection) {
-			    casa::Vector<casa::Double> increment, refPix, refVal;
-			    casa::Matrix<casa::Double> xform;
+			    casacore::Vector<casacore::Double> increment, refPix, refVal;
+			    casacore::Matrix<casacore::Double> xform;
 			    is>>refVal>>increment>>xform>>refPix;
 			    ASKAPCHECK(increment.nelements() == 2, "Direction axis increment should be a vector of size 2");
 			    ASKAPCHECK(refPix.nelements() == 2, "Direction axis reference pixel should be a vector of size 2");
 			    ASKAPCHECK(refVal.nelements() == 2, "Direction axis reference value should be a vector of size 2");
-			    ASKAPCHECK(xform.shape() == casa::IPosition(2,2,2), "Direction axis transform matrix should be 2x2");
-			    casa::DirectionCoordinate dc(casa::MDirection::J2000,casa::Projection(casa::Projection::SIN),
+			    ASKAPCHECK(xform.shape() == casacore::IPosition(2,2,2), "Direction axis transform matrix should be 2x2");
+			    casacore::DirectionCoordinate dc(casacore::MDirection::J2000,casacore::Projection(casacore::Projection::SIN),
 			             refVal[0],refVal[1], increment[0],increment[1],xform, refPix[0],refPix[1]);
-			    casa::Vector<casa::String> worldAxisUnits;
+			    casacore::Vector<casacore::String> worldAxisUnits;
 			    is>>worldAxisUnits;
 			    dc.setWorldAxisUnits(worldAxisUnits);
 			    axes.addDirectionAxis(dc);

@@ -94,10 +94,10 @@ namespace askap
 /// @param[in] matr matrix to test
 /// @param[in] tolerance tolerance on the element absolute values
 /// @return true if all elements are zero within the tolerance
-bool LinearSolver::allMatrixElementsAreZeros(const casa::Matrix<double> &matr, const double tolerance)
+bool LinearSolver::allMatrixElementsAreZeros(const casacore::Matrix<double> &matr, const double tolerance)
 {
-  for (casa::uInt row = 0; row < matr.nrow(); ++row) {
-       for (casa::uInt col = 0; col < matr.ncolumn(); ++col) {
+  for (casacore::uInt row = 0; row < matr.nrow(); ++row) {
+       for (casacore::uInt col = 0; col < matr.ncolumn(); ++col) {
             if (abs(matr(row,col)) > tolerance) {
                 return false;
             }
@@ -134,8 +134,8 @@ std::vector<std::string> LinearSolver::getIndependentSubset(std::vector<std::str
         toErase.reserve(names.size());
 
         for (std::vector<std::string>::const_iterator ci = names.begin(); ci != names.end(); ++ci) {
-            const casa::Matrix<double>& nm1 = normalEquations().normalMatrix(*ci, *ciRes);
-            const casa::Matrix<double>& nm2 = normalEquations().normalMatrix(*ciRes, *ci);
+            const casacore::Matrix<double>& nm1 = normalEquations().normalMatrix(*ci, *ciRes);
+            const casacore::Matrix<double>& nm2 = normalEquations().normalMatrix(*ciRes, *ci);
 
             if (!allMatrixElementsAreZeros(nm1,tolerance) || !allMatrixElementsAreZeros(nm2,tolerance)) {
                 // this parameter (iterated in the inner loop) belongs to the subset
@@ -180,7 +180,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
         it->second = nParameters;
         it->first = *cit;
         ASKAPLOG_DEBUG_STR(logger, "Processing "<<*cit<<" "<<nParameters);
-        const casa::uInt newParameters = normalEquations().dataVector(*cit).nelements();
+        const casacore::uInt newParameters = normalEquations().dataVector(*cit).nelements();
         nParameters += newParameters;
         ASKAPDEBUGASSERT((params.isFree(*cit) ? params.value(*cit).nelements() : newParameters) == newParameters);
       }
@@ -205,7 +205,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
         for (std::vector<std::pair<string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1)  {
              // Axes are dof, dof for each parameter
              // Take a deep breath for const-safe indexing into the double layered map
-             const casa::Matrix<double>& nm = normalEquations().normalMatrix(indit1->first, indit2->first);
+             const casacore::Matrix<double>& nm = normalEquations().normalMatrix(indit1->first, indit2->first);
 
              for (size_t row=0; row<nm.nrow(); ++row)  {
                   for (size_t col=0; col<nm.ncolumn(); ++col) {
@@ -220,7 +220,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
 
     if (algorithm() != "LSQR") {
         for (std::vector<std::pair<string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1) {
-            const casa::Vector<double> &dv = normalEquations().dataVector(indit1->first);
+            const casacore::Vector<double> &dv = normalEquations().dataVector(indit1->first);
             for (size_t row=0; row<dv.nelements(); ++row) {
                  const double elem = dv(row);
                  ASKAPCHECK(!isnan(elem), "Data vector seems to have NaN for row = "<<row<<", this shouldn't happem!");
@@ -339,11 +339,11 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
          }
 
 // Update the parameters for the calculated changes. Exploit reference
-// semantics of casa::Array.
+// semantics of casacore::Array.
          std::vector<std::pair<string, int> >::const_iterator indit;
          for (indit=indices.begin();indit!=indices.end();++indit) {
-              casa::IPosition vecShape(1, params.value(indit->first).nelements());
-              casa::Vector<double> value(params.value(indit->first).reform(vecShape));
+              casacore::IPosition vecShape(1, params.value(indit->first).nelements());
+              casacore::Vector<double> value(params.value(indit->first).reform(vecShape));
               for (size_t i=0; i<value.nelements(); ++i)  {
 //                 std::cout << value(i) << " " << gsl_vector_get(X, indit->second+i) << std::endl;
                    const double adjustment = gsl_vector_get(X, indit->second+i);
@@ -394,7 +394,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
         //std::cout << "Matrix sparsity: " << (double)matrix.GetNumberElements() / (double)(nrows * ncolumms) << std::endl;
 
         for (std::vector<std::pair<string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1) {
-            const casa::Vector<double> &dv = normalEquations().dataVector(indit1->first);
+            const casacore::Vector<double> &dv = normalEquations().dataVector(indit1->first);
             for (size_t row=0; row<dv.nelements(); ++row) {
                  const double elem = dv(row);
                  ASKAPCHECK(!isnan(elem), "Data vector seems to have NaN for row = "<<row<<", this shouldn't happem!");
@@ -440,11 +440,11 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
 
         //------------------------------------------------------------------------
         // Update the parameters for the calculated changes. Exploit reference
-        // semantics of casa::Array.
+        // semantics of casacore::Array.
          std::vector<std::pair<string, int> >::const_iterator indit;
          for (indit=indices.begin();indit!=indices.end();++indit) {
-              casa::IPosition vecShape(1, params.value(indit->first).nelements());
-              casa::Vector<double> value(params.value(indit->first).reform(vecShape));
+              casacore::IPosition vecShape(1, params.value(indit->first).nelements());
+              casacore::Vector<double> value(params.value(indit->first).reform(vecShape));
               for (size_t i=0; i<value.nelements(); ++i)  {
                    //const double adjustment = gsl_vector_get(X, indit->second+i);
                    const double adjustment = x[indit->second+i];
@@ -469,8 +469,8 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
         std::vector<std::pair<string, int> >::const_iterator indit;
         for (indit=indices.begin();indit!=indices.end();++indit)
         {
-          casa::IPosition vecShape(1, params.value(indit->first).nelements());
-          casa::Vector<double> value(params.value(indit->first).reform(vecShape));
+          casacore::IPosition vecShape(1, params.value(indit->first).nelements());
+          casacore::Vector<double> value(params.value(indit->first).reform(vecShape));
           for (size_t i=0; i<value.nelements(); ++i)  {
                value(i)+=gsl_vector_get(X, indit->second+i);
           }

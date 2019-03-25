@@ -110,13 +110,13 @@ namespace askap
       /// @param[in] the coordinate system of the slice
 
       void addSlice(const std::string& name,
-                    const casa::Vector<double>& normalmatrixslice,
-                    const casa::Vector<double>& normalmatrixdiagonal,
-                    const casa::Vector<double>& preconditionerslice,
-                    const casa::Vector<double>& datavector,
-                    const casa::IPosition& shape,
-                    const casa::IPosition& reference,
-                    const casa::CoordinateSystem& coordSys = casa::CoordinateSystem());
+                    const casacore::Vector<double>& normalmatrixslice,
+                    const casacore::Vector<double>& normalmatrixdiagonal,
+                    const casacore::Vector<double>& preconditionerslice,
+                    const casacore::Vector<double>& datavector,
+                    const casacore::IPosition& shape,
+                    const casacore::IPosition& reference,
+                    const casacore::CoordinateSystem& coordSys = casacore::CoordinateSystem());
 
       /// @brief Store slice of the normal matrix for a given parameter.
       ///
@@ -130,11 +130,11 @@ namespace askap
       /// @param datavector Data vector for this parameter
       /// @param reference Reference point for the slice
       void addSlice(const std::string& name,
-                    const casa::Vector<double>& normalmatrixslice,
-                    const casa::Vector<double>& normalmatrixdiagonal,
-                    const casa::Vector<double>& preconditionerslice,
-                    const casa::Vector<double>& datavector,
-                    const casa::IPosition& reference);
+                    const casacore::Vector<double>& normalmatrixslice,
+                    const casacore::Vector<double>& normalmatrixdiagonal,
+                    const casacore::Vector<double>& preconditionerslice,
+                    const casacore::Vector<double>& datavector,
+                    const casacore::IPosition& reference);
 
       /// @brief Store diagonal of the normal matrix for a given parameter.
       ///
@@ -146,9 +146,9 @@ namespace askap
       /// @param datavector Data vector for this parameter
       /// @param shape Shape of this parameter
       void addDiagonal(const std::string& name,
-                       const casa::Vector<double>& normalmatrixdiagonal,
-                       const casa::Vector<double>& datavector,
-                       const casa::IPosition& shape);
+                       const casacore::Vector<double>& normalmatrixdiagonal,
+                       const casacore::Vector<double>& datavector,
+                       const casacore::IPosition& shape);
 
       /// @brief Store diagonal of the normal matrix for a given parameter.
       ///
@@ -159,8 +159,8 @@ namespace askap
       /// @param normalmatrixdiagonal Normal Matrix for this parameter
       /// @param datavector Data vector for this parameter
       void addDiagonal(const std::string& name,
-                       const casa::Vector<double>& normalmatrixdiagonal,
-                       const casa::Vector<double>& datavector);
+                       const casacore::Vector<double>& normalmatrixdiagonal,
+                       const casacore::Vector<double>& datavector);
 
 
 
@@ -192,17 +192,17 @@ namespace askap
       /// @param[in] par1 the name of the first parameter
       /// @param[in] par2 the name of the second parameter
       /// @return one element of the sparse normal matrix (a dense matrix)
-      virtual const casa::Matrix<double>& normalMatrix(const std::string &par1,
+      virtual const casacore::Matrix<double>& normalMatrix(const std::string &par1,
                        const std::string &par2) const;
 
       /// @brief Return normal equations slice
-      virtual const casa::Vector<double>& normalMatrixSlice(const std::string &par) const;
+      virtual const casacore::Vector<double>& normalMatrixSlice(const std::string &par) const;
 
       /// @brief Return normal equations diagonal
-      virtual const casa::Vector<double>& normalMatrixDiagonal(const std::string &par) const;
+      virtual const casacore::Vector<double>& normalMatrixDiagonal(const std::string &par) const;
 
       /// @brief Return preconditioner slice (otherwise normalMatrixSlice is used for preconditioning)
-      virtual const casa::Vector<double>& preconditionerSlice(const std::string &par) const;
+      virtual const casacore::Vector<double>& preconditionerSlice(const std::string &par) const;
 
       /// @brief data vector for a given parameter
       /// @details In the current framework, parameters are essentially
@@ -213,7 +213,7 @@ namespace askap
       /// parameter each element of data vector is a vector of unit length.
       /// @param[in] par the name of the parameter of interest
       /// @return one element of the sparse data vector (a dense vector)
-      virtual const casa::Vector<double>& dataVector(const std::string &par) const;
+      virtual const casacore::Vector<double>& dataVector(const std::string &par) const;
 
       /// @brief obtain all parameters dealt with by these normal equations
       /// @details Normal equations provide constraints for a number of
@@ -226,25 +226,25 @@ namespace askap
       virtual std::vector<std::string> unknowns() const;
 
       /// Return normal equations slice map
-      const std::map<std::string, casa::Vector<double> >& normalMatrixSlice() const;
+      const std::map<std::string, casacore::Vector<double> >& normalMatrixSlice() const;
 
       /// Return normal equations diagonal map
-      const std::map<std::string, casa::Vector<double> >& normalMatrixDiagonal() const;
+      const std::map<std::string, casacore::Vector<double> >& normalMatrixDiagonal() const;
 
       /// Return preconditioner slice map
-      const std::map<std::string, casa::Vector<double> >& preconditionerSlice() const;
+      const std::map<std::string, casacore::Vector<double> >& preconditionerSlice() const;
 
       /// Return data vector map
-      const std::map<std::string, casa::Vector<double> >& dataVector() const;
+      const std::map<std::string, casacore::Vector<double> >& dataVector() const;
 
       /// Return shape map
-      const std::map<std::string, casa::IPosition>& shape() const;
+      const std::map<std::string, casacore::IPosition>& shape() const;
 
       /// Return references map
-      const std::map<std::string, casa::IPosition >& reference() const;
+      const std::map<std::string, casacore::IPosition >& reference() const;
 
       /// Return coordinate system map
-      const std::map<std::string, casa::CoordinateSystem >& coordSys() const;
+      const std::map<std::string, casacore::CoordinateSystem >& coordSys() const;
 
       /// Reset to empty
       virtual void reset();
@@ -278,19 +278,19 @@ namespace askap
 
     private:
       /// A slice through a specified plane
-      std::map<std::string, casa::Vector<double> > itsNormalMatrixSlice;
+      std::map<std::string, casacore::Vector<double> > itsNormalMatrixSlice;
       /// The diagonal
-      std::map<std::string, casa::Vector<double> > itsNormalMatrixDiagonal;
+      std::map<std::string, casacore::Vector<double> > itsNormalMatrixDiagonal;
       /// A slice through a specified plane
-      std::map<std::string, casa::Vector<double> > itsPreconditionerSlice;
+      std::map<std::string, casacore::Vector<double> > itsPreconditionerSlice;
       /// The shape
-      std::map<std::string, casa::IPosition> itsShape;
+      std::map<std::string, casacore::IPosition> itsShape;
       /// The Reference point for the slice
-      std::map<std::string, casa::IPosition> itsReference;
+      std::map<std::string, casacore::IPosition> itsReference;
       /// The coordinate system for the slice
-      std::map<std::string, casa::CoordinateSystem> itsCoordSys;
+      std::map<std::string, casacore::CoordinateSystem> itsCoordSys;
       /// The data vectors
-      std::map<std::string, casa::Vector<double> > itsDataVector;
+      std::map<std::string, casacore::Vector<double> > itsDataVector;
 
       /// The weighting type and state of the params stored in the NE
       int itsWeightType;

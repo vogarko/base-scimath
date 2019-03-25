@@ -57,7 +57,7 @@ using namespace askap::scimath;
 /// @return value of the function 
 double SpheroidalFunction::operator()(const double nu) const
 {
-  if (casa::abs(nu)>=1.) {
+  if (casacore::abs(nu)>=1.) {
       // Legendre series expansion doesn't allow to compute values for nu outside [-1,1] interval. However,
       // approximation is good enough (for a reasonable number of terms), so it is quite close to 0.
       return 0.;
@@ -76,13 +76,13 @@ double SpheroidalFunction::operator()(const double nu) const
 /// @param[in] c parameter c of the spheroidal function (bandwidth or a measure of the support size in our case)
 /// @param[in] alpha parameter alpha of the spheroidal function (weighting exponent in our case)
 /// @param[in] nterms number of terms in the decomposition
-SpheroidalFunction::SpheroidalFunction(const double c, const double alpha, const casa::uInt nterms) :
+SpheroidalFunction::SpheroidalFunction(const double c, const double alpha, const casacore::uInt nterms) :
          itsREven(true), itsAlpha(alpha) 
 {
-  ASKAPCHECK(casa::abs(alpha-int(alpha))<1e-6, 
+  ASKAPCHECK(casacore::abs(alpha-int(alpha))<1e-6, 
              "Current code supports only integer alpha due to GSL limitations, you have alpha="<<alpha);
   
-  casa::Matrix<double> hlp(nterms,nterms,0.);
+  casacore::Matrix<double> hlp(nterms,nterms,0.);
   
   fillHelperMatrix(hlp,c,int(alpha));
         
@@ -123,7 +123,7 @@ double SpheroidalFunction::sumLegendreSeries(const double x, const int m) const
    const int status = gsl_sf_legendre_sphPlm_array(nOrders + m, m, x, vals);
 #endif // HAVE_GSL2
    double result = 0.;
-   for (casa::uInt elem = 0; elem<itsCoeffs.nelements(); ++elem) {
+   for (casacore::uInt elem = 0; elem<itsCoeffs.nelements(); ++elem) {
         const int r = 2*elem + (itsREven ? 0 : 1);
         //const int l = r + m;
         ASKAPASSERT(r < nOrders + 1);
@@ -148,12 +148,12 @@ double SpheroidalFunction::sumLegendreSeries(const double x, const int m) const
 /// those corresponding to a single eigenvector associated with the smallest eigenvalue, so
 /// n in Smn is always equal to m and itsREven is always true. In addition m = alpha. It is
 /// passed as an additional parameter for generality.  
-void SpheroidalFunction::fillHelperMatrix(casa::Matrix<double> &B, const double c, const int m) const
+void SpheroidalFunction::fillHelperMatrix(casacore::Matrix<double> &B, const double c, const int m) const
 {
    ASKAPASSERT(B.nrow() == B.ncolumn());
    ASKAPASSERT(B.nrow() > 1);
    const double cSquared = c*c;
-   for (casa::uInt row = 0; row<B.nrow(); ++row) {
+   for (casacore::uInt row = 0; row<B.nrow(); ++row) {
         const int r = int(row)*2 + (itsREven ? 0 : 1);
         const int l = r + m; // order of Legendre function P_l^m
         B(row,row) = double(l*(l+1)) + cSquared*(double(2*l+3)*(l+m)*(l-m)+double(2*l-1)*(l+m+1)*(l-m+1)) /
@@ -177,7 +177,7 @@ void SpheroidalFunction::fillHelperMatrix(casa::Matrix<double> &B, const double 
 /// @return eigenvalue
 /// @note an exception is thrown if there is an error solving eigensystem. itsCoeffs vector is resized
 /// to match the input matrix and filled with coefficients for Legendre series 
-double SpheroidalFunction::fillLegendreCoeffs(const casa::Matrix<double> &B)
+double SpheroidalFunction::fillLegendreCoeffs(const casacore::Matrix<double> &B)
 {
     ASKAPASSERT(B.nrow() == B.ncolumn());
     itsCoeffs.resize(B.nrow());
@@ -189,17 +189,17 @@ double SpheroidalFunction::fillLegendreCoeffs(const casa::Matrix<double> &B)
 
     // fill the matrix (a bit of an overkill, but it is faster to reuse existing code
     // than to write something for tridiagonal matrix)
-    for (casa::uInt row = 0; row<B.nrow(); ++row) {
-         for (casa::uInt col = 0; col<B.ncolumn(); ++col) {
+    for (casacore::uInt row = 0; row<B.nrow(); ++row) {
+         for (casacore::uInt col = 0; col<B.ncolumn(); ++col) {
               gsl_matrix_set(A, row, col, B(row,col));
          }
     }
          
     const int status = gsl_eigen_symmv(A,eVal,eVec,work);
     double result = -1.;
-    casa::uInt optIndex = 0;
+    casacore::uInt optIndex = 0;
     if (status == GSL_SUCCESS) {
-        for (casa::uInt elem = 0; elem<itsCoeffs.nelements(); ++elem) {
+        for (casacore::uInt elem = 0; elem<itsCoeffs.nelements(); ++elem) {
              const double val = gsl_vector_get(eVal,elem);
              if ((elem == 0) || (val<result)) {
                   result = val;

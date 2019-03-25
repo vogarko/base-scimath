@@ -51,12 +51,12 @@ namespace scimath {
 /// @note This class is relatively generic and can be moved to a higher level (i.e. to Base), 
 /// if needed somewhere else.
 /// @ingroup utils
-struct MultiDimArrayPlaneIter : protected casa::ArrayPositionIterator {
+struct MultiDimArrayPlaneIter : protected casacore::ArrayPositionIterator {
    
    /// @brief setup the iterator
    /// @details 
    /// @param[in] shape shape of the full hypercube (or array-valued parameter) 
-   MultiDimArrayPlaneIter(const casa::IPosition &shape);
+   MultiDimArrayPlaneIter(const casacore::IPosition &shape);
    
    /// @brief extract a single plane from an array
    /// @details This method forms a slice of the given array to extract a single plane corresponding
@@ -64,7 +64,7 @@ struct MultiDimArrayPlaneIter : protected casa::ArrayPositionIterator {
    /// @param[in] in input array
    /// @return output array (single plane)
    template<typename T>
-   casa::Array<T> getPlane(casa::Array<T> &in) const;
+   casacore::Array<T> getPlane(casacore::Array<T> &in) const;
    
    /// @brief extract a single plane form a 1D array
    /// @details This method extracts a single slice from an array flattened to a 1D vector. The slice 
@@ -73,7 +73,7 @@ struct MultiDimArrayPlaneIter : protected casa::ArrayPositionIterator {
    /// @param[in] in input vector
    /// @return output array (single plane)
    template<typename T>
-   casa::Array<T> getPlane(casa::Vector<T> &in) const;
+   casacore::Array<T> getPlane(casacore::Vector<T> &in) const;
    
    /// @brief extract a single plane into a flattened vector
    /// @details This method extracts a single plane slice from an array flattened to a 1D vector. 
@@ -82,7 +82,7 @@ struct MultiDimArrayPlaneIter : protected casa::ArrayPositionIterator {
    /// @param[in] in input vector
    /// @return output vector (single plane)
    template<typename T>
-   casa::Vector<T> getPlaneVector(casa::Vector<T> &in) const;
+   casacore::Vector<T> getPlaneVector(casacore::Vector<T> &in) const;
    
    /// @brief extract a single plane into a flattened vector
    /// @details This method extracts a single plane slice from an array. 
@@ -91,14 +91,14 @@ struct MultiDimArrayPlaneIter : protected casa::ArrayPositionIterator {
    /// @param[in] in input vector
    /// @return output vector (single plane)
    template<typename T>
-   casa::Vector<T> getPlaneVector(casa::Array<T> &in) const;
+   casacore::Vector<T> getPlaneVector(casacore::Array<T> &in) const;
    
    
    /// @brief return the sequence number of the plane
    /// @details To assist with caching this method returns consequitive numbers for every
    /// iteration. The first iteration corresponds to 0.
    /// @return sequence number
-   inline casa::uInt sequenceNumber() const { return itsSequenceNumber;}
+   inline casacore::uInt sequenceNumber() const { return itsSequenceNumber;}
    
    /// @brief return the unique tag of the current plane
    /// @details To assist caching one may need a string key which is unique for every iteration.
@@ -112,7 +112,7 @@ struct MultiDimArrayPlaneIter : protected casa::ArrayPositionIterator {
    /// @details This method returns the shape of a sinlge plane preserving degenerate
    /// dimensions. 
    /// @return a shape of the single plane
-   inline const casa::IPosition& planeShape() const { return itsPlaneShape;}
+   inline const casacore::IPosition& planeShape() const { return itsPlaneShape;}
    
    /// @brief shape of a single plane for an arbitrary cube
    /// @details This method returns the shape of a single plane preserving degenerate
@@ -122,7 +122,7 @@ struct MultiDimArrayPlaneIter : protected casa::ArrayPositionIterator {
    /// the object has been initialised with.
    /// @param[in] shape shape of the full cube
    /// @return a shape of the single plane preserving degenerate dimensions
-   static casa::IPosition planeShape(const casa::IPosition &shape);
+   static casacore::IPosition planeShape(const casacore::IPosition &shape);
    
    /// @brief extract the first 2D plane of a multi-dimensional cube
    /// @details This is a static helper method, which can probably go somewhere else as
@@ -131,16 +131,16 @@ struct MultiDimArrayPlaneIter : protected casa::ArrayPositionIterator {
    /// @param[in] in input array
    /// @return output array (single plane)
    template<typename T>
-   static casa::Array<T> getFirstPlane(casa::Array<T> &in);
+   static casacore::Array<T> getFirstPlane(casacore::Array<T> &in);
    
    /// @brief shape of the full array
    /// @return shape of the full array
-   inline const casa::IPosition& shape() const { return itsShape;}
+   inline const casacore::IPosition& shape() const { return itsShape;}
    
    /// @brief obtain current position within the whole array
    /// @details This method returns the bottom left corner (blc) of the current plane
    /// @return blc of the current plane
-   inline const casa::IPosition& position() const { return pos();}
+   inline const casacore::IPosition& position() const { return pos();}
    
    /// @brief check whether there are more planes to iterate
    /// @details
@@ -153,15 +153,15 @@ struct MultiDimArrayPlaneIter : protected casa::ArrayPositionIterator {
    
 private:
    /// @brief shape of the full hypercube
-   casa::IPosition itsShape;    
+   casacore::IPosition itsShape;    
 
    /// @brief shape of a single plane of the hypercube
    /// @details To relieve the user of this class from repeated similar operations this variable
    /// stores the shape of all degenerate dimensions preserved (i.e. [x,y,1,1])
-   casa::IPosition itsPlaneShape;
+   casacore::IPosition itsPlaneShape;
    
    /// @brief sequence number
-   casa::uInt itsSequenceNumber;
+   casacore::uInt itsSequenceNumber;
 };
 
 } // namespace scimath

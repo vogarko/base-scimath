@@ -44,71 +44,71 @@
 namespace LOFAR
 {
 
-    // casa::CoordinateSystem
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::CoordinateSystem& cSys);
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::CoordinateSystem& cSys);
+    // casacore::CoordinateSystem
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::CoordinateSystem& cSys);
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::CoordinateSystem& cSys);
 
     // MV: serialisation for measures-related casacore types
 
-    /// @brief output operator for casa::Quantity
+    /// @brief output operator for casacore::Quantity
     /// @param[in] os output stream
     /// @param[in] q Quantity to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::Quantity& q);
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::Quantity& q);
 
-    /// @brief input operator for casa::Quantity
+    /// @brief input operator for casacore::Quantity
     /// @param[in] is input stream
     /// @param[in] q quantity object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::Quantity& q);
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::Quantity& q);
 
-    /// @brief output operator for casa::MDirection::Ref
+    /// @brief output operator for casacore::MDirection::Ref
     /// @param[in] os output stream
     /// @param[in] ref object to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::MDirection::Ref& ref);
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::MDirection::Ref& ref);
 
-    /// @brief input operator for casa::MDirection::Ref
+    /// @brief input operator for casacore::MDirection::Ref
     /// @param[in] is input stream
     /// @param[in] ref object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::MDirection::Ref& ref);
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::MDirection::Ref& ref);
 
-    /// @brief output operator for casa::MVDirection
+    /// @brief output operator for casacore::MVDirection
     /// @param[in] os output stream
     /// @param[in] dir object to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::MVDirection& dir);
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::MVDirection& dir);
 
-    /// @brief input operator for casa::MVDirection
+    /// @brief input operator for casacore::MVDirection
     /// @param[in] is input stream
     /// @param[in] dir object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::MVDirection& dir);
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::MVDirection& dir);
 
-    /// @brief output operator for casa::MDirection
+    /// @brief output operator for casacore::MDirection
     /// @param[in] os output stream
     /// @param[in] dir object to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::MDirection& dir);
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::MDirection& dir);
 
-    /// @brief input operator for casa::MDirection
+    /// @brief input operator for casacore::MDirection
     /// @param[in] is input stream
     /// @param[in] dir object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::MDirection& dir);
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::MDirection& dir);
 
-    /// @brief output operator for casa::Stokes::StokesTypes
+    /// @brief output operator for casacore::Stokes::StokesTypes
     /// @param[in] os output stream
     /// @param[in] pol object to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::Stokes::StokesTypes& pol);
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::Stokes::StokesTypes& pol);
 
-    /// @brief input operator for casa::Stokes::StokesTypes
+    /// @brief input operator for casacore::Stokes::StokesTypes
     /// @param[in] is input stream
     /// @param[in] pol object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::Stokes::StokesTypes& pol);
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::Stokes::StokesTypes& pol);
 }
 
 #include "CasaBlobUtils.tcc"

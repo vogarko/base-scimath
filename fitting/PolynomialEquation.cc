@@ -48,18 +48,18 @@ namespace askap
   {
 
     PolynomialEquation::PolynomialEquation(const Params& ip,
-      casa::Vector<double>& data,
-      casa::Vector<double>& weights,
-      casa::Vector<double>& arguments,
-      casa::Vector<double>& model) : Equation(ip), GenericEquation(ip), itsData(data),
+      casacore::Vector<double>& data,
+      casacore::Vector<double>& weights,
+      casacore::Vector<double>& arguments,
+      casacore::Vector<double>& model) : Equation(ip), GenericEquation(ip), itsData(data),
       itsWeights(weights), itsArguments(arguments), itsModel(model)
     {
     };
 
-    PolynomialEquation::PolynomialEquation(casa::Vector<double>& data,
-      casa::Vector<double>& weights,
-      casa::Vector<double>& arguments,
-      casa::Vector<double>& model) :  itsData(data),
+    PolynomialEquation::PolynomialEquation(casacore::Vector<double>& data,
+      casacore::Vector<double>& weights,
+      casacore::Vector<double>& arguments,
+      casacore::Vector<double>& model) :  itsData(data),
       itsWeights(weights), itsArguments(arguments), itsModel(model)
     {
     };
@@ -108,7 +108,7 @@ namespace askap
         for (std::vector<string>::const_iterator it=completions.begin();it!=completions.end();it++)
         {
           string polyName("poly"+(*it));
-          const casa::Vector<double> par(parameters().value(polyName));
+          const casacore::Vector<double> par(parameters().value(polyName));
           this->calcPoly(itsArguments, par, itsModel);
         }
       }
@@ -122,20 +122,20 @@ namespace askap
       if(completions.size()>0) {
         DesignMatrix designmatrix; // old parameters: parameters();
 
-        casa::Vector<double> values(itsData.size());
+        casacore::Vector<double> values(itsData.size());
         values=0.0;
 
 // Loop over all polynomials adding to the values. 
         for (std::vector<string>::const_iterator it=completions.begin();it!=completions.end();it++)
         {
           string polyName("poly"+(*it));
-          const casa::Vector<double> par(parameters().value(polyName));
-          casa::Matrix<double> valueDerivs(itsData.size(), par.size());
+          const casacore::Vector<double> par(parameters().value(polyName));
+          casacore::Matrix<double> valueDerivs(itsData.size(), par.size());
           this->calcPoly(itsArguments, par, itsModel);
           this->calcPolyDeriv(itsArguments, par, valueDerivs);
           designmatrix.addDerivative(polyName, valueDerivs);
         }
-        casa::Vector<double> residual(itsData.copy());
+        casacore::Vector<double> residual(itsData.copy());
   
         residual-=itsModel;
         designmatrix.addResidual(residual, itsWeights);
@@ -143,9 +143,9 @@ namespace askap
       }
     };
 
-    void PolynomialEquation::calcPoly(const casa::Vector<double>& x,
-      const casa::Vector<double>& parameters,
-      casa::Vector<double>& values)
+    void PolynomialEquation::calcPoly(const casacore::Vector<double>& x,
+      const casacore::Vector<double>& parameters,
+      casacore::Vector<double>& values)
     {
       for (size_t ix=0; ix<x.size(); ++ix)
       {
@@ -156,9 +156,9 @@ namespace askap
         }
       }
     }
-    void PolynomialEquation::calcPolyDeriv(const casa::Vector<double>& x,
-      const casa::Vector<double>& parameters,
-      casa::Matrix<double>& valueDerivs)
+    void PolynomialEquation::calcPolyDeriv(const casacore::Vector<double>& x,
+      const casacore::Vector<double>& parameters,
+      casacore::Matrix<double>& valueDerivs)
     {
       const uint nPoly=parameters.size();
       const uint n=x.size();

@@ -40,7 +40,7 @@ namespace askap
     Solveable::Solveable() : itsAlgorithm(""), itsSubAlgorithm(""),
       itsParams(std::map<std::string, std::string>()),
       itsGain(0.1), itsNiter(100), itsTol(1e-6), itsVerbose(false),
-      itsThreshold(casa::Quantity(0.0, "Jy"))
+      itsThreshold(casacore::Quantity(0.0, "Jy"))
     {
     };
 
@@ -73,12 +73,12 @@ namespace askap
     void Solveable::setVerbose(bool verbose) {itsVerbose=verbose;};
     bool Solveable::verbose() const {return itsVerbose;};
 
-    void Solveable::setThreshold(const casa::Quantity& threshold) 
+    void Solveable::setThreshold(const casacore::Quantity& threshold) 
     {
       itsThreshold=threshold;
     }
 
-    const casa::Quantity& Solveable::threshold() const
+    const casacore::Quantity& Solveable::threshold() const
     {
       return itsThreshold;
     }

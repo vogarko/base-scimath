@@ -3,11 +3,11 @@
 /// @brief Autodifferentiation class working for complex parameters
 /// @details A creation of this class was inspired by the CASA's 
 /// AutoDiff and SparseDiff classes. Its functionality and purpose are 
-/// essentially the same as that for casa::SparseDiff. However, it works
+/// essentially the same as that for casacore::SparseDiff. However, it works
 /// correctly for complex parameters (i.e. it tracks derivatives by 
 /// real and imaginary part of each parameter) and uses string indices.
 /// It is quite likely, that in the future we will convert this template
-/// to use casa::SparseDiff classes. An extra adapter layer will be required
+/// to use casacore::SparseDiff classes. An extra adapter layer will be required
 /// anyway to convert string indices into integer indices and to deal with
 /// complex-valued parameters properly. 
 /// 
@@ -58,11 +58,11 @@ namespace scimath {
 /// @brief Autodifferentiation class working for complex parameters
 /// @details A creation of this class was inspired by the CASA's 
 /// AutoDiff and SparseDiff classes. Its functionality and purpose are 
-/// essentially the same as that for casa::SparseDiff. However, it works
+/// essentially the same as that for casacore::SparseDiff. However, it works
 /// correctly for complex parameters (i.e. it tracks derivatives by 
 /// real and imaginary part of each parameter) and uses string indices.
 /// It is quite likely, that in the future we will convert this template
-/// to use casa::SparseDiff classes. An extra adapter layer will be required
+/// to use casacore::SparseDiff classes. An extra adapter layer will be required
 /// anyway to convert string indices into integer indices and to deal with
 /// complex-valued parameters properly. 
 /// @ingroup fitting
@@ -72,7 +72,7 @@ struct ComplexDiff {
   
   /// @brief construct a complex constant
   /// @param[in] in a reference to input complex value
-  ComplexDiff(const casa::Complex &in);
+  ComplexDiff(const casacore::Complex &in);
   
   /// @brief construct a real constant
   /// @param[in] in input real value
@@ -85,7 +85,7 @@ struct ComplexDiff {
   //// complex (i.e. cross-terms will be tracked).
   /// @param[in] name parameter name
   /// @param[in] in a reference to input complex value
-  ComplexDiff(const std::string &name, const casa::Complex &in); 
+  ComplexDiff(const std::string &name, const casacore::Complex &in); 
   
   /// @brief construct a real parameter
   /// @details This variant of the constructor fills appropriate 
@@ -98,17 +98,17 @@ struct ComplexDiff {
   
   /// @brief obtain value
   /// @return value of the function associated with this object
-  casa::Complex value() const throw();
+  casacore::Complex value() const throw();
   
   /// @brief obtain derivatives by real part of the parameter
   /// @param[in] name parameter name
   /// @return value of the derivative by real part of the given parameter
-  casa::Complex derivRe(const std::string &name) const;
+  casacore::Complex derivRe(const std::string &name) const;
   
   /// @brief obtain derivatives by imaginary part of the parameter
   /// @param[in] name parameter name
   /// @return value of the derivative by imaginary part of the given parameter
-  casa::Complex derivIm(const std::string &name) const;
+  casacore::Complex derivIm(const std::string &name) const;
   
   /// @brief add up another autodifferentiator
   /// @param[in] other autodifferentiator to add up
@@ -125,7 +125,7 @@ struct ComplexDiff {
   /// working with a constant is good from the performance point of view.
   /// Otherwise, a search for matching parmeters will be done on each
   /// multiplication.
-  void operator*=(const casa::Complex &other);
+  void operator*=(const casacore::Complex &other);
   
   /// @brief form a sum of two parts
   /// @details At this stage the operator is implemented via appropriate in situ
@@ -163,7 +163,7 @@ struct ComplexDiff {
   
   /// @brief type of the parameter iterator
   typedef utility::MapKeyIterator<std::map<std::string, 
-                    casa::Complex>::const_iterator> parameter_iterator;
+                    casacore::Complex>::const_iterator> parameter_iterator;
   
   /// @brief origin iterator for parameters
   /// @details This method returns an stl-compatible iterator, which iterates
@@ -223,9 +223,9 @@ protected:
   /// @param[in] otherDer a second operand's derivatives 
   /// @param[in] otherVal a second operand's value
   template<typename Op> void binaryOperationInSitu(Op &operation,
-              std::map<std::string, casa::Complex> &thisDer,
-              const std::map<std::string, casa::Complex> &otherDer,
-              const casa::Complex &otherVal) const;
+              std::map<std::string, casacore::Complex> &thisDer,
+              const std::map<std::string, casacore::Complex> &otherDer,
+              const casacore::Complex &otherVal) const;
 
   /// @brief perform an arbitrary binary operation on derivatives
   /// @details See another overloaded version of the method for details.
@@ -255,7 +255,7 @@ protected:
   /// @param[in] operation type performing actual operation
   /// @param[in] der operand's derivatives
   template<typename Op> void unaryOperationInSitu(Op &operation,
-              std::map<std::string, casa::Complex> &der) const;
+              std::map<std::string, casacore::Complex> &der) const;
   
   /// @brief perform an arbitrary unary operation on derivatives
   /// @details See another overloaded version of this method for details.
@@ -272,9 +272,9 @@ protected:
   ///            first operand
   /// @param[in] derivative2 a const reference to derivative of the second operand
   /// @note parameters value1 and value2 are not used
-  inline void static additionInSitu(const casa::Complex &, 
-                 casa::Complex &derivative1, const casa::Complex &, 
-                 const casa::Complex &derivative2)
+  inline void static additionInSitu(const casacore::Complex &, 
+                 casacore::Complex &derivative1, const casacore::Complex &, 
+                 const casacore::Complex &derivative2)
              {   derivative1 += derivative2;  }
              
 
@@ -285,31 +285,31 @@ protected:
   ///            first operand
   /// @param[in] value2 a const reference to the value of the second operand
   /// @param[in] derivative2 a const reference to derivative of the second operand
-  inline void static multiplicationInSitu(const casa::Complex &value1, 
-                   casa::Complex &derivative1, const casa::Complex &value2,
-                   const casa::Complex &derivative2) 
+  inline void static multiplicationInSitu(const casacore::Complex &value1, 
+                   casacore::Complex &derivative1, const casacore::Complex &value2,
+                   const casacore::Complex &derivative2) 
              { derivative1 = value2*derivative1 + value1*derivative2; }
 
   /// @brief helper method to perform in situ conjugation
   /// @details It is used in conjunction with unaryOperationInSitu
   /// @param[in] derivative a non-const reference to derivative to update
   /// @note The first argument (value) is not used
-  inline void static conjugationInSitu(const casa::Complex&, 
-                  casa::Complex &derivative)
+  inline void static conjugationInSitu(const casacore::Complex&, 
+                  casacore::Complex &derivative)
              { derivative = conj(derivative); } 
   
 private:
   
   /// @brief derivatives by real part of the parameters
-  std::map<std::string, casa::Complex> itsDerivRe;
+  std::map<std::string, casacore::Complex> itsDerivRe;
   
   /// @brief derivatives by imaginary part of the parameters
   /// @note If some parameter is conceptually real, there may be no
   /// entry in this map for it at all.
-  std::map<std::string, casa::Complex> itsDerivIm;
+  std::map<std::string, casacore::Complex> itsDerivIm;
   
   /// @brief the value of the function represented by this differentiator
-  casa::Complex itsValue;
+  casacore::Complex itsValue;
 };
 
 /// @brief perform an arbitrary binary operation on derivatives

@@ -20,10 +20,10 @@
 /// for fitting a polynomial equation.
 /// @code
 ///
-///    casa::Vector<double> arguments(10);
-///    casa::Vector<double> data(10);
-///    casa::Vector<double> weights(10);
-///    casa::Vector<double> model(10);
+///    casacore::Vector<double> arguments(10);
+///    casacore::Vector<double> data(10);
+///    casacore::Vector<double> weights(10);
+///    casacore::Vector<double> model(10);
 ///
 ///    for (uint i=0;i<arguments.size();i++) {
 ///        arguments[i]=i;
@@ -33,7 +33,7 @@
 ///    model.set(0.0);
 ///
 ///    Params ip;
-///    casa::Vector<double> quadratic(3);
+///    casacore::Vector<double> quadratic(3);
 ///    quadratic(0)=1;
 ///    quadratic(1)=2;
 ///    quadratic(2)=3;
