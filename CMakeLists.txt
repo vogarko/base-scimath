@@ -120,6 +120,7 @@ add_library(askap_scimath
 ./lsqr_solver/LSQRSolver.cc
 ./lsqr_solver/MathUtils.cc
 ./lsqr_solver/ModelDamping.cc
+./lsqr_solver/ParallelTools.cc
 ./lsqr_solver/SparseMatrix.cc
 )
 
@@ -191,6 +192,7 @@ lsqr_solver/GlobalTypedefs.h
 lsqr_solver/LSQRSolver.h
 lsqr_solver/MathUtils.h
 lsqr_solver/ModelDamping.h
+lsqr_solver/ParallelTools.h
 lsqr_solver/SparseMatrix.h
 
 DESTINATION include/askap/scimath/lqsr_solver
