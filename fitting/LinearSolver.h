@@ -76,21 +76,24 @@ namespace askap
         /// @param[in] params parameters to be updated 
         /// @param[in] quality Quality of solution
         virtual bool solveNormalEquations(Params &params, Quality& quality);
-        
+
         /// @brief Clone this object
         virtual Solver::ShPtr clone() const;
-       
+
+        // Setter for workers communicator.
+        virtual void SetWorkersCommunicator(void *comm);
+
        protected:
-       
+
         /// @brief solve for a subset of parameters
         /// @details This method is used in solveNormalEquations
         /// @param[in] params parameters to be updated           
         /// @param[in] quality Quality of the solution
         /// @param[in] names names for parameters to solve for
         /// @return pair of minimum and maximum eigenvalues
-        std::pair<double,double>  solveSubsetOfNormalEquations(Params &params, Quality& quality, 
+        std::pair<double,double>  solveSubsetOfNormalEquations(Params &params, Quality& quality,
                    const std::vector<std::string> &names) const;
-        
+
         /// @brief extract an independent subset of parameters
         /// @details This method analyses the normal equations and forms a subset of 
         /// parameters which can be solved for independently. Although the SVD is more than
@@ -100,7 +103,7 @@ namespace askap
         /// @param[in] tolerance tolerance on the matrix elements to decide whether they can be considered independent
         /// @return names of parameters in this subset
         std::vector<std::string> getIndependentSubset(std::vector<std::string> &names, const double tolerance) const;
-         
+
         /// @brief test that all matrix elements are below tolerance by absolute value
         /// @details This is a helper method to test all matrix elements
         /// @param[in] matr matrix to test
@@ -113,6 +116,9 @@ namespace askap
          /// @details Effectively, this is a threshold for singular values 
          /// taken into account in the svd method
          double itsMaxCondNumber;
+
+         // MPI communicator of all workers (for LSQR solver).
+         void *itsWorkersComm;
     };
 
   }

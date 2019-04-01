@@ -27,6 +27,10 @@
 /// @author Tim Cornwell <tim.cornwell@csiro.au>
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
+
 #include <fitting/LinearSolver.h>
 
 #include <askap/AskapError.h>
@@ -78,7 +82,8 @@ namespace askap
     /// thing to do!). A very large threshold has the same effect. Zero
     /// threshold is not allowed and will cause an exception.
     LinearSolver::LinearSolver(double maxCondNumber) : 
-           itsMaxCondNumber(maxCondNumber) 
+           itsMaxCondNumber(maxCondNumber),
+           itsWorkersComm(NULL)
     {
       ASKAPASSERT(itsMaxCondNumber!=0);
     };
@@ -154,14 +159,13 @@ std::vector<std::string> LinearSolver::getIndependentSubset(std::vector<std::str
     } 
     return resultNames;
 }
-    
-    
+
 /// @brief solve for a subset of parameters
 /// @details This method is used in solveNormalEquations
 /// @param[in] params parameters to be updated           
 /// @param[in] quality Quality of the solution
 /// @param[in] names names of the parameters to solve for 
-std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &params, Quality& quality, 
+std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &params, Quality& quality,
                    const std::vector<std::string> &names) const
 {
     ASKAPTRACE("LinearSolver::solveSubsetOfNormalEquations");
@@ -210,7 +214,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
              for (size_t row=0; row<nm.nrow(); ++row)  {
                   for (size_t col=0; col<nm.ncolumn(); ++col) {
                        const double elem = nm(row,col);
-                       ASKAPCHECK(!isnan(elem), "Normal matrix seems to have NaN for row = "<<row<<" and col = "<<col<<", this shouldn't happem!");
+                       ASKAPCHECK(!std::isnan(elem), "Normal matrix seems to have NaN for row = "<<row<<" and col = "<<col<<", this shouldn't happem!");
                        gsl_matrix_set(A, row+(indit1->second), col+(indit2->second), elem);
                        //std::cout << "A " << row+(indit1->second) << " " << col+(indit2->second) << " " << nm(row,col) << std::endl;
                   }
@@ -223,7 +227,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
             const casacore::Vector<double> &dv = normalEquations().dataVector(indit1->first);
             for (size_t row=0; row<dv.nelements(); ++row) {
                  const double elem = dv(row);
-                 ASKAPCHECK(!isnan(elem), "Data vector seems to have NaN for row = "<<row<<", this shouldn't happem!");
+                 ASKAPCHECK(!std::isnan(elem), "Data vector seems to have NaN for row = "<<row<<", this shouldn't happem!");
                  gsl_vector_set(B, row+(indit1->second), elem);
     //          std::cout << "B " << row << " " << dv(row) << std::endl;
             }
@@ -259,18 +263,21 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
         gsl_vector * work = gsl_vector_alloc (nParameters);
         ASKAPDEBUGASSERT(work!=NULL);
 
+        gsl_error_handler_t *oldhandler=gsl_set_error_handler_off();
+        ASKAPLOG_DEBUG_STR(logger, "Running SV decomp");
         const int status = gsl_linalg_SV_decomp (A, V, S, work);
-        ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status);
+        // ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status);
+        gsl_set_error_handler(oldhandler);
 
         // a hack for now. For some reason, for some matrices gsl_linalg_SV_decomp may return NaN as singular value, perhaps some
         // numerical precision issue inside SVD. Although it needs to be investigated further  (see ASKAPSDP-2270), for now trying
         // to replace those singular values with zeros to exclude them from processing. Note, singular vectors may also contain NaNs
         for (int i=0; i<nParameters; ++i) {
-          if (isnan(gsl_vector_get(S,i))) {
+          if (std::isnan(gsl_vector_get(S,i))) {
               gsl_vector_set(S,i,0.);
           }
           for (int k=0; k < nParameters; ++k) {
-               ASKAPCHECK(!isnan(gsl_matrix_get(V,i,k)), "NaN in V: i="<<i<<" k="<<k);
+               ASKAPCHECK(!std::isnan(gsl_matrix_get(V,i,k)), "NaN in V: i="<<i<<" k="<<k);
           }
         }
 
@@ -315,7 +322,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
          double smax = 0.0;
          for (int i=0;i<nParameters; ++i) {
               const double sValue = std::abs(gsl_vector_get(S, i));
-              ASKAPCHECK(!isnan(sValue), "Got NaN as a singular value for normal matrix, this shouldn't happen S[i]="<<gsl_vector_get(S,i)<<" parameter "<<i<<" singularValueLimit="<<singularValueLimit);
+              ASKAPCHECK(!std::isnan(sValue), "Got NaN as a singular value for normal matrix, this shouldn't happen S[i]="<<gsl_vector_get(S,i)<<" parameter "<<i<<" singularValueLimit="<<singularValueLimit);
               if(sValue>0.0) {
                  ++rank;
                  if ((sValue>smax) || (i == 0)) {
@@ -330,12 +337,19 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
          result.second = smax;
 
          quality.setDOF(nParameters);
-         quality.setRank(rank);
-         quality.setCond(smax/smin);
-         if(rank==nParameters) {
-            quality.setInfo("SVD decomposition rank complete");
+         if (status != 0) {
+             ASKAPLOG_WARN_STR(logger, "Solution is considered invalid due to gsl_linalg_SV_decomp failure, main matrix is effectively rank zero");
+             quality.setRank(0);
+             quality.setCond(0.);
+             quality.setInfo("SVD decomposition rank deficient");
          } else {
-            quality.setInfo("SVD decomposition rank deficient");
+             quality.setRank(rank);
+             quality.setCond(smax/smin);
+             if (rank==nParameters) {
+                 quality.setInfo("SVD decomposition rank complete");
+             } else {
+                 quality.setInfo("SVD decomposition rank deficient");
+             }
          }
 
 // Update the parameters for the calculated changes. Exploit reference
@@ -347,7 +361,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
               for (size_t i=0; i<value.nelements(); ++i)  {
 //                 std::cout << value(i) << " " << gsl_vector_get(X, indit->second+i) << std::endl;
                    const double adjustment = gsl_vector_get(X, indit->second+i);
-                   ASKAPCHECK(!isnan(adjustment), "Solution resulted in NaN as an update for parameter "<<(indit->second + i));
+                   ASKAPCHECK(!std::isnan(adjustment), "Solution resulted in NaN as an update for parameter "<<(indit->second + i));
                    value(i) += adjustment;
               }
           }
@@ -356,6 +370,15 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
           gsl_matrix_free(V);
     }
     else if (algorithm() == "LSQR") {
+        int myrank = 0;
+        int nbproc = 1;
+
+        void* comm = NULL;
+
+#ifdef HAVE_MPI
+        MPI_Comm comm_world = MPI_COMM_WORLD;
+        comm = (void *)&comm_world;
+#endif
 
         // Setting damping parameters.
         double alpha = 0.01;
@@ -373,7 +396,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
         size_t nrows = nParameters;
         size_t ncolumms = nParameters;
 
-        lsqr::SparseMatrix matrix(nrows, nrows * ncolumms);
+        lsqr::SparseMatrix matrix(nrows, nrows * ncolumms, comm);
         lsqr::Vector b_RHS(nrows, 0.0);
 
         // Set the matrix.
@@ -397,7 +420,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
             const casacore::Vector<double> &dv = normalEquations().dataVector(indit1->first);
             for (size_t row=0; row<dv.nelements(); ++row) {
                  const double elem = dv(row);
-                 ASKAPCHECK(!isnan(elem), "Data vector seems to have NaN for row = "<<row<<", this shouldn't happem!");
+                 ASKAPCHECK(!std::isnan(elem), "Data vector seems to have NaN for row = "<<row<<", this shouldn't happem!");
                  //gsl_vector_set(B, row+(indit1->second), elem);
                  b_RHS[row+(indit1->second)] = elem;
             }
@@ -408,7 +431,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
         //-----------------------------------------------
 
         lsqr::ModelDamping damping(ncolumms);
-        damping.Add(alpha, norm, matrix, b_RHS, NULL, NULL, NULL);
+        damping.Add(alpha, norm, matrix, b_RHS, NULL, NULL, NULL, myrank, nbproc);
 
         //-------------------------------------
         // Solve matrix system.
@@ -435,8 +458,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
         lsqr::Vector x(ncolumms, 0.0);
         lsqr::LSQRSolver solver(matrix.GetCurrentNumberRows(), ncolumms);
 
-        int myrank = 0;
-        solver.Solve(niter, rmin, matrix, b_RHS, x, myrank, suppress_output);
+        solver.Solve(niter, rmin, matrix, b_RHS, x, myrank, nbproc, suppress_output);
 
         //------------------------------------------------------------------------
         // Update the parameters for the calculated changes. Exploit reference
@@ -448,7 +470,7 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
               for (size_t i=0; i<value.nelements(); ++i)  {
                    //const double adjustment = gsl_vector_get(X, indit->second+i);
                    const double adjustment = x[indit->second+i];
-                   ASKAPCHECK(!isnan(adjustment), "Solution resulted in NaN as an update for parameter "<<(indit->second + i));
+                   ASKAPCHECK(!std::isnan(adjustment), "Solution resulted in NaN as an update for parameter "<<(indit->second + i));
                    value(i) += adjustment;
               }
           }
@@ -500,59 +522,41 @@ std::pair<double,double>  LinearSolver::solveSubsetOfNormalEquations(Params &par
     /// @param[in] params parameters to be updated 
     /// @param[in] quality Quality of solution
     /// @note This is fully general solver for the normal equations for any shape
-    /// parameters.        
+    /// parameters.
     bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
     {
-      ASKAPTRACE("LinearSolver::solveNormalEquations");
-      
-// Solving A^T Q^-1 V = (A^T Q^-1 A) P
-     
-// Find all the free parameters
-      std::vector<string> names(params.freeNames());
-      if (names.size() == 0) {
-          // list of parameters is empty, will solve for all 
-          // unknowns in the equation 
-          names = normalEquations().unknowns();
-      }
-      ASKAPCHECK(names.size()>0, "No free parameters in Linear Solver");
+        ASKAPTRACE("LinearSolver::solveNormalEquations");
 
-      if (names.size() < 100) {
-          // no need to extract independent blocks if number of unknowns is small
-          solveSubsetOfNormalEquations(params,quality,names);
-      } else {
-          while (names.size() > 0) {
-              const std::vector<std::string> subsetNames = getIndependentSubset(names,1e-6);
-              /* this is now being done inside getIndependentSubset
-              if (subsetNames.size() == names.size()) {
-                  names.resize(0);
-              } else {
-                  // remove the elements corresponding to the current subset from the list of names prepared for the
-                  // following integration
-                  std::vector<size_t> indicesToRemove(subsetNames.size(),subsetNames.size());                                   
-                  for (size_t index = 0,indexToRemove = 0; index < names.size(); ++index) {
-                       if (find(subsetNames.begin(),subsetNames.end(),names[index]) != subsetNames.end()) {
-                           ASKAPDEBUGASSERT(indexToRemove < indicesToRemove.size());
-                           indicesToRemove[indexToRemove++] = index;
-                       }
-                  }
-                  
-                  // the following could be done more elegantly/faster, but leave the optimisation to later time                  
-                  for (std::vector<size_t>::const_reverse_iterator ci = indicesToRemove.rbegin(); ci!=indicesToRemove.rend(); ++ci) {
-                       ASKAPDEBUGASSERT(*ci < names.size());
-                       names.erase(names.begin() + *ci);
-                  }
-              }
-              */
-              solveSubsetOfNormalEquations(params,quality, subsetNames);
-          } 
-      }
-        
-      return true;
+        // Solving A^T Q^-1 V = (A^T Q^-1 A) P
+        // Find all the free parameters.
+        vector<string> names(params.freeNames());
+        if (names.size() == 0) {
+            // List of parameters is empty, will solve for all
+            // unknowns in the equation.
+            names = normalEquations().unknowns();
+        }
+        ASKAPCHECK(names.size() > 0, "No free parameters in Linear Solver");
+
+        if (names.size() < 100 // No need to extract independent blocks if number of unknowns is small.
+            || algorithm() == "LSQR") {
+            solveSubsetOfNormalEquations(params, quality, names);
+        } else {
+            while (names.size() > 0) {
+                const std::vector<std::string> subsetNames = getIndependentSubset(names,1e-6);
+                solveSubsetOfNormalEquations(params, quality, subsetNames);
+            }
+        }
+        return true;
     };
 
     Solver::ShPtr LinearSolver::clone() const
     {
       return Solver::ShPtr(new LinearSolver(*this));
+    }
+
+    void LinearSolver::SetWorkersCommunicator(void *comm)
+    {
+        itsWorkersComm = comm;
     }
 
   }
