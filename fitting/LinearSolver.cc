@@ -529,7 +529,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
 
         // Solving A^T Q^-1 V = (A^T Q^-1 A) P
         // Find all the free parameters.
-        vector<string> names(params.freeNames());
+	std::vector<std::string> names(params.freeNames());
         if (names.size() == 0) {
             // List of parameters is empty, will solve for all
             // unknowns in the equation.
