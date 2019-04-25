@@ -3,11 +3,11 @@
 /// @brief Autodifferentiation class working for complex parameters
 /// @details A creation of this class was inspired by the CASA's 
 /// AutoDiff and SparseDiff classes. Its functionality and purpose are 
-/// essentially the same as that for casa::SparseDiff. However, it works
+/// essentially the same as that for casacore::SparseDiff. However, it works
 /// correctly for complex parameters (i.e. it tracks derivatives by 
 /// real and imaginary part of each parameter) and uses string indices.
 /// It is quite likely, that in the future we will convert this template
-/// to use casa::SparseDiff classes. An extra adapter layer will be required
+/// to use casacore::SparseDiff classes. An extra adapter layer will be required
 /// anyway to convert string indices into integer indices and to deal with
 /// complex-valued parameters properly. 
 /// 
@@ -51,7 +51,7 @@ ComplexDiff::ComplexDiff() : itsValue(0.,0.) {}
   
 /// @brief construct a complex constant
 /// @param[in] in a reference to input complex value
-ComplexDiff::ComplexDiff(const casa::Complex &in) : itsValue(in) {}
+ComplexDiff::ComplexDiff(const casacore::Complex &in) : itsValue(in) {}
   
 /// @brief construct a real constant
 /// @param[in] in input real value
@@ -64,11 +64,11 @@ ComplexDiff::ComplexDiff(double in) : itsValue(in,0.) {}
 /// complex (i.e. cross-terms will be tracked).
 /// @param[in] name parameter name
 /// @param[in] in a reference to input complex value
-ComplexDiff::ComplexDiff(const std::string &name, const casa::Complex &in) :
+ComplexDiff::ComplexDiff(const std::string &name, const casacore::Complex &in) :
               itsValue(in) 
 {
-  itsDerivRe[name] = casa::Complex(1.,0.);
-  itsDerivIm[name] = casa::Complex(0.,1.);
+  itsDerivRe[name] = casacore::Complex(1.,0.);
+  itsDerivIm[name] = casacore::Complex(0.,1.);
 }
   
 /// @brief construct a real parameter
@@ -81,12 +81,12 @@ ComplexDiff::ComplexDiff(const std::string &name, const casa::Complex &in) :
 ComplexDiff::ComplexDiff(const std::string &name, double in) : 
               itsValue(in,0.) 
 {
-  itsDerivRe[name] = casa::Complex(1.,0.);
+  itsDerivRe[name] = casacore::Complex(1.,0.);
 } 
   
 /// @brief obtain value
 /// @return value of the function associated with this object
-casa::Complex ComplexDiff::value() const throw()
+casacore::Complex ComplexDiff::value() const throw()
 {
   return itsValue;
 }
@@ -94,19 +94,19 @@ casa::Complex ComplexDiff::value() const throw()
 /// @brief obtain derivatives by real part of the parameter
 /// @param[in] name parameter name
 /// @return value of the derivative by real part of the given parameter
-casa::Complex ComplexDiff::derivRe(const std::string &name) const
+casacore::Complex ComplexDiff::derivRe(const std::string &name) const
 {
-  std::map<std::string, casa::Complex>::const_iterator ci = itsDerivRe.find(name);
-  return ci!=itsDerivRe.end() ? ci->second : casa::Complex(0.,0.);
+  std::map<std::string, casacore::Complex>::const_iterator ci = itsDerivRe.find(name);
+  return ci!=itsDerivRe.end() ? ci->second : casacore::Complex(0.,0.);
 }
   
 /// @brief obtain derivatives by imaginary part of the parameter
 /// @param[in] name parameter name
 /// @return value of the derivative by imaginary part of the given parameter
-casa::Complex ComplexDiff::derivIm(const std::string &name) const
+casacore::Complex ComplexDiff::derivIm(const std::string &name) const
 {
-  std::map<std::string, casa::Complex>::const_iterator ci = itsDerivIm.find(name);
-  return ci!=itsDerivIm.end()? ci->second : casa::Complex(0.,0.);
+  std::map<std::string, casacore::Complex>::const_iterator ci = itsDerivIm.find(name);
+  return ci!=itsDerivIm.end()? ci->second : casacore::Complex(0.,0.);
 }
 
 /// @brief perform an arbitrary binary operation on derivatives
@@ -127,29 +127,29 @@ casa::Complex ComplexDiff::derivIm(const std::string &name) const
 /// @param[in] otherVal a second operand's value
 template<typename Op> 
 void ComplexDiff::binaryOperationInSitu(Op &operation,
-            std::map<std::string, casa::Complex> &thisDer, 
-            const std::map<std::string, casa::Complex> &otherDer,
-            const casa::Complex &otherVal) const
+            std::map<std::string, casacore::Complex> &thisDer, 
+            const std::map<std::string, casacore::Complex> &otherDer,
+            const casacore::Complex &otherVal) const
 { 
-  for (std::map<std::string, casa::Complex>::const_iterator otherIt = 
+  for (std::map<std::string, casacore::Complex>::const_iterator otherIt = 
        otherDer.begin(); otherIt!=otherDer.end(); ++otherIt) {
        
-       const std::map<std::string, casa::Complex>::iterator thisIt = 
-                  thisDer.insert(std::pair<std::string, casa::Complex>(
-                              otherIt->first, casa::Complex(0.,0.))).first;
+       const std::map<std::string, casacore::Complex>::iterator thisIt = 
+                  thisDer.insert(std::pair<std::string, casacore::Complex>(
+                              otherIt->first, casacore::Complex(0.,0.))).first;
                               
        operation(itsValue, thisIt->second, otherVal, otherIt->second);
   }  
   
   // now account for this class parameters which are absent in the second 
   // operand
-  for (std::map<std::string, casa::Complex>::iterator thisIt = thisDer.begin();
+  for (std::map<std::string, casacore::Complex>::iterator thisIt = thisDer.begin();
        thisIt != thisDer.end(); ++thisIt) {
        
-       const std::map<std::string, casa::Complex>::const_iterator otherIt = 
+       const std::map<std::string, casacore::Complex>::const_iterator otherIt = 
                                  otherDer.find(thisIt->first);
        if (otherIt == otherDer.end()) {
-           operation(itsValue,thisIt->second, otherVal, casa::Complex(0.,0.));
+           operation(itsValue,thisIt->second, otherVal, casacore::Complex(0.,0.));
        }                         
   }
 }
@@ -200,9 +200,9 @@ bool ComplexDiff::isConformant(const ComplexDiff &other) const
 /// @param[in] operation type performing actual operation
 /// @param[in] der operand's derivatives
 template<typename Op> void ComplexDiff::unaryOperationInSitu(Op &operation,
-              std::map<std::string, casa::Complex> &der) const
+              std::map<std::string, casacore::Complex> &der) const
 {
-   for (std::map<std::string, casa::Complex>::iterator it = der.begin();
+   for (std::map<std::string, casacore::Complex>::iterator it = der.begin();
        it != der.end(); ++it) {
        operation(itsValue, it->second);
    }
@@ -233,14 +233,14 @@ void ComplexDiff::operator*=(const ComplexDiff &other)
 struct ConstantMultiplier {
   /// @brief constructor
   /// @param[in] in a const reference to the constant
-  ConstantMultiplier(const casa::Complex &in) : itsConstant(in) {}
+  ConstantMultiplier(const casacore::Complex &in) : itsConstant(in) {}
   
   /// @brief multiply given derivative by the constant
   /// @param[in] der reference to a value of derivative to multiply
-  inline void operator()(const casa::Complex&, casa::Complex& der) 
+  inline void operator()(const casacore::Complex&, casacore::Complex& der) 
       { der *= itsConstant; }
 private:
-  const casa::Complex &itsConstant;
+  const casacore::Complex &itsConstant;
 }; 
 
 /// @brief multiply to a constant
@@ -250,7 +250,7 @@ private:
 /// working with a constant is good from the performance point of view.
 /// Otherwise, a search for matching parmeters will be done on each
 /// multiplication.
-void ComplexDiff::operator*=(const casa::Complex &other)
+void ComplexDiff::operator*=(const casacore::Complex &other)
 {
   ConstantMultiplier cm(other);
   unaryOperationInSitu(cm);

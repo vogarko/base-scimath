@@ -7,7 +7,7 @@
 /// treated independently. However, it is better to retain a basic matrix
 /// algebra to ensure the code is clear. This class also treats well a
 /// possible degenerate dimension (polarisation). Theoretically, 
-/// casa::Matrix<ComplexDiff> could be used instead of this class. However,
+/// casacore::Matrix<ComplexDiff> could be used instead of this class. However,
 /// having a separate class allows, in principle, to handle maps of the 
 /// parameters at the matrix level and don't duplicate the map search 
 /// unnecessarily. Such functionality is in the future plans, but it is
@@ -100,30 +100,30 @@ inline ComplexDiff& ComplexDiffMatrix::operator[](size_t index)
 }
 
 
-/// @brief constructor from casa::Matrix
+/// @brief constructor from casacore::Matrix
 /// @param[in] matr input matrix
 template<typename T>
-inline ComplexDiffMatrix::ComplexDiffMatrix(const casa::Matrix<T> &matr) :
+inline ComplexDiffMatrix::ComplexDiffMatrix(const casacore::Matrix<T> &matr) :
      itsNRows(matr.nrow()), itsNColumns(matr.ncolumn()), 
      itsElements(matr.nrow()*matr.ncolumn()), itsParameterMapInvalid(true)    
 {
    std::vector<ComplexDiff>::iterator it = itsElements.begin();
-   for (casa::uInt col=0; col<itsNColumns; ++col) {
-        for (casa::uInt row=0; row<itsNRows; ++row,++it) {
+   for (casacore::uInt col=0; col<itsNColumns; ++col) {
+        for (casacore::uInt row=0; row<itsNRows; ++row,++it) {
              *it = matr(row,col);
         }
    }
 }
 
-/// @brief constructor from casa::Vector
+/// @brief constructor from casacore::Vector
 /// @param[in] vec input vector
 template<typename T>
-inline ComplexDiffMatrix::ComplexDiffMatrix(const casa::Vector<T> &vec) :
+inline ComplexDiffMatrix::ComplexDiffMatrix(const casacore::Vector<T> &vec) :
      itsNRows(vec.nelements()), itsNColumns(1), itsElements(vec.nelements()),
      itsParameterMapInvalid(true)    
 {
    std::vector<ComplexDiff>::iterator it = itsElements.begin();
-   for (casa::uInt row=0; row<itsNRows; ++row,++it) {
+   for (casacore::uInt row=0; row<itsNRows; ++row,++it) {
         *it = vec[row];
    }
 }
@@ -159,7 +159,7 @@ inline ComplexDiffMatrix blockAdd(const ComplexDiffMatrix &in1,
   size_t curCol = 0, curRow = 0;
   for (std::vector<ComplexDiff>::iterator it = result.itsElements.begin();
        it != result.itsElements.end(); ++it,++curRow) {
-       *it = ComplexDiff(casa::Complex(0.,0.));
+       *it = ComplexDiff(casacore::Complex(0.,0.));
        if (curRow >= result.nRow()) {
            curRow = 0;
            ++curCol;
@@ -195,14 +195,14 @@ inline ComplexDiffMatrix blockMultiply(const ComplexDiffMatrix &in1,
   ASKAPDEBUGASSERT(in1.nRow() > 0);
   ASKAPDEBUGASSERT(in2.nRow() > 0);
   ASKAPDEBUGASSERT(in1.nColumn() % in2.nRow() == 0);
-  const casa::uInt nBlocks = in1.nColumn() / in2.nRow();
+  const casacore::uInt nBlocks = in1.nColumn() / in2.nRow();
   if (in2.nColumn() == in1.nRow()) {
       // 1. block matrix x ordinary matrix -> blocks of square matrices
       ComplexDiffMatrix result(in1.nRow(), in2.nColumn() * nBlocks); // output is a block-matrix
       size_t curCol = 0, curRow = 0;
       for (std::vector<ComplexDiff>::iterator it = result.itsElements.begin();
            it != result.itsElements.end(); ++it,++curRow) {
-           *it = ComplexDiff(casa::Complex(0.,0.));
+           *it = ComplexDiff(casacore::Complex(0.,0.));
            if (curRow >= result.nRow()) {
                curRow = 0;
                ++curCol;
@@ -221,7 +221,7 @@ inline ComplexDiffMatrix blockMultiply(const ComplexDiffMatrix &in1,
   size_t curCol = 0, curRow = 0;
   for (std::vector<ComplexDiff>::iterator it = result.itsElements.begin();
        it != result.itsElements.end(); ++it,++curRow) {
-       *it = ComplexDiff(casa::Complex(0.,0.));
+       *it = ComplexDiff(casacore::Complex(0.,0.));
        if (curRow >= result.nRow()) {
            curRow = 0;
            ++curCol;
@@ -248,7 +248,7 @@ inline ComplexDiffMatrix operator*(const ComplexDiffMatrix &in1,
    size_t curCol = 0, curRow = 0;
    for (std::vector<ComplexDiff>::iterator it = result.itsElements.begin();
         it != result.itsElements.end(); ++it,++curRow) {
-        *it = ComplexDiff(casa::Complex(0.,0.));
+        *it = ComplexDiff(casacore::Complex(0.,0.));
         if (curRow >= result.nRow()) {
             curRow = 0;
             ++curCol;

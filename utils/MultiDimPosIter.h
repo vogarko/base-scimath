@@ -1,7 +1,7 @@
 /// @file
 /// 
 /// @brief helper iterator class to traversing multi-dimensional indices
-/// @details The idea behind this class is similar to that of casa::ArrayPositionIterator, but 
+/// @details The idea behind this class is similar to that of casacore::ArrayPositionIterator, but 
 /// with some support of incomplete iterations over some dimension. Moreover, there is 
 /// functionality to partition complete iteration into given number of groups. This is handy
 /// to distribute work defined by more than one number between workers. 
@@ -41,7 +41,7 @@ namespace askap {
 namespace scimath {
 
 /// @brief helper iterator class to traversing multi-dimensional indices
-/// @details The idea behind this class is similar to that of casa::ArrayPositionIterator, but 
+/// @details The idea behind this class is similar to that of casacore::ArrayPositionIterator, but 
 /// with some support of incomplete iterations over some dimension. Moreover, there is 
 /// functionality to partition complete iteration into given number of groups. This is handy
 /// to distribute work defined by more than one number between workers. 
@@ -54,19 +54,19 @@ struct MultiDimPosIter {
   /// @brief construct iterator and set the cursor at origin
   /// @details
   /// @param[in] shape shape of the volume to iterate
-  explicit MultiDimPosIter(const casa::IPosition &shape);
+  explicit MultiDimPosIter(const casacore::IPosition &shape);
   
   /// @brief construct iterator with the given start and stop positions
   /// @details
   /// @param[in] shape shape of the volume to iterate
   /// @param[in] start position of the origin
   /// @param[in] end end position
-  MultiDimPosIter(const casa::IPosition &shape, const casa::IPosition &start, const casa::IPosition &end);
+  MultiDimPosIter(const casacore::IPosition &shape, const casacore::IPosition &start, const casacore::IPosition &end);
   
   /// @brief initialise to iterate over full volume
   /// @details
   /// @param[in] shape shape of the volume to iterate
-  void init(const casa::IPosition &shape);
+  void init(const casacore::IPosition &shape);
   
   /// @brief initialise iterator to the empty range
   void init();
@@ -76,7 +76,7 @@ struct MultiDimPosIter {
   /// @param[in] shape shape of the volume to iterate
   /// @param[in] start position of the origin
   /// @param[in] end end position
-  void init(const casa::IPosition &shape, const casa::IPosition &start, const casa::IPosition &end);
+  void init(const casacore::IPosition &shape, const casacore::IPosition &start, const casacore::IPosition &end);
   
   /// @brief initialise to iterate over one chunk of the full range
   /// @details This method bins the whole iteration range into a given number of
@@ -85,11 +85,11 @@ struct MultiDimPosIter {
   /// @param[in] shape shape of the volume to iterate
   /// @param[in] nChunks desired total number of chunks
   /// @param[in] chunk selected chunk number (0..nChunk-1)
-  void init(const casa::IPosition &shape, const casa::uInt nChunks, const casa::uInt chunk);
+  void init(const casacore::IPosition &shape, const casacore::uInt nChunks, const casacore::uInt chunk);
   
   /// @brief obtain current cursor
   /// @return const reference to IPosition object
-  inline const casa::IPosition& cursor() const { return itsCursor; }
+  inline const casacore::IPosition& cursor() const { return itsCursor; }
   
   /// @brief check whether the iterator has more points to iterate
   /// @return true, if there are more points to iterate
@@ -108,16 +108,16 @@ private:
   bool itsHasMore;
   
   /// @brief start of the range
-  casa::IPosition itsStart;
+  casacore::IPosition itsStart;
   
   /// @brief last point of the range
-  casa::IPosition itsEnd;
+  casacore::IPosition itsEnd;
   
   /// @brief current cursor
-  casa::IPosition itsCursor; 
+  casacore::IPosition itsCursor; 
   
   /// @brief shape of the iteration range
-  casa::IPosition itsShape;
+  casacore::IPosition itsShape;
 
 }; // MultiDimPosIter
 

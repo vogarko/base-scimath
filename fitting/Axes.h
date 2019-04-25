@@ -5,7 +5,7 @@
 /// parameter. For example,
 /// @code
 /// Axes imageAxes;
-/// double arcsec=casa::C::pi/(3600.0*180.0);
+/// double arcsec=casacore::C::pi/(3600.0*180.0);
 /// double cell=5.0*arcsec;
 /// imageAxes.add("RA_LIN", -double(npix)*cell/2.0, double(npix)*cell/2.0);
 /// imageAxes.add("DEC_LIN", -double(npix)*cell/2.0, double(npix)*cell/2.0);
@@ -133,25 +133,25 @@ namespace askap
       /// @brief form vector of stokes enums from STOKES axis
       /// @return vector of stokes enums
       /// @note An axis names STOKES must be present, otherwise an exception will be thrown
-      casa::Vector<casa::Stokes::StokesTypes> stokesAxis() const;
+      casacore::Vector<casacore::Stokes::StokesTypes> stokesAxis() const;
       
       /// @brief add STOKES axis formed from the vector of stokes enums
       /// @details This is a reverse operation to stokesAxis. If the STOKES axis
       /// already exists, the values are updated.
       /// @param[in] stokes a vector of stokes enums
-      void addStokesAxis(const casa::Vector<casa::Stokes::StokesTypes> &stokes);      
+      void addStokesAxis(const casacore::Vector<casacore::Stokes::StokesTypes> &stokes);      
       
       // operations with direction axis
       
       /// @brief extract parameters of the direction axis
       /// @return a const reference to casacore's DirectionCoordinate object
-      const casa::DirectionCoordinate& directionAxis() const;
+      const casacore::DirectionCoordinate& directionAxis() const;
       
       /// @brief add direction axis
       /// @details This method is reverse to directionAxis. It adds or updates direction 
       /// coordinate. 
       /// @param[in] dc direction coordinate
-      void addDirectionAxis(const casa::DirectionCoordinate &dc);
+      void addDirectionAxis(const casacore::DirectionCoordinate &dc);
       
       /// Output to an ostream
       /// @param os an ostream
@@ -180,7 +180,7 @@ namespace askap
       /// understand this is to consider what goes on near the poles). This 
       /// object defines the direction coordinate in the most general way. 
       /// @note Sine projection is currently always assumed
-      boost::shared_ptr<casa::DirectionCoordinate> itsDirectionAxis;
+      boost::shared_ptr<casacore::DirectionCoordinate> itsDirectionAxis;
     };
 
     /// Use Domain as a synonym (for the moment).

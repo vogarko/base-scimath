@@ -142,8 +142,8 @@ struct GenericNormalEquations : public INormalEquations {
   /// @param[in] name Name of the parameter
   /// @param[in] normalmatrix Normal Matrix for this parameter
   /// @param[in] datavector Data vector for this parameter
-  void add(const string& name, const casa::Matrix<double>& normalmatrix,
-                               const casa::Vector<double>& datavector);
+  void add(const string& name, const casacore::Matrix<double>& normalmatrix,
+                               const casacore::Vector<double>& datavector);
   
   /// @brief normal equations for given parameters
   /// @details In the current framework, parameters are essentially 
@@ -155,7 +155,7 @@ struct GenericNormalEquations : public INormalEquations {
   /// @param[in] par1 the name of the first parameter
   /// @param[in] par2 the name of the second parameter
   /// @return one element of the sparse normal matrix (a dense matrix)
-  virtual const casa::Matrix<double>& normalMatrix(const std::string &par1, 
+  virtual const casacore::Matrix<double>& normalMatrix(const std::string &par1, 
                         const std::string &par2) const;
   
   /// @brief data vector for a given parameter
@@ -167,7 +167,7 @@ struct GenericNormalEquations : public INormalEquations {
   /// parameter each element of data vector is a vector of unit length.
   /// @param[in] par the name of the parameter of interest
   /// @return one element of the sparse data vector (a dense vector)     
-  virtual const casa::Vector<double>& dataVector(const std::string &par) const;
+  virtual const casacore::Vector<double>& dataVector(const std::string &par) const;
   
   /// @brief write the object to a blob stream
   /// @param[in] os the output stream
@@ -206,9 +206,9 @@ struct GenericNormalEquations : public INormalEquations {
     
 protected:
   /// @brief map of matrices (data element of each row map)
-  typedef std::map<std::string, casa::Matrix<double> > MapOfMatrices;
+  typedef std::map<std::string, casacore::Matrix<double> > MapOfMatrices;
   /// @brief map of vectors (data vectors for all parameters)
-  typedef std::map<std::string, casa::Vector<double> > MapOfVectors;
+  typedef std::map<std::string, casacore::Vector<double> > MapOfVectors;
 
   /// @brief Add one parameter from another normal equations class
   /// @details This helper method is used in merging of two normal equations.
@@ -230,7 +230,7 @@ protected:
   /// The normal matrix to be integrated with this class is given in the form
   /// of map of matrices (effectively a sparse matrix). Each element of the map
   /// corresponds to a cross- or parallel term in the normal equations. Data
-  /// vector is given simply as a casa::Vector, rather than the map of vectors,
+  /// vector is given simply as a casacore::Vector, rather than the map of vectors,
   /// because only one parameter is concerned here. If a parameter with the given
   /// name doesn't exist, the method adds it to both normal matrix and data vector,
   /// populating correctly all required cross-terms with 0-matrices of an 
@@ -239,7 +239,7 @@ protected:
   /// @param[in] inNM input normal matrix
   /// @param[in] inDV input data vector 
   void addParameter(const std::string &par, const MapOfMatrices &inNM,
-                    const casa::Vector<double>& inDV);
+                    const casacore::Vector<double>& inDV);
   
   /// @brief extract dimension of a parameter from the given row
   /// @details This helper method analyses the matrices stored in the supplied
@@ -250,7 +250,7 @@ protected:
   /// all elements).
   /// @param[in] nmRow a row of the sparse normal matrix to work with
   /// @return dimension of the corresponding parameter
-  static casa::uInt parameterDimension(const MapOfMatrices &nmRow);  
+  static casacore::uInt parameterDimension(const MapOfMatrices &nmRow);  
   
   
   /// @brief Calculate an element of A^tA
@@ -262,8 +262,8 @@ protected:
   /// @param[in] matrix1 the first element of a sparse normal matrix
   /// @param[in] matrix2 the second element of a sparse normal matrix
   /// @return a product of matrix1 transposed to matrix2
-  static casa::Matrix<double> nmElement(const casa::Matrix<double> &matrix1,
-               const casa::Matrix<double> &matrix2);
+  static casacore::Matrix<double> nmElement(const casacore::Matrix<double> &matrix1,
+               const casacore::Matrix<double> &matrix2);
   
   /// @brief Calculate an element of A^tB
   /// @details Each element of a sparse normal matrix is also a matrix
@@ -275,8 +275,8 @@ protected:
   /// @param[in] dm an element of the design matrix
   /// @param[in] dv an element of the data vector
   /// @return element of the right-hand side of the normal equations
-  static casa::Vector<double> dvElement(const casa::Matrix<double> &dm,
-              const casa::Vector<double> &dv); 
+  static casacore::Vector<double> dvElement(const casacore::Matrix<double> &dm,
+              const casacore::Vector<double> &dv); 
   
   /// @brief Extract derivatives from design matrix
   /// @details This method extracts an appropriate derivative matrix
@@ -287,8 +287,8 @@ protected:
   /// @param[in] dataPoint a sequence number of the data point, for which 
   /// the derivatives are returned
   /// @return matrix of derivatives
-  static const casa::Matrix<double>& extractDerivatives(const DesignMatrix &dm,
-             const std::string &par, casa::uInt dataPoint);
+  static const casacore::Matrix<double>& extractDerivatives(const DesignMatrix &dm,
+             const std::string &par, casacore::uInt dataPoint);
   
 private:
   

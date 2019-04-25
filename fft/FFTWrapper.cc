@@ -70,24 +70,24 @@ namespace askap {
         /*
          * Execute a Double-precision FFT plan.
          */
-        static inline void fftExec(casa::Vector<casa::DComplex> vec, const bool forward,
+        static inline void fftExec(casacore::Vector<casacore::DComplex> vec, const bool forward,
                             fftw_plan& p, fftw_complex* buf, size_t bufsz)
         {
             const size_t nElements = vec.nelements();
             const size_t n2 = nElements/2;
             ASKAPDEBUGASSERT(nElements == bufsz);
-            DComplex *bufPtr = reinterpret_cast<casa::DComplex*>(buf);
+            DComplex *bufPtr = reinterpret_cast<casacore::DComplex*>(buf);
 
             // rotate input because the origin for FFTW is at 0, not n/2 (casa fft).
             for (size_t i=n2; i<nElements; i++) *bufPtr++ = vec(i);
             for (size_t i=0; i<n2; i++) *bufPtr++ = vec(i);
-            bufPtr = reinterpret_cast<casa::DComplex*>(buf);
+            bufPtr = reinterpret_cast<casacore::DComplex*>(buf);
 
             fftw_execute(p);
 
             if (!forward) {
                 for (size_t i=0; i<nElements; i++) *bufPtr++/=nElements;
-                bufPtr = reinterpret_cast<casa::DComplex*>(buf);
+                bufPtr = reinterpret_cast<casacore::DComplex*>(buf);
             }
             // rotate output and copy back to the vectors storage
             for (size_t i=n2; i<nElements; i++) vec(i) = *bufPtr++;
@@ -97,24 +97,24 @@ namespace askap {
         /*
          * Execute a Single-precision FFT plan.
          */
-        static inline void fftExec(casa::Vector<casa::Complex> vec, const bool forward,
+        static inline void fftExec(casacore::Vector<casacore::Complex> vec, const bool forward,
                             fftwf_plan& p, fftwf_complex* buf, size_t bufsz)
         {
             const size_t nElements = vec.nelements();
             const size_t n2 = nElements/2;
             ASKAPDEBUGASSERT(nElements == bufsz);
-            Complex *bufPtr = reinterpret_cast<casa::Complex*>(buf);
+            Complex *bufPtr = reinterpret_cast<casacore::Complex*>(buf);
 
             // rotate input because the origin for FFTW is at 0, not n/2 (casa fft).
             for (size_t i=n2; i<nElements; i++) *bufPtr++ = vec(i);
             for (size_t i=0; i<n2; i++) *bufPtr++ = vec(i);
-            bufPtr = reinterpret_cast<casa::Complex*>(buf);
+            bufPtr = reinterpret_cast<casacore::Complex*>(buf);
 
             fftwf_execute(p);
 
             if (!forward) {
                 for (size_t i=0; i<nElements; i++) *bufPtr++/=nElements;
-                bufPtr = reinterpret_cast<casa::Complex*>(buf);
+                bufPtr = reinterpret_cast<casacore::Complex*>(buf);
             }
 
             // rotate output and copy back to the vectors storage
@@ -123,9 +123,9 @@ namespace askap {
         }
 
 
-        void fft(casa::Vector<casa::DComplex>& vec, const bool forward)
+        void fft(casacore::Vector<casacore::DComplex>& vec, const bool forward)
         {
-            ASKAPTRACE("fft<casa::DComplex>");
+            ASKAPTRACE("fft<casacore::DComplex>");
 #ifdef _OPENMP
             boost::unique_lock<boost::mutex> lock(fftWrapperMutex);
 #endif
@@ -154,9 +154,9 @@ namespace askap {
             fftw_destroy_plan(p);
         }
 
-        void fft(casa::Vector<casa::Complex>& vec, const bool forward)
+        void fft(casacore::Vector<casacore::Complex>& vec, const bool forward)
         {
-            ASKAPTRACE("fft<casa::Complex>");
+            ASKAPTRACE("fft<casacore::Complex>");
 #ifdef _OPENMP
             boost::unique_lock<boost::mutex> lock(fftWrapperMutex);
 #endif
@@ -185,17 +185,17 @@ namespace askap {
         }
 
 
-        void fft2d(casa::Array<casa::Complex>& arr, const bool forward)
+        void fft2d(casacore::Array<casacore::Complex>& arr, const bool forward)
         {
-            ASKAPTRACE("fft2d<casa::Complex>");
+            ASKAPTRACE("fft2d<casacore::Complex>");
 #ifdef _OPENMP
             boost::unique_lock<boost::mutex> lock(fftWrapperMutex);
 #endif
             // 1: Make an iterator that returns plane by plane
-            casa::ArrayIterator<casa::Complex> it(arr, 2);
+            casacore::ArrayIterator<casacore::Complex> it(arr, 2);
 
             while (!it.pastEnd()) {
-                casa::Matrix<casa::Complex> mat(it.array());
+                casacore::Matrix<casacore::Complex> mat(it.array());
                 const uInt nrow = mat.nrow();
                 const uInt ncol = mat.ncolumn();
                 ASKAPDEBUGASSERT(nrow > 0 && ncol > 0);
@@ -235,18 +235,18 @@ namespace askap {
             }
         }
 
-        void fft2d(casa::Array<casa::DComplex>& arr, const bool forward)
+        void fft2d(casacore::Array<casacore::DComplex>& arr, const bool forward)
         {
-            ASKAPTRACE("fft2d<casa::DComplex>");
+            ASKAPTRACE("fft2d<casacore::DComplex>");
 #ifdef _OPENMP
             boost::unique_lock<boost::mutex> lock(fftWrapperMutex);
 #endif
 
             /// 1: Make an iterator that returns plane by plane
-            casa::ArrayIterator<casa::DComplex> it(arr, 2);
+            casacore::ArrayIterator<casacore::DComplex> it(arr, 2);
 
             while (!it.pastEnd()) {
-                casa::Matrix<casa::DComplex> mat(it.array());
+                casacore::Matrix<casacore::DComplex> mat(it.array());
                 const uInt nrow = mat.nrow();
                 const uInt ncol = mat.ncolumn();
                 ASKAPDEBUGASSERT(ncol > 0 && nrow > 0);

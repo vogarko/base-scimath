@@ -114,13 +114,13 @@ namespace askap
 
     }
 
-    void DesignMatrix::addDerivative(const string& name, const casa::Matrix<casa::Double>& deriv)
+    void DesignMatrix::addDerivative(const string& name, const casacore::Matrix<casacore::Double>& deriv)
     { 
       itsParameterNamesInvalid = true;
       itsAMatrix[name].push_back(deriv.copy());
     }
 
-    void DesignMatrix::addResidual(const casa::Vector<casa::Double>& residual, const casa::Vector<double>& weight)
+    void DesignMatrix::addResidual(const casacore::Vector<casacore::Double>& residual, const casacore::Vector<double>& weight)
     {
       ASKAPDEBUGASSERT(residual.nelements() == weight.nelements());
       itsBVector.push_back(residual.copy());
@@ -136,8 +136,8 @@ namespace askap
 /// @param[in] measured a matrix with measured data
 /// @param[in] weights a matrix with weights
 void DesignMatrix::addModel(const ComplexDiffMatrix &cdm, 
-                const casa::Matrix<casa::Complex> &measured, 
-                const casa::Matrix<double> &weights)
+                const casacore::Matrix<casacore::Complex> &measured, 
+                const casacore::Matrix<double> &weights)
 {
    const size_t nDataPoints = cdm.nRow()*cdm.nColumn();
    ASKAPDEBUGASSERT(measured.nelements() == nDataPoints);
@@ -149,12 +149,12 @@ void DesignMatrix::addModel(const ComplexDiffMatrix &cdm,
    // corresponds to two adjacent double elements. The first column is 
    // a derivative by real part, the second - that by imaginary part of the
    // parameter (filled only if the parameter is complex)
-   casa::Matrix<casa::Double> derivatives(nDataPoints*2, 2);
+   casacore::Matrix<casacore::Double> derivatives(nDataPoints*2, 2);
    
    
    // a reference to derivatives used for real parameters
-   casa::Matrix<casa::Double> derivRealPar = 
-               derivatives.column(0).reform(casa::IPosition(2, nDataPoints*2, 1));
+   casacore::Matrix<casacore::Double> derivRealPar = 
+               derivatives.column(0).reform(casacore::IPosition(2, nDataPoints*2, 1));
  
    // process all parameters first. There is probably a lot of unnecessary 
    // operations here in the case of sparse equations. 
@@ -167,11 +167,11 @@ void DesignMatrix::addModel(const ComplexDiffMatrix &cdm,
         for (ComplexDiffMatrix::const_iterator elem = cdm.begin();
              elem != cdm.end(); ++elem, index+=2) {
         
-             const casa::Complex derivRe = elem->derivRe(*pit);
+             const casacore::Complex derivRe = elem->derivRe(*pit);
              derivatives(index,0) = real(derivRe);
              derivatives(index+1,0) = imag(derivRe);
              if (isComplex) {
-                 const casa::Complex derivIm = elem->derivIm(*pit);
+                 const casacore::Complex derivIm = elem->derivIm(*pit);
                  derivatives(index,1) = real(derivIm);
                  derivatives(index+1,1) = imag(derivIm);
              }             
@@ -184,27 +184,27 @@ void DesignMatrix::addModel(const ComplexDiffMatrix &cdm,
    }
    
    // process residuals
-   casa::Vector<casa::Double> residual(nDataPoints*2);
+   casacore::Vector<casacore::Double> residual(nDataPoints*2);
    
-   casa::Vector<casa::Double>::contiter resIt = residual.cbegin();
+   casacore::Vector<casacore::Double>::contiter resIt = residual.cbegin();
    
    // if we decide to give a separate weight for real and imaginary parts
    // in the input vector, we could avoid copying by using reform.
    // It leaves the storage intact, hence the same order of axes
    // as in ComplexDiffMatrix
    //
-   //  const casa::Vector<casa::Double> reformedWeights = 
-   //         weights.reform(casa::IPosition(1,weights.nelements()));
+   //  const casacore::Vector<casacore::Double> reformedWeights = 
+   //         weights.reform(casacore::IPosition(1,weights.nelements()));
    //
-   casa::Vector<casa::Double> reformedWeights(nDataPoints*2);
+   casacore::Vector<casacore::Double> reformedWeights(nDataPoints*2);
    
-   casa::Vector<casa::Double>::contiter rwtIt = reformedWeights.cbegin();
+   casacore::Vector<casacore::Double>::contiter rwtIt = reformedWeights.cbegin();
                  
-   casa::Vector<casa::Double>::const_iterator wtIt = weights.begin();
+   casacore::Vector<casacore::Double>::const_iterator wtIt = weights.begin();
    
    // iteration happens in the same order as the data are stored in the
    // ComplexDiffMatrix (because reform gives the same order)  
-   casa::Matrix<casa::Complex>::const_iterator measIt = measured.begin();
+   casacore::Matrix<casacore::Complex>::const_iterator measIt = measured.begin();
    
    for (ComplexDiffMatrix::const_iterator elem = cdm.begin();
               elem != cdm.end(); ++elem, ++resIt, ++rwtIt, ++wtIt, ++measIt) {
@@ -212,7 +212,7 @@ void DesignMatrix::addModel(const ComplexDiffMatrix &cdm,
         ASKAPDEBUGASSERT(resIt != residual.cend());
         ASKAPDEBUGASSERT(rwtIt != reformedWeights.cend());
         ASKAPDEBUGASSERT(wtIt != weights.end());
-        const casa::Complex value = *measIt - elem->value();
+        const casacore::Complex value = *measIt - elem->value();
         *resIt = real(value);
         *(++resIt) = imag(value);
         *rwtIt = *wtIt;
@@ -269,16 +269,16 @@ void DesignMatrix::addModel(const ComplexDiffMatrix &cdm,
       DMBVector::const_iterator bIt = itsBVector.begin();
       DMWeight::const_iterator wIt = itsWeight.begin(); 
       for (; (bIt!=itsBVector.end())&&(wIt!=itsWeight.end());++bIt, ++wIt)  {
-        sumwt+=casa::sum(*wIt);
-        sum+=casa::sum((*wIt)*((*bIt)*(*bIt)));
+        sumwt+=casacore::sum(*wIt);
+        sum+=casacore::sum((*wIt)*((*bIt)*(*bIt)));
       }
       ASKAPCHECK(sumwt>0.0, "Sum of weights is zero");
       return sqrt(sum/sumwt);
     }
 
-    casa::uInt DesignMatrix::nData() const
+    casacore::uInt DesignMatrix::nData() const
     {
-      casa::uInt nData=0;
+      casacore::uInt nData=0;
       for (DMBVector::const_iterator bIt=itsBVector.begin();bIt!=itsBVector.end();++bIt) {
         nData += bIt->size();
       }

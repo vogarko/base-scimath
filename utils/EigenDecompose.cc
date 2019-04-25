@@ -56,19 +56,19 @@ struct GSLVectorRAIterator {
    /// @brief construct the object
    /// @param[in] vect gsl vector
    /// @param[in] elem element index pointed by this iterator
-   explicit GSLVectorRAIterator(const utility::SharedGSLVector &vect, casa::uInt elem = 0) : itsIndex(elem), itsVector(vect) {}
+   explicit GSLVectorRAIterator(const utility::SharedGSLVector &vect, casacore::uInt elem = 0) : itsIndex(elem), itsVector(vect) {}
    
    /// @brief advance iterator
    /// @details step how far to advance
    /// @return resulting iterator
-   GSLVectorRAIterator operator+(const casa::uInt step) const { return GSLVectorRAIterator(itsVector, itsIndex + step);}
+   GSLVectorRAIterator operator+(const casacore::uInt step) const { return GSLVectorRAIterator(itsVector, itsIndex + step);}
 
    /// @brief obtain data
    /// @return current element
    double operator*() { return gsl_vector_get(itsVector.get(),itsIndex);}
 private:
    /// @brief current element   
-   casa::uInt itsIndex;
+   casacore::uInt itsIndex;
    /// @brief gsl vector
    utility::SharedGSLVector itsVector;
 };
@@ -83,9 +83,9 @@ namespace scimath {
 /// @param[out] eVal vector with eigen values (sorted from largest to smallest)
 /// @param[out] eVect matrix with eigen vectors (in columns)
 /// @ingroup utils
-void symEigenDecompose(const casa::Matrix<double> &mtr, casa::Vector<double> &eVal, casa::Matrix<double> &eVect)
+void symEigenDecompose(const casacore::Matrix<double> &mtr, casacore::Vector<double> &eVal, casacore::Matrix<double> &eVect)
 {
-    const casa::uInt size = mtr.nrow();
+    const casacore::uInt size = mtr.nrow();
     ASKAPCHECK(size == mtr.ncolumn(), "Expect a square matrix, you have "<<size<<" x "<<mtr.ncolumn()<<" matrix.");
     eVal.resize(size);
     eVect.resize(size,size);
@@ -95,8 +95,8 @@ void symEigenDecompose(const casa::Matrix<double> &mtr, casa::Vector<double> &eV
     boost::shared_ptr<gsl_eigen_symmv_workspace> work = utility::createGSLObject(gsl_eigen_symmv_alloc(size));
     utility::SharedGSLVector gslEVal = utility::createGSLVector(size);
 
-    for (casa::uInt row = 0; row<size; ++row) {
-         for (casa::uInt col = 0; col<size; ++col) {
+    for (casacore::uInt row = 0; row<size; ++row) {
+         for (casacore::uInt col = 0; col<size; ++col) {
               gsl_matrix_set(A.get(), row, col, mtr(row,col));
          }
     }
@@ -104,21 +104,21 @@ void symEigenDecompose(const casa::Matrix<double> &mtr, casa::Vector<double> &eV
     const int status = gsl_eigen_symmv(A.get(),gslEVal.get(),gslEVect.get(),work.get());
     
     if (status == GSL_SUCCESS) {
-        std::vector<casa::uInt> indices(size);
+        std::vector<casacore::uInt> indices(size);
         // initialise indices
-        for (casa::uInt elem = 0; elem<size; ++elem) {
+        for (casacore::uInt elem = 0; elem<size; ++elem) {
              indices[elem] = elem;
         }
         
-        std::sort(indices.begin(),indices.end(),utility::indexedCompare<casa::uInt>(utility::GSLVectorRAIterator(gslEVal),
+        std::sort(indices.begin(),indices.end(),utility::indexedCompare<casacore::uInt>(utility::GSLVectorRAIterator(gslEVal),
                   std::greater<double>()));
        
-        for (casa::uInt elem = 0; elem<size; ++elem) {
-             const casa::uInt index = indices[elem];
+        for (casacore::uInt elem = 0; elem<size; ++elem) {
+             const casacore::uInt index = indices[elem];
              ASKAPDEBUGASSERT(index<size);
              eVal[elem] = gsl_vector_get(gslEVal.get(),index);
              // extract the appropriate eigenvector
-             for (casa::uInt i=0; i<size; ++i) {
+             for (casacore::uInt i=0; i<size; ++i) {
                   eVect(i,elem) = gsl_matrix_get(gslEVect.get(),i,index);                             
              }         
         }

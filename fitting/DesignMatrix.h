@@ -10,13 +10,13 @@
 ///
 /// The parameters are identified by strings and so the storage
 /// for the design matrix is a map of strings to a std::vector
-/// of casa::Matrix's. There is (currently) not much checking
+/// of casacore::Matrix's. There is (currently) not much checking
 /// of the consistency of ordering - it is assumed that the
 /// std::vector elements march in order. Since the only way
 /// to fill them is via the add* functions, this should be ok.
 ///
-/// The parameters are intrinisically casa::Array's but we convert them
-/// to casa::Vector's to avoid indexing hell.
+/// The parameters are intrinisically casacore::Array's but we convert them
+/// to casacore::Vector's to avoid indexing hell.
 ///
 /// @copyright (c) 2007 CSIRO
 /// Australia Telescope National Facility (ATNF)
@@ -64,13 +64,13 @@ namespace scimath {
 
 
 /// Format of A matrix
-typedef std::vector<casa::Matrix<casa::Double> > DMAMatrix;
+typedef std::vector<casacore::Matrix<casacore::Double> > DMAMatrix;
 
 /// Format of B vector
-typedef std::vector<casa::Vector<casa::Double> > DMBVector;
+typedef std::vector<casacore::Vector<casacore::Double> > DMBVector;
     
 /// Format of weights
-typedef std::vector<casa::Vector<casa::Double> > DMWeight;
+typedef std::vector<casacore::Vector<casacore::Double> > DMWeight;
 
 
 /// @brief Hold the design matrix
@@ -103,12 +103,12 @@ public:
   /// @brief Add the derivative of the data with respect to dof of the named parameter
   /// @param[in] name Name of parameter
   /// @param[in] deriv Derivative
-  void addDerivative(const std::string& name, const casa::Matrix<casa::Double>& deriv);
+  void addDerivative(const std::string& name, const casacore::Matrix<casacore::Double>& deriv);
 
   /// @brief Add the residual constraint
   /// @param[in] residual Residual vector
   /// @param[in] weight Weight vector
-  void addResidual(const casa::Vector<casa::Double>& residual, const casa::Vector<double>& weight);
+  void addResidual(const casacore::Vector<casacore::Double>& residual, const casacore::Vector<double>& weight);
 
   /// @brief add derivatives and residual constraint
   /// @details This method extracts all information about derivatives and
@@ -118,8 +118,8 @@ public:
   /// @param[in] cdm a ComplexDiffMatrix defining derivatives and model values
   /// @param[in] measured a matrix with measured data
   /// @param[in] weights a matrix with weights
-  void addModel(const ComplexDiffMatrix &cdm, const casa::Matrix<casa::Complex> &measured, 
-                const casa::Matrix<double> &weights);
+  void addModel(const ComplexDiffMatrix &cdm, const casacore::Matrix<casacore::Complex> &measured, 
+                const casacore::Matrix<double> &weights);
      
 
   /// @brief Reset to empty
@@ -144,7 +144,7 @@ public:
   double fit() const;
 
   /// Return number of data constraints
-  casa::uInt nData() const;
+  casacore::uInt nData() const;
 
   /// Return number of parameters
   int nParameters() const;

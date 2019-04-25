@@ -48,7 +48,7 @@ namespace scimath {
 /// @param[in] in input array
 /// @return output array (single plane)
 template<typename T>
-casa::Array<T> MultiDimArrayPlaneIter::getFirstPlane(casa::Array<T> &in) {
+casacore::Array<T> MultiDimArrayPlaneIter::getFirstPlane(casacore::Array<T> &in) {
     const MultiDimArrayPlaneIter iter(in.shape());
     return iter.getPlane(in);
 }
@@ -59,7 +59,7 @@ casa::Array<T> MultiDimArrayPlaneIter::getFirstPlane(casa::Array<T> &in) {
 /// @param[in] in input array
 /// @return output array (single plane)
 template<typename T>
-casa::Array<T> MultiDimArrayPlaneIter::getPlane(casa::Array<T> &in) const
+casacore::Array<T> MultiDimArrayPlaneIter::getPlane(casacore::Array<T> &in) const
 {
   return getPlane(in, position());
 }
@@ -78,7 +78,7 @@ casa::Array<T> MultiDimArrayPlaneIter::getPlane(casa::Array<T> &in, const casa::
   const casa::IPosition blc(pos);
   casa::IPosition trc(blc);
   trc += itsPlaneShape;
-  for (casa::uInt dim = 0; dim<trc.nelements(); ++dim) {
+  for (casacore::uInt dim = 0; dim<trc.nelements(); ++dim) {
        trc[dim] -= 1;
        ASKAPDEBUGASSERT(trc[dim]<itsShape[dim]);
   }
@@ -92,10 +92,10 @@ casa::Array<T> MultiDimArrayPlaneIter::getPlane(casa::Array<T> &in, const casa::
 /// @param[in] in input vector
 /// @return output array (single plane)
 template<typename T>
-casa::Array<T> MultiDimArrayPlaneIter::getPlane(casa::Vector<T> &in) const
+casacore::Array<T> MultiDimArrayPlaneIter::getPlane(casacore::Vector<T> &in) const
 {
   ASKAPDEBUGASSERT(itsShape.product() == in.shape().product()); 
-  casa::Array<T> reformedReference = in.reform(itsShape);
+  casacore::Array<T> reformedReference = in.reform(itsShape);
   return getPlane(reformedReference);
 }
 
@@ -107,10 +107,10 @@ casa::Array<T> MultiDimArrayPlaneIter::getPlane(casa::Vector<T> &in) const
 /// @param[in] in input vector
 /// @return output vector (single plane)
 template<typename T>
-casa::Vector<T> MultiDimArrayPlaneIter::getPlaneVector(casa::Vector<T> &in) const
+casacore::Vector<T> MultiDimArrayPlaneIter::getPlaneVector(casacore::Vector<T> &in) const
 {
-  casa::Array<T> plane = getPlane(in);
-  return plane.reform(casa::IPosition(1,plane.nelements())); 
+  casacore::Array<T> plane = getPlane(in);
+  return plane.reform(casacore::IPosition(1,plane.nelements())); 
 }
    
 /// @brief extract a single plane into a flattened vector
@@ -120,10 +120,10 @@ casa::Vector<T> MultiDimArrayPlaneIter::getPlaneVector(casa::Vector<T> &in) cons
 /// @param[in] in input vector
 /// @return output vector (single plane)
 template<typename T>
-casa::Vector<T> MultiDimArrayPlaneIter::getPlaneVector(casa::Array<T> &in) const
+casacore::Vector<T> MultiDimArrayPlaneIter::getPlaneVector(casacore::Array<T> &in) const
 {
-  casa::Array<T> plane = getPlane(in);
-  return plane.reform(casa::IPosition(1,plane.nelements())); 
+  casacore::Array<T> plane = getPlane(in);
+  return plane.reform(casacore::IPosition(1,plane.nelements())); 
 }
 
 

@@ -60,9 +60,9 @@ namespace askap
 /// @param weights Weights for data
 /// @param arguments Arguments for the polynomial
 /// @param model Model (to be calculated)
-        PolynomialEquation(const Params& ip, casa::Vector<double>& data,
-          casa::Vector<double>& weights, casa::Vector<double>& arguments,
-          casa::Vector<double>& model);
+        PolynomialEquation(const Params& ip, casacore::Vector<double>& data,
+          casacore::Vector<double>& weights, casacore::Vector<double>& arguments,
+          casacore::Vector<double>& model);
 
 /// Constructor using default parameters: Note that the arguments are NOT
 /// const - the values are updated in place.
@@ -70,9 +70,9 @@ namespace askap
 /// @param weights Weights for data
 /// @param arguments Arguments for the polynomial
 /// @param model Model (to be calculated)
-        PolynomialEquation(casa::Vector<double>& data,
-          casa::Vector<double>& weights, casa::Vector<double>& arguments,
-          casa::Vector<double>& model);
+        PolynomialEquation(casacore::Vector<double>& data,
+          casacore::Vector<double>& weights, casacore::Vector<double>& arguments,
+          casacore::Vector<double>& model);
 
 /// Copy constructor
         PolynomialEquation(const PolynomialEquation& other);
@@ -100,24 +100,24 @@ namespace askap
         /// @param arguments Arguments to the equation i.e. set of values x
         /// @param parameters Parameters to the equation
         /// @param values Returned values i.e. set of f(x;P) for all x
-        static void calcPoly(const casa::Vector<double>& arguments, 
-          const casa::Vector<double>& parameters,
-          casa::Vector<double>& values);
+        static void calcPoly(const casacore::Vector<double>& arguments, 
+          const casacore::Vector<double>& parameters,
+          casacore::Vector<double>& values);
 
         /// Calculate the polynomial derivatives
         /// @param arguments Arguments to the equation i.e. set of values x
         /// @param parameters Parameters to the equation
         /// @param valueDerivs Returned derivatives i.e. set of df(x;P)/dP for all x and P
-        static void calcPolyDeriv(const casa::Vector<double>& arguments, const casa::Vector<double>& parameters,
-          casa::Matrix<double>& valueDerivs);
+        static void calcPolyDeriv(const casacore::Vector<double>& arguments, const casacore::Vector<double>& parameters,
+          casacore::Matrix<double>& valueDerivs);
         /// Data
-        casa::Vector<double> itsData;
+        casacore::Vector<double> itsData;
         /// Weights
-        casa::Vector<double> itsWeights;
+        casacore::Vector<double> itsWeights;
         /// Arguments
-        casa::Vector<double> itsArguments;
+        casacore::Vector<double> itsArguments;
         /// Model
-        mutable casa::Vector<double> itsModel;
+        mutable casacore::Vector<double> itsModel;
     };
 
   }

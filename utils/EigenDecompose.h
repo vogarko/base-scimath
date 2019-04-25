@@ -44,7 +44,7 @@ namespace scimath {
 /// @param[out] eVal vector with eigen values (sorted from largest to smallest)
 /// @param[out] eVect matrix with eigen vectors (in columns)
 /// @ingroup utils
-void symEigenDecompose(const casa::Matrix<double> &mtr, casa::Vector<double> &eVal, casa::Matrix<double> &eVect);
+void symEigenDecompose(const casacore::Matrix<double> &mtr, casacore::Vector<double> &eVal, casacore::Matrix<double> &eVect);
 
 } // namespace scimath
 

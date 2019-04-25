@@ -85,7 +85,7 @@ namespace askap
 /// Add an array parameter
 /// @param name Name of param to be added
 /// @param value Value
-        void add(const std::string& name, const casa::Array<double>& value);
+        void add(const std::string& name, const casacore::Array<double>& value);
 
 /// @brief Add an empty array parameter        
 /// @details This version of the method creates a new array parameter with the
@@ -94,13 +94,13 @@ namespace askap
 /// @param[in] name name of the parameter to be added
 /// @param[in] shape required shape of the parameter
 /// @param[in] axes optional axes of the parameter
-void add(const std::string &name, const casa::IPosition &shape, const Axes &axes = Axes());
+void add(const std::string &name, const casacore::IPosition &shape, const Axes &axes = Axes());
 
 /// Add an array parameter with specified axes
 /// @param name Name of param to be added
 /// @param value Param to be added
 /// @param axes Axes definition
-        void add(const std::string& name, const casa::Array<double>& value,
+        void add(const std::string& name, const casacore::Array<double>& value,
           const Axes& axes);
 
 /// Add a scalar parameter with specified axes
@@ -116,14 +116,14 @@ void add(const std::string &name, const casa::IPosition &shape, const Axes &axes
         /// 2 filled with real and imaginary part.
         /// @param[in] name parameter name
         /// @param[in] value a value of the parameter to be added
-        void add(const std::string &name, const casa::Complex &value);
+        void add(const std::string &name, const casacore::Complex &value);
 
 /// @brief add a complex vector
 /// @details This method is a convenient way to update parameter which is a complex
 /// vector (translated to vector of real numbers twice the size)
 /// @param[in] name parameter name
 /// @param[in] value a value of the paramter to be added
-void addComplexVector(const std::string &name, const casa::Vector<casa::Complex> &value);
+void addComplexVector(const std::string &name, const casacore::Vector<casacore::Complex> &value);
 
         /// @brief remove a parameter
         /// @details One needs to be able to remove a given parameter to avoid passing
@@ -134,7 +134,7 @@ void addComplexVector(const std::string &name, const casa::Vector<casa::Complex>
 /// Update an Array parameter
 /// @param name Name of param to be updated
 /// @param value New value
-        void update(const std::string& name, const casa::Array<double>& value);
+        void update(const std::string& name, const casacore::Array<double>& value);
 
 /// @brief Update a slice of an array parameter        
 /// @details This version of the method updates a part of the array given by the IPosition object,
@@ -142,10 +142,10 @@ void addComplexVector(const std::string &name, const casa::Vector<casa::Complex>
 /// the shape of the given value (i.e. give blc = IPosition(4,0,0,1,0) to update only channel 0, 
 /// polarisation 1 plane)
 /// @param[in] name name of the parameter to be added
-/// const casa::Array<double>& value
+/// const casacore::Array<double>& value
 /// @param[in] value an array with replacement values
 /// @param[in] blc where to insert the new values to
-void update(const std::string &name, const casa::Array<double> &value, const casa::IPosition &blc);
+void update(const std::string &name, const casacore::Array<double> &value, const casacore::IPosition &blc);
 
 /// Update a scalar parameter
 /// @param name Name of param to be updated
@@ -158,14 +158,14 @@ void update(const std::string &name, const casa::Array<double> &value, const cas
         /// 2 filled with real and imaginary part.
         /// @param[in] name parameter name
         /// @param[in] value a value of the parameter to be added
-        void update(const std::string &name, const casa::Complex &value);
+        void update(const std::string &name, const casacore::Complex &value);
 
 /// @brief update a complex vector
 /// @details This method is a convenient way to update parameter which is a complex
 /// vector (translated to vector of real numbers twice the size)
 /// @param[in] name parameter name
 /// @param[in] value a value of the paramter to be updated
-void updateComplexVector(const std::string &name, const casa::Vector<casa::Complex> &value);
+void updateComplexVector(const std::string &name, const casacore::Vector<casacore::Complex> &value);
 
 /// Is this parameter a scalar?
 /// @param name Name of param
@@ -189,11 +189,11 @@ void updateComplexVector(const std::string &name, const casa::Vector<casa::Compl
 
 /// Return array value for the parameter with this name (const)
 /// @param name Name of param
-        const casa::Array<double>& value(const std::string& name) const;
+        const casacore::Array<double>& value(const std::string& name) const;
 
 /// Return array value for the parameter with this name (non-const)
 /// @param name Name of param
-        casa::Array<double>& value(const std::string& name);
+        casacore::Array<double>& value(const std::string& name);
 
 /// Return the value for the scalar parameter with this name (const)
 /// Throws invalid_argument if non-scalar
@@ -211,13 +211,13 @@ void updateComplexVector(const std::string &name, const casa::Vector<casa::Compl
         /// incompatible.
         /// @param[in] name Name of the parameter
         /// @return value of the parameter
-        casa::Complex complexValue(const std::string &name) const;
+        casacore::Complex complexValue(const std::string &name) const;
 
 /// @brief obtain parameter as a complex vector
 /// @details Complex vectors are represented as real vectors with twice the size.
 /// @param[in] name parameter name
 /// @return complex vector
-casa::Vector<casa::Complex> complexVectorValue(const std::string &name) const; 
+casacore::Vector<casacore::Complex> complexVectorValue(const std::string &name) const; 
 
 /// Return the axes for the parameter with this name (const)
 /// @param name Name of param
@@ -329,7 +329,7 @@ casa::Vector<casa::Complex> complexVectorValue(const std::string &name) const;
      private:
         /// @todo Use single map map<string, struct>
         /// The value arrays, ordered as a map
-        std::map<std::string, casa::Array<double> > itsArrays;
+        std::map<std::string, casacore::Array<double> > itsArrays;
         /// The axes, ordered as a map
         std::map<std::string, Axes> itsAxes;
         /// The free/fixed status, ordered as a map

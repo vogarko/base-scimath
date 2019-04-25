@@ -7,7 +7,7 @@
 /// treated independently. However, it is better to retain a basic matrix
 /// algebra to ensure the code is clear. This class also treats well a
 /// possible degenerate dimension (polarisation). Theoretically, 
-/// casa::Matrix<ComplexDiff> could be used instead of this class. However,
+/// casacore::Matrix<ComplexDiff> could be used instead of this class. However,
 /// having a separate class allows, in principle, to handle maps of the 
 /// parameters at the matrix level and don't duplicate the map search 
 /// unnecessarily. Such functionality is in the future plans, but it is

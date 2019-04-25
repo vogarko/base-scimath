@@ -44,9 +44,9 @@ T PhaseUnwrapper<T>::operator()(const T phase)
   if (itsDataSighted) {
       const T diff = phase - itsPrevOrigPhase;
       if (diff >= itsTolerance) {
-          itsWrapCompensation -= 2. * casa::C::pi;
+          itsWrapCompensation -= 2. * casacore::C::pi;
       } else if (diff <= -itsTolerance) {
-          itsWrapCompensation += 2. * casa::C::pi;
+          itsWrapCompensation += 2. * casacore::C::pi;
       }
       itsPrevOrigPhase = phase;
       return phase + itsWrapCompensation;      

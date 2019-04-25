@@ -48,37 +48,37 @@ using namespace askap;
 namespace LOFAR
 {
 
-    /// @brief blob support for casa::CoordinateSystem
+    /// @brief blob support for casacore::CoordinateSystem
     LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os,
-                                   const casa::CoordinateSystem& cSys)
+                                   const casacore::CoordinateSystem& cSys)
     {
         os.putStart("CoordinateSystem",coordSysBlobVersion);
 
         int nCoordinates = cSys.nCoordinates();
         int coordinateCount = 0;
-        int dcPos = cSys.findCoordinate(casa::Coordinate::DIRECTION,-1);
-        int fcPos = cSys.findCoordinate(casa::Coordinate::SPECTRAL,-1);
-        int pcPos = cSys.findCoordinate(casa::Coordinate::STOKES,-1);
+        int dcPos = cSys.findCoordinate(casacore::Coordinate::DIRECTION,-1);
+        int fcPos = cSys.findCoordinate(casacore::Coordinate::SPECTRAL,-1);
+        int pcPos = cSys.findCoordinate(casacore::Coordinate::STOKES,-1);
 
         os << nCoordinates;
         os << dcPos << fcPos << pcPos;
         if (dcPos >= 0) {
-          const casa::DirectionCoordinate& dc = cSys.directionCoordinate(dcPos);
-          os << casa::MDirection::showType(dc.directionType()) <<
+          const casacore::DirectionCoordinate& dc = cSys.directionCoordinate(dcPos);
+          os << casacore::MDirection::showType(dc.directionType()) <<
                 dc.projection().name() << dc.referenceValue() <<
                 dc.increment() << dc.linearTransform() <<
                 dc.referencePixel() << dc.worldAxisUnits();
           coordinateCount++;
         }
         if (fcPos >= 0) {
-          const casa::SpectralCoordinate& fc = cSys.spectralCoordinate(fcPos);
-          os << casa::MFrequency::showType(fc.frequencySystem()) <<
+          const casacore::SpectralCoordinate& fc = cSys.spectralCoordinate(fcPos);
+          os << casacore::MFrequency::showType(fc.frequencySystem()) <<
                 fc.referenceValue() << fc.increment() << fc.referencePixel() <<
                 fc.restFrequency() << fc.worldAxisUnits();
           coordinateCount++;
         }
         if (pcPos >= 0) {
-          const casa::StokesCoordinate& pc = cSys.stokesCoordinate(pcPos);
+          const casacore::StokesCoordinate& pc = cSys.stokesCoordinate(pcPos);
           os << pc.stokes();
           coordinateCount++;
         }
@@ -90,9 +90,9 @@ namespace LOFAR
         return os;
     }
 
-    /// @brief blob support for casa::CoordinateSystem
+    /// @brief blob support for casacore::CoordinateSystem
     LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is,
-                                   casa::CoordinateSystem& cSys)
+                                   casacore::CoordinateSystem& cSys)
     {
         const int version = is.getStart("CoordinateSystem");
         ASKAPCHECK(version == coordSysBlobVersion, "Attempting to read from" <<
@@ -104,17 +104,17 @@ namespace LOFAR
         int dcPos, fcPos, pcPos;
         is >> dcPos >> fcPos >> pcPos;
 
-        cSys = casa::CoordinateSystem();
+        cSys = casacore::CoordinateSystem();
 
         if (dcPos >= 0) {
-          casa::String dirTypeStr;
+          casacore::String dirTypeStr;
           is >> dirTypeStr;
-          casa::MDirection::Types dirType;
-          casa::MDirection::getType(dirType, dirTypeStr);
-          casa::String projectionName;
+          casacore::MDirection::Types dirType;
+          casacore::MDirection::getType(dirType, dirTypeStr);
+          casacore::String projectionName;
           is >> projectionName;
-          casa::Vector<casa::Double> increment, refPix, refVal;
-          casa::Matrix<casa::Double> xform;
+          casacore::Vector<casacore::Double> increment, refPix, refVal;
+          casacore::Matrix<casacore::Double> xform;
           is >> refVal >> increment >> xform >> refPix;
           ASKAPCHECK(increment.nelements() == 2,
               "Direction axis increment should be a vector of size 2");
@@ -122,23 +122,23 @@ namespace LOFAR
               "Direction axis reference pixel should be a vector of size 2");
           ASKAPCHECK(refVal.nelements() == 2,
               "Direction axis reference value should be a vector of size 2");
-          ASKAPCHECK(xform.shape() == casa::IPosition(2,2,2),
+          ASKAPCHECK(xform.shape() == casacore::IPosition(2,2,2),
               "Direction axis transform matrix should be 2x2");
-          casa::DirectionCoordinate dc(dirType,
-              casa::Projection::type(projectionName), refVal[0],refVal[1],
+          casacore::DirectionCoordinate dc(dirType,
+              casacore::Projection::type(projectionName), refVal[0],refVal[1],
               increment[0],increment[1], xform, refPix[0],refPix[1]);
-          casa::Vector<casa::String> worldAxisUnits;
+          casacore::Vector<casacore::String> worldAxisUnits;
           is >> worldAxisUnits;
           dc.setWorldAxisUnits(worldAxisUnits);
           cSys.addCoordinate(dc);
         }
         if (fcPos >= 0) {
-          casa::String freqTypeStr;
+          casacore::String freqTypeStr;
           is >> freqTypeStr;
-          casa::MFrequency::Types freqType;
-          casa::MFrequency::getType(freqType, freqTypeStr);
-          casa::Double restFreq;
-          casa::Vector<casa::Double> increment, refPix, refVal;
+          casacore::MFrequency::Types freqType;
+          casacore::MFrequency::getType(freqType, freqTypeStr);
+          casacore::Double restFreq;
+          casacore::Vector<casacore::Double> increment, refPix, refVal;
           is >> refVal >> increment >> refPix >> restFreq;
           ASKAPCHECK(increment.nelements() == 1,
               "Spectral axis increment should be a vector of size 1");
@@ -146,17 +146,17 @@ namespace LOFAR
               "Spectral axis reference pixel should be a vector of size 1");
           ASKAPCHECK(refVal.nelements() == 1,
               "Spectral axis reference value should be a vector of size 1");
-          casa::SpectralCoordinate fc(freqType, refVal[0], increment[0],
+          casacore::SpectralCoordinate fc(freqType, refVal[0], increment[0],
               refPix[0], restFreq);
-          casa::Vector<casa::String> worldAxisUnits;
+          casacore::Vector<casacore::String> worldAxisUnits;
           is >> worldAxisUnits;
           fc.setWorldAxisUnits(worldAxisUnits);
           cSys.addCoordinate(fc);
         }
         if (pcPos >= 0) {
-          casa::Vector<casa::Int> whichStokes;
+          casacore::Vector<casacore::Int> whichStokes;
           is >> whichStokes;
-          casa::StokesCoordinate pc(whichStokes);
+          casacore::StokesCoordinate pc(whichStokes);
           cSys.addCoordinate(pc);
         }
 
@@ -166,127 +166,127 @@ namespace LOFAR
 
     // MV: shift operators for measures-related casacore types
  
-    /// @brief output operator for casa::Quantity
+    /// @brief output operator for casacore::Quantity
     /// @param[in] os output stream
     /// @param[in] q Quantity to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::Quantity& q)
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::Quantity& q)
     {
       os<<q.getFullUnit().getName()<<q.getValue();
       return os;
     }
 
-    /// @brief input operator for casa::Quantity
+    /// @brief input operator for casacore::Quantity
     /// @param[in] is input stream
     /// @param[in] q quantity object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::Quantity& q)
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::Quantity& q)
     {
       std::string unitName;
-      casa::Double val;
+      casacore::Double val;
       is>>unitName>>val;
-      q=casa::Quantity(val, casa::Unit(unitName));
+      q=casacore::Quantity(val, casacore::Unit(unitName));
       return is;
     }
 
-    /// @brief output operator for casa::MDirection::Ref
+    /// @brief output operator for casacore::MDirection::Ref
     /// @param[in] os output stream
     /// @param[in] ref object to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::MDirection::Ref& ref)
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::MDirection::Ref& ref)
     {
-      const casa::uInt refType = ref.getType();
+      const casacore::uInt refType = ref.getType();
       // for now ignore frame and offset - we're not using them in ingest anyway
       // but do check that the user didn't set them. If someone sees the exception later on, they can add 
       // the required logic in this and the following method
-      ASKAPCHECK(const_cast<casa::MDirection::Ref&>(ref).getFrame().empty(), 
+      ASKAPCHECK(const_cast<casacore::MDirection::Ref&>(ref).getFrame().empty(), 
                  "Serialisation of frame information attached to measures is not implemented");
       ASKAPCHECK(ref.offset() == NULL, "Serialisation of frame offset in measures is not implemented");
       os << refType;
       return os;
     }
 
-    /// @brief input operator for casa::MDirection::Ref
+    /// @brief input operator for casacore::MDirection::Ref
     /// @param[in] is input stream
     /// @param[in] ref object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::MDirection::Ref& ref)
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::MDirection::Ref& ref)
     {
-      casa::uInt refType;
+      casacore::uInt refType;
       is >> refType;
       // for now ignore frame and offset - we're not using them in ingest anyway
       // see output operator for cross checks.
-      ref = casa::MDirection::Ref(refType);
+      ref = casacore::MDirection::Ref(refType);
       return is;
     }
 
-    /// @brief output operator for casa::MVDirection
+    /// @brief output operator for casacore::MVDirection
     /// @param[in] os output stream
     /// @param[in] dir object to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::MVDirection& dir)
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::MVDirection& dir)
     {
-      casa::Vector<casa::Double> angles = dir.get();
+      casacore::Vector<casacore::Double> angles = dir.get();
       ASKAPDEBUGASSERT(angles.nelements() == 2);
       os << angles;
       return os;
     }
 
-    /// @brief input operator for casa::MVDirection
+    /// @brief input operator for casacore::MVDirection
     /// @param[in] is input stream
     /// @param[in] dir object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::MVDirection& dir)
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::MVDirection& dir)
     {
-      casa::Vector<casa::Double> angles;
+      casacore::Vector<casacore::Double> angles;
       is >> angles;
       ASKAPDEBUGASSERT(angles.nelements() == 2);
-      dir = casa::MVDirection(angles);
+      dir = casacore::MVDirection(angles);
       return is;
     }
 
-    /// @brief output operator for casa::MDirection
+    /// @brief output operator for casacore::MDirection
     /// @param[in] os output stream
     /// @param[in] dir object to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::MDirection& dir)
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::MDirection& dir)
     {
       os<<dir.getValue()<<dir.getRef();
       return os;
     }
 
-    /// @brief input operator for casa::MDirection
+    /// @brief input operator for casacore::MDirection
     /// @param[in] is input stream
     /// @param[in] dir object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::MDirection& dir)
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::MDirection& dir)
     {
-      casa::MVDirection val;
-      casa::MDirection::Ref ref;
+      casacore::MVDirection val;
+      casacore::MDirection::Ref ref;
       is >> val >> ref;
-      dir = casa::MDirection(val,ref);
+      dir = casacore::MDirection(val,ref);
       return is;
     }
 
-    /// @brief output operator for casa::Stokes::StokesTypes
+    /// @brief output operator for casacore::Stokes::StokesTypes
     /// @param[in] os output stream
     /// @param[in] pol object to serialise
     /// @return output stream for chaining
-    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casa::Stokes::StokesTypes& pol)
+    LOFAR::BlobOStream& operator<<(LOFAR::BlobOStream& os, const casacore::Stokes::StokesTypes& pol)
     {
       os<<(int)pol;
       return os;
     }
 
-    /// @brief input operator for casa::Stokes::StokesTypes
+    /// @brief input operator for casacore::Stokes::StokesTypes
     /// @param[in] is input stream
     /// @param[in] pol object to populate
     /// @return input stream for chaining
-    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casa::Stokes::StokesTypes& pol)
+    LOFAR::BlobIStream& operator>>(LOFAR::BlobIStream& is, casacore::Stokes::StokesTypes& pol)
     {
       int intPol;
       is >> intPol;
-      pol = casa::Stokes::StokesTypes(intPol);
+      pol = casacore::Stokes::StokesTypes(intPol);
       return is;
     }
 

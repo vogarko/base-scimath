@@ -74,13 +74,13 @@ namespace askap
       virtual void setParameters (const Params& ip, const Domain& dom);
       
     private:
-      /// Helper function to convert a std::vector to a casa::Vector of strings
+      /// Helper function to convert a std::vector to a casacore::Vector of strings
       /// @param s std::vector of std::strings to be converted
-      static casa::Vector<casa::String> toCasaString(const std::vector<std::string>& s);
-      /// Helper function to convert a std::vector from a casa::Vector 
+      static casacore::Vector<casacore::String> toCasaString(const std::vector<std::string>& s);
+      /// Helper function to convert a std::vector from a casacore::Vector 
       /// of strings
-      /// @param s casa::Vector of std::Strings to be converted
-      static std::vector<std::string> toStdString(const casa::Vector<casa::String>& s);
+      /// @param s casacore::Vector of std::Strings to be converted
+      static std::vector<std::string> toStdString(const casacore::Vector<casacore::String>& s);
       
       /// Helper function to create a table with the specified name 
       /// and required description
@@ -95,10 +95,10 @@ namespace askap
       std::string itsTableName;
       
       /// Table
-      casa::Table itsTable;
+      casacore::Table itsTable;
       
       /// Table description
-      casa::TableDesc itsTableDesc;
+      casacore::TableDesc itsTableDesc;
       
     };
     

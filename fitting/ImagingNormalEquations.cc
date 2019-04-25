@@ -86,13 +86,13 @@ namespace askap
       vector<string>::iterator iterCol;
       for (iterRow=names.begin();iterRow!=names.end();++iterRow)
       {
-        itsDataVector[*iterRow]=casa::Vector<double>(0);
-        itsShape[*iterRow]=casa::IPosition();
-        itsReference[*iterRow]=casa::IPosition();
-        itsCoordSys[*iterRow]=casa::CoordinateSystem();
-        itsNormalMatrixSlice[*iterRow]=casa::Vector<double>(0);
-        itsNormalMatrixDiagonal[*iterRow]=casa::Vector<double>(0);
-        itsPreconditionerSlice[*iterRow]=casa::Vector<double>(0);
+        itsDataVector[*iterRow]=casacore::Vector<double>(0);
+        itsShape[*iterRow]=casacore::IPosition();
+        itsReference[*iterRow]=casacore::IPosition();
+        itsCoordSys[*iterRow]=casacore::CoordinateSystem();
+        itsNormalMatrixSlice[*iterRow]=casacore::Vector<double>(0);
+        itsNormalMatrixDiagonal[*iterRow]=casacore::Vector<double>(0);
+        itsPreconditionerSlice[*iterRow]=casacore::Vector<double>(0);
       }
     }
 
@@ -221,9 +221,9 @@ namespace askap
 
           ASKAPDEBUGASSERT(other.itsDataVector.find(*iterCol) != other.itsDataVector.end());
 
-          const casa::Vector<double> &newDataVec = other.itsDataVector.find(*iterCol)->second;
-          const casa::CoordinateSystem &newCoordSys = other.itsCoordSys.find(*iterCol)->second;
-          const casa::IPosition &newShape = other.itsShape.find(*iterCol)->second;
+          const casacore::Vector<double> &newDataVec = other.itsDataVector.find(*iterCol)->second;
+          const casacore::CoordinateSystem &newCoordSys = other.itsCoordSys.find(*iterCol)->second;
+          const casacore::IPosition &newShape = other.itsShape.find(*iterCol)->second;
 
           if(itsDataVector[*iterCol].size()==0)
           {
@@ -371,16 +371,16 @@ namespace askap
       // I think these are essentially copy by reference which means the
       // accumulation is happening in place. This needs to deal with the weightState-
 
-      casa::Array<double> outPix(itsDataVector[col].reform(accumulator.outShape()));
-      casa::Array<double> outWgtPix(itsNormalMatrixDiagonal[col].reform(accumulator.outShape()));
-      casa::Array<double> outSenPix(accumulator.outShape(),0.);
+      casacore::Array<double> outPix(itsDataVector[col].reform(accumulator.outShape()));
+      casacore::Array<double> outWgtPix(itsNormalMatrixDiagonal[col].reform(accumulator.outShape()));
+      casacore::Array<double> outSenPix(accumulator.outShape(),0.);
 
       accumulator.setInputParameters(other.itsShape.find(col)->second,
                                      other.itsCoordSys.find(col)->second);
 
-      casa::Array<double> inPix(other.itsDataVector.find(col)->second.reform(accumulator.inShape()));
-      casa::Array<double> inWgtPix(other.itsNormalMatrixDiagonal.find(col)->second.reform(accumulator.inShape()));
-      casa::Array<double> inSenPix(accumulator.inShape(),1.);
+      casacore::Array<double> inPix(other.itsDataVector.find(col)->second.reform(accumulator.inShape()));
+      casacore::Array<double> inWgtPix(other.itsNormalMatrixDiagonal.find(col)->second.reform(accumulator.inShape()));
+      casacore::Array<double> inSenPix(accumulator.inShape(),1.);
 
       if ( accumulator.outputBufferSetupRequired() ) {
         accumulator.initialiseRegridder();
@@ -419,43 +419,43 @@ namespace askap
     }
 
     // normalMatrixDiagonal
-    const casa::Vector<double>& ImagingNormalEquations::normalMatrixDiagonal(const std::string &par) const
+    const casacore::Vector<double>& ImagingNormalEquations::normalMatrixDiagonal(const std::string &par) const
     {
-      std::map<string, casa::Vector<double> >::const_iterator cIt =
+      std::map<string, casacore::Vector<double> >::const_iterator cIt =
                                         itsNormalMatrixDiagonal.find(par);
       ASKAPASSERT(cIt != itsNormalMatrixDiagonal.end());
       return cIt->second;
     }
 
-    const std::map<string, casa::Vector<double> >& ImagingNormalEquations::normalMatrixDiagonal() const
+    const std::map<string, casacore::Vector<double> >& ImagingNormalEquations::normalMatrixDiagonal() const
     {
       return itsNormalMatrixDiagonal;
     }
 
     // normalMatrixSlice
-    const casa::Vector<double>& ImagingNormalEquations::normalMatrixSlice(const std::string &par) const
+    const casacore::Vector<double>& ImagingNormalEquations::normalMatrixSlice(const std::string &par) const
     {
-      std::map<string, casa::Vector<double> >::const_iterator cIt =
+      std::map<string, casacore::Vector<double> >::const_iterator cIt =
                                         itsNormalMatrixSlice.find(par);
       ASKAPASSERT(cIt != itsNormalMatrixSlice.end());
       return cIt->second;
     }
 
-    const std::map<string, casa::Vector<double> >& ImagingNormalEquations::normalMatrixSlice() const
+    const std::map<string, casacore::Vector<double> >& ImagingNormalEquations::normalMatrixSlice() const
     {
       return itsNormalMatrixSlice;
     }
 
     // preconditionerSlice
-    const casa::Vector<double>& ImagingNormalEquations::preconditionerSlice(const std::string &par) const
+    const casacore::Vector<double>& ImagingNormalEquations::preconditionerSlice(const std::string &par) const
     {
-      std::map<string, casa::Vector<double> >::const_iterator cIt =
+      std::map<string, casacore::Vector<double> >::const_iterator cIt =
                                         itsPreconditionerSlice.find(par);
       ASKAPASSERT(cIt != itsPreconditionerSlice.end());
       return cIt->second;
     }
 
-    const std::map<string, casa::Vector<double> >& ImagingNormalEquations::preconditionerSlice() const
+    const std::map<string, casacore::Vector<double> >& ImagingNormalEquations::preconditionerSlice() const
     {
       return itsPreconditionerSlice;
     }
@@ -470,7 +470,7 @@ namespace askap
 /// @param[in] par1 the name of the first parameter
 /// @param[in] par2 the name of the second parameter
 /// @return one element of the sparse normal matrix (a dense matrix)
-const casa::Matrix<double>& ImagingNormalEquations::normalMatrix(const std::string &par1,
+const casacore::Matrix<double>& ImagingNormalEquations::normalMatrix(const std::string &par1,
                         const std::string &par2) const
 {
    ASKAPTHROW(AskapError,
@@ -487,70 +487,70 @@ const casa::Matrix<double>& ImagingNormalEquations::normalMatrix(const std::stri
 /// parameter each element of data vector is a vector of unit length.
 /// @param[in] par the name of the parameter of interest
 /// @return one element of the sparse data vector (a dense vector)
-const casa::Vector<double>& ImagingNormalEquations::dataVector(const std::string &par) const
+const casacore::Vector<double>& ImagingNormalEquations::dataVector(const std::string &par) const
 {
-   std::map<string, casa::Vector<double> >::const_iterator cIt =
+   std::map<string, casacore::Vector<double> >::const_iterator cIt =
                                      itsDataVector.find(par);
    ASKAPASSERT(cIt != itsDataVector.end());
    return cIt->second;
 }
 
-const std::map<std::string, casa::Vector<double> >& ImagingNormalEquations::dataVector() const
+const std::map<std::string, casacore::Vector<double> >& ImagingNormalEquations::dataVector() const
 {
   return itsDataVector;
 }
 
 /// Return shape
-    const std::map<string, casa::IPosition >& ImagingNormalEquations::shape() const
+    const std::map<string, casacore::IPosition >& ImagingNormalEquations::shape() const
     {
       return itsShape;
     }
 
 /// Return reference
-    const std::map<string, casa::IPosition >& ImagingNormalEquations::reference() const
+    const std::map<string, casacore::IPosition >& ImagingNormalEquations::reference() const
     {
       return itsReference;
     }
 
 /// Return coordinate system
-    const std::map<string, casa::CoordinateSystem >& ImagingNormalEquations::coordSys() const
+    const std::map<string, casacore::CoordinateSystem >& ImagingNormalEquations::coordSys() const
     {
       return itsCoordSys;
     }
 
     void ImagingNormalEquations::reset()
     {
-      map<string, casa::Vector<double> >::iterator iterRow;
+      map<string, casacore::Vector<double> >::iterator iterRow;
       for (iterRow=itsDataVector.begin();iterRow!=itsDataVector.end();iterRow++)
       {
         itsDataVector[iterRow->first].resize();
-        itsDataVector[iterRow->first]=casa::Vector<double>(0);
+        itsDataVector[iterRow->first]=casacore::Vector<double>(0);
         itsShape[iterRow->first].resize(0);
-        itsShape[iterRow->first]=casa::IPosition();
+        itsShape[iterRow->first]=casacore::IPosition();
         itsReference[iterRow->first].resize(0);
-        itsReference[iterRow->first]=casa::IPosition();
+        itsReference[iterRow->first]=casacore::IPosition();
         // leave "keep" and "replace" axis vectors empty, so they are all removed.
         Vector<Int> worldAxes;
         Vector<Double> worldRep;
         CoordinateUtil::removeAxes(itsCoordSys[iterRow->first], worldRep, worldAxes, False);
-        itsCoordSys[iterRow->first] = casa::CoordinateSystem();
+        itsCoordSys[iterRow->first] = casacore::CoordinateSystem();
         itsNormalMatrixSlice[iterRow->first].resize();
-        itsNormalMatrixSlice[iterRow->first]=casa::Vector<double>(0);
+        itsNormalMatrixSlice[iterRow->first]=casacore::Vector<double>(0);
         itsNormalMatrixDiagonal[iterRow->first].resize();
-        itsNormalMatrixDiagonal[iterRow->first]=casa::Vector<double>(0);
+        itsNormalMatrixDiagonal[iterRow->first]=casacore::Vector<double>(0);
         itsPreconditionerSlice[iterRow->first].resize();
-        itsPreconditionerSlice[iterRow->first]=casa::Vector<double>(0);
+        itsPreconditionerSlice[iterRow->first]=casacore::Vector<double>(0);
       }
     }
 
     void ImagingNormalEquations::addSlice(const string& name,
-      const casa::Vector<double>& normalmatrixslice,
-      const casa::Vector<double>& normalmatrixdiagonal,
-      const casa::Vector<double>& preconditionerslice,
-      const casa::Vector<double>& datavector,
-      const casa::IPosition& shape,
-      const casa::IPosition& reference,
-      const casa::CoordinateSystem& coordSys)
+      const casacore::Vector<double>& normalmatrixslice,
+      const casacore::Vector<double>& normalmatrixdiagonal,
+      const casacore::Vector<double>& preconditionerslice,
+      const casacore::Vector<double>& datavector,
+      const casacore::IPosition& shape,
+      const casacore::IPosition& reference,
+      const casacore::CoordinateSystem& coordSys)
     {
       ASKAPTRACE("ImagingNormalEquations::addSlice");
 
@@ -622,18 +622,18 @@ const std::map<std::string, casa::Vector<double> >& ImagingNormalEquations::data
     /// @param datavector Data vector for this parameter
     /// @param reference Reference point for the slice
     void ImagingNormalEquations::addSlice(const string& name,
-                    const casa::Vector<double>& normalmatrixslice,
-                    const casa::Vector<double>& normalmatrixdiagonal,
-                    const casa::Vector<double>& preconditionerslice,
-                    const casa::Vector<double>& datavector,
-                    const casa::IPosition& reference)
+                    const casacore::Vector<double>& normalmatrixslice,
+                    const casacore::Vector<double>& normalmatrixdiagonal,
+                    const casacore::Vector<double>& preconditionerslice,
+                    const casacore::Vector<double>& datavector,
+                    const casacore::IPosition& reference)
     {
       addSlice(name,normalmatrixslice,normalmatrixdiagonal,preconditionerslice,
-               datavector,casa::IPosition(1,datavector.nelements()),reference);
+               datavector,casacore::IPosition(1,datavector.nelements()),reference);
     }
 
-    void ImagingNormalEquations::addDiagonal(const string& name, const casa::Vector<double>& normalmatrixdiagonal,
-      const casa::Vector<double>& datavector, const casa::IPosition& shape)
+    void ImagingNormalEquations::addDiagonal(const string& name, const casacore::Vector<double>& normalmatrixdiagonal,
+      const casacore::Vector<double>& datavector, const casacore::IPosition& shape)
     {
       ASKAPTRACE("ImagingNormalEquations::addDiagonal");
 
@@ -659,10 +659,10 @@ const std::map<std::string, casa::Vector<double> >& ImagingNormalEquations::data
       itsShape[name]=shape;
     }
 
-    void ImagingNormalEquations::addDiagonal(const string& name, const casa::Vector<double>& normalmatrixdiagonal,
-      const casa::Vector<double>& datavector)
+    void ImagingNormalEquations::addDiagonal(const string& name, const casacore::Vector<double>& normalmatrixdiagonal,
+      const casacore::Vector<double>& datavector)
     {
-      casa::IPosition shape(1, datavector.nelements());
+      casacore::IPosition shape(1, datavector.nelements());
       addDiagonal(name, normalmatrixdiagonal, datavector, shape);
     }
 
@@ -701,7 +701,7 @@ const std::map<std::string, casa::Vector<double> >& ImagingNormalEquations::data
     std::vector<std::string> ImagingNormalEquations::unknowns() const {
       std::vector<std::string> result;
       result.reserve(itsNormalMatrixSlice.size());
-      for (std::map<std::string, casa::Vector<double> >::const_iterator ci = itsNormalMatrixSlice.begin();
+      for (std::map<std::string, casacore::Vector<double> >::const_iterator ci = itsNormalMatrixSlice.begin();
            ci!=itsNormalMatrixSlice.end(); ++ci) {
            result.push_back(ci->first);
 

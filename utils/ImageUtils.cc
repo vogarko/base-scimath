@@ -54,34 +54,34 @@ namespace scimath {
 /// @param[in] imagename name of the output image file
 /// @param[in] arr input array
 /// @ingroup utils
-void saveAsCasaImage(const std::string &imagename, const casa::Array<casa::Float> &arr)
+void saveAsCasaImage(const std::string &imagename, const casacore::Array<casacore::Float> &arr)
 {
    ASKAPDEBUGTRACE("saveAsCasaImage");
    size_t nDim = arr.shape().nonDegenerate().nelements();
-   casa::Vector<casa::String> names(2);
+   casacore::Vector<casacore::String> names(2);
    ASKAPASSERT(nDim>=2);
    names[0]="x"; names[1]="y";
-   casa::Vector<double> increment(2 ,1.);
+   casacore::Vector<double> increment(2 ,1.);
       
-   casa::Matrix<double> xform(2,2,0.);
+   casacore::Matrix<double> xform(2,2,0.);
    xform.diagonal() = 1.;
-   casa::LinearCoordinate linear(names, casa::Vector<casa::String>(2,"pixel"),
-           casa::Vector<double>(2,0.),increment, xform, casa::Vector<double>(2,0.));
+   casacore::LinearCoordinate linear(names, casacore::Vector<casacore::String>(2,"pixel"),
+           casacore::Vector<double>(2,0.),increment, xform, casacore::Vector<double>(2,0.));
       
-   casa::CoordinateSystem coords;
+   casacore::CoordinateSystem coords;
    coords.addCoordinate(linear);
       
    for (size_t dim=2; dim<nDim; ++dim) {
-        casa::Vector<casa::String> addname(1);
+        casacore::Vector<casacore::String> addname(1);
         addname[0]="addaxis"+utility::toString<size_t>(dim-1);
-        casa::Matrix<double> xform(1,1,1.);
-        casa::LinearCoordinate lc(addname, casa::Vector<casa::String>(1,"pixel"),
-        casa::Vector<double>(1,0.), casa::Vector<double>(1,1.),xform, 
-            casa::Vector<double>(1,0.));
+        casacore::Matrix<double> xform(1,1,1.);
+        casacore::LinearCoordinate lc(addname, casacore::Vector<casacore::String>(1,"pixel"),
+        casacore::Vector<double>(1,0.), casacore::Vector<double>(1,1.),xform, 
+            casacore::Vector<double>(1,0.));
         coords.addCoordinate(lc);
    }
-   casa::PagedImage<casa::Float> result(casa::TiledShape(arr.nonDegenerate().shape()), coords, imagename);
-   casa::ArrayLattice<casa::Float> lattice(arr.nonDegenerate());
+   casacore::PagedImage<casacore::Float> result(casacore::TiledShape(arr.nonDegenerate().shape()), coords, imagename);
+   casacore::ArrayLattice<casacore::Float> lattice(arr.nonDegenerate());
    result.copyData(lattice);
 }
 

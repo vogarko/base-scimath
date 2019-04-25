@@ -43,23 +43,23 @@ using namespace askap::scimath;
 /// @param[in] checkUnspecifiedProducts if true (default), the code checks that all
 ///            polarisation products missing in the input frame are multiplied by 0 (and
 ///            therefore don't affect the result), see itsCheckUnspecifiedProducts for more info
-PolConverter::PolConverter(const casa::Vector<casa::Stokes::StokesTypes> &polFrameIn,
-               const casa::Vector<casa::Stokes::StokesTypes> &polFrameOut,
+PolConverter::PolConverter(const casacore::Vector<casacore::Stokes::StokesTypes> &polFrameIn,
+               const casacore::Vector<casacore::Stokes::StokesTypes> &polFrameOut,
                bool checkUnspecifiedProducts) : itsVoid(false),
-               itsTransform(polFrameOut.nelements(),polFrameIn.nelements(),casa::Complex(0.,0.)),
+               itsTransform(polFrameOut.nelements(),polFrameIn.nelements(),casacore::Complex(0.,0.)),
                itsPolFrameIn(polFrameIn), itsPolFrameOut(polFrameOut),
                itsCheckUnspecifiedProducts(checkUnspecifiedProducts)
 {
   if (equal(polFrameIn, polFrameOut)) {
       itsVoid = true;
   } else {
-    for (casa::uInt pol=0; pol<polFrameIn.nelements(); ++pol) {
+    for (casacore::uInt pol=0; pol<polFrameIn.nelements(); ++pol) {
          ASKAPCHECK(isValid(polFrameIn[pol]), "Conversion is unsupported for polarisation product "<<
-                    int(polFrameIn[pol])<<" ("<<casa::Stokes::type(polFrameIn[pol])<<")");
+                    int(polFrameIn[pol])<<" ("<<casacore::Stokes::type(polFrameIn[pol])<<")");
     }
-    for (casa::uInt pol=0; pol<polFrameOut.nelements(); ++pol) {
+    for (casacore::uInt pol=0; pol<polFrameOut.nelements(); ++pol) {
          ASKAPCHECK(isValid(polFrameOut[pol]), "Conversion is unsupported for polarisation product "<<
-                    int(polFrameOut[pol])<<" ("<<casa::Stokes::type(polFrameOut[pol])<<")");
+                    int(polFrameOut[pol])<<" ("<<casacore::Stokes::type(polFrameOut[pol])<<")");
     }
     fillMatrix(polFrameIn, polFrameOut);
   }
@@ -104,13 +104,13 @@ PolConverter & PolConverter::operator=(const PolConverter & other)
 /// @param[in] first first polarisation frame
 /// @param[in] second second polarisation frame
 /// @return true if two given frames are the same, false if not.
-bool PolConverter::equal(const casa::Vector<casa::Stokes::StokesTypes> &first,
-                    const casa::Vector<casa::Stokes::StokesTypes> &second)
+bool PolConverter::equal(const casacore::Vector<casacore::Stokes::StokesTypes> &first,
+                    const casacore::Vector<casacore::Stokes::StokesTypes> &second)
 {
   if (first.nelements() != second.nelements()) {
       return false;
   }
-  for (casa::uInt pol = 0; pol<first.nelements(); ++pol) {
+  for (casacore::uInt pol = 0; pol<first.nelements(); ++pol) {
        if (first[pol]!=second[pol]) {
            return false;
        }
@@ -125,16 +125,16 @@ bool PolConverter::equal(const casa::Vector<casa::Stokes::StokesTypes> &first,
 /// @return converted visibility vector
 /// @note vis should have the same size (<=4) as both polFrames passed in the constructor,
 /// the output vector will have the same size.
-casa::Vector<casa::Complex> PolConverter::operator()(casa::Vector<casa::Complex> vis) const
+casacore::Vector<casacore::Complex> PolConverter::operator()(casacore::Vector<casacore::Complex> vis) const
 {
   if (itsVoid) {
       return vis;
   }
   ASKAPDEBUGASSERT(vis.nelements() == itsTransform.ncolumn());
-  casa::Vector<casa::Complex> res(itsTransform.nrow(),0.);
+  casacore::Vector<casacore::Complex> res(itsTransform.nrow(),0.);
 
-  for (casa::uInt row = 0; row<res.nelements(); ++row) {
-       for (casa::uInt col = 0; col<vis.nelements(); ++col) {
+  for (casacore::uInt row = 0; row<res.nelements(); ++row) {
+       for (casacore::uInt col = 0; col<vis.nelements(); ++col) {
             res[row] += itsTransform(row,col)*vis[col];
        }
   }
@@ -150,7 +150,7 @@ casa::Vector<casa::Complex> PolConverter::operator()(casa::Vector<casa::Complex>
 /// @return converted visibility vector
 /// @note vis should have the same size (<=4) as both polFrames passed in the constructor,
 /// the output vector should have the correct size.
-casa::Vector<casa::Complex>& PolConverter::convert(casa::Vector<casa::Complex>& out, const casa::Vector<casa::Complex>& vis) const
+casacore::Vector<casacore::Complex>& PolConverter::convert(casacore::Vector<casacore::Complex>& out, const casacore::Vector<casacore::Complex>& vis) const
 {
     if (itsVoid) {
         out = vis;
@@ -159,9 +159,9 @@ casa::Vector<casa::Complex>& PolConverter::convert(casa::Vector<casa::Complex>& 
     ASKAPDEBUGASSERT(vis.nelements() == itsTransform.ncolumn());
     ASKAPDEBUGASSERT(out.nelements() == itsTransform.nrow());
 
-    for (casa::uInt row = 0; row<out.nelements(); ++row) {
+    for (casacore::uInt row = 0; row<out.nelements(); ++row) {
          out[row] = 0.;
-         for (casa::uInt col = 0; col<vis.nelements(); ++col) {
+         for (casacore::uInt col = 0; col<vis.nelements(); ++col) {
               out[row] += itsTransform(row,col)*vis[col];
          }
     }
@@ -178,28 +178,28 @@ casa::Vector<casa::Complex>& PolConverter::convert(casa::Vector<casa::Complex>& 
 /// @note visNoise should have the same size (<=4) as both polFrames passed in the constructor,
 /// the output vector will have the same size. Real and imaginary parts of the output vectors are the noise
 /// levels of real and imaginary parts of the visibility.
-casa::Vector<casa::Complex> PolConverter::noise(casa::Vector<casa::Complex> visNoise) const
+casacore::Vector<casacore::Complex> PolConverter::noise(casacore::Vector<casacore::Complex> visNoise) const
 {
   if (itsVoid) {
       return visNoise;
   }
   ASKAPDEBUGASSERT(visNoise.nelements() == itsTransform.ncolumn());
-  casa::Vector<casa::Complex> res(itsTransform.nrow(),0.);
+  casacore::Vector<casacore::Complex> res(itsTransform.nrow(),0.);
 
-  for (casa::uInt row = 0; row<res.nelements(); ++row) {
+  for (casacore::uInt row = 0; row<res.nelements(); ++row) {
        float reNoise = 0.;
        float imNoise = 0.;
-       for (casa::uInt col = 0; col<visNoise.nelements(); ++col) {
-            const casa::Complex coeff = itsTransform(row,col);
-            const casa::Complex val = visNoise[col];
-            reNoise += casa::square(casa::real(coeff)*casa::real(val)) +
-                       casa::square(casa::imag(coeff)*casa::imag(val));
-            imNoise += casa::square(casa::imag(coeff)*casa::real(val)) +
-                       casa::square(casa::real(coeff)*casa::imag(val));
+       for (casacore::uInt col = 0; col<visNoise.nelements(); ++col) {
+            const casacore::Complex coeff = itsTransform(row,col);
+            const casacore::Complex val = visNoise[col];
+            reNoise += casacore::square(casacore::real(coeff)*casacore::real(val)) +
+                       casacore::square(casacore::imag(coeff)*casacore::imag(val));
+            imNoise += casacore::square(casacore::imag(coeff)*casacore::real(val)) +
+                       casacore::square(casacore::real(coeff)*casacore::imag(val));
        }
        ASKAPDEBUGASSERT(reNoise >= 0.);
        ASKAPDEBUGASSERT(imNoise >= 0.);
-       res[row] = casa::Complex(sqrt(reNoise),sqrt(imNoise));
+       res[row] = casacore::Complex(sqrt(reNoise),sqrt(imNoise));
   }
 
   return res;
@@ -213,7 +213,7 @@ casa::Vector<casa::Complex> PolConverter::noise(casa::Vector<casa::Complex> visN
 /// @note visNoise should have the same size (<=4) as both polFrames passed in the constructor,
 /// the output vector will have the same size. Real and imaginary parts of the output vectors are the noise
 /// levels of real and imaginary parts of the visibility.
-casa::Vector<casa::Complex>& PolConverter::noise(casa::Vector<casa::Complex>& outNoise, const casa::Vector<casa::Complex>& visNoise) const
+casacore::Vector<casacore::Complex>& PolConverter::noise(casacore::Vector<casacore::Complex>& outNoise, const casacore::Vector<casacore::Complex>& visNoise) const
 {
   if (itsVoid) {
       outNoise = visNoise;
@@ -222,20 +222,20 @@ casa::Vector<casa::Complex>& PolConverter::noise(casa::Vector<casa::Complex>& ou
   ASKAPDEBUGASSERT(visNoise.nelements() == itsTransform.ncolumn());
   ASKAPDEBUGASSERT(outNoise.nelements() == itsTransform.nrow());
 
-  for (casa::uInt row = 0; row<outNoise.nelements(); ++row) {
+  for (casacore::uInt row = 0; row<outNoise.nelements(); ++row) {
        float reNoise = 0.;
        float imNoise = 0.;
-       for (casa::uInt col = 0; col<visNoise.nelements(); ++col) {
-            const casa::Complex coeff = itsTransform(row,col);
-            const casa::Complex val = visNoise[col];
-            reNoise += casa::square(casa::real(coeff)*casa::real(val)) +
-                       casa::square(casa::imag(coeff)*casa::imag(val));
-            imNoise += casa::square(casa::imag(coeff)*casa::real(val)) +
-                       casa::square(casa::real(coeff)*casa::imag(val));
+       for (casacore::uInt col = 0; col<visNoise.nelements(); ++col) {
+            const casacore::Complex coeff = itsTransform(row,col);
+            const casacore::Complex val = visNoise[col];
+            reNoise += casacore::square(casacore::real(coeff)*casacore::real(val)) +
+                       casacore::square(casacore::imag(coeff)*casacore::imag(val));
+            imNoise += casacore::square(casacore::imag(coeff)*casacore::real(val)) +
+                       casacore::square(casacore::real(coeff)*casacore::imag(val));
        }
        ASKAPDEBUGASSERT(reNoise >= 0.);
        ASKAPDEBUGASSERT(imNoise >= 0.);
-       outNoise[row] = casa::Complex(sqrt(reNoise),sqrt(imNoise));
+       outNoise[row] = casacore::Complex(sqrt(reNoise),sqrt(imNoise));
   }
 
   return outNoise;
@@ -246,8 +246,8 @@ casa::Vector<casa::Complex>& PolConverter::noise(casa::Vector<casa::Complex>& ou
 /// given the two frames .
 /// @param[in] polFrameIn input polarisation frame defined as a vector of Stokes enums
 /// @param[in] polFrameOut output polarisation frame defined as a vector of Stokes enums
-void PolConverter::fillMatrix(const casa::Vector<casa::Stokes::StokesTypes> &polFrameIn,
-                  const casa::Vector<casa::Stokes::StokesTypes> &polFrameOut)
+void PolConverter::fillMatrix(const casacore::Vector<casacore::Stokes::StokesTypes> &polFrameIn,
+                  const casacore::Vector<casacore::Stokes::StokesTypes> &polFrameOut)
 {
   ASKAPDEBUGASSERT(itsTransform.nrow() == polFrameOut.nelements());
   ASKAPDEBUGASSERT(itsTransform.ncolumn() == polFrameIn.nelements());
@@ -256,18 +256,18 @@ void PolConverter::fillMatrix(const casa::Vector<casa::Stokes::StokesTypes> &pol
 
   // todo, check whether we can do the same in a more elegant and general way.
 
-  casa::Matrix<casa::Complex> T(4,4,0.);
+  casacore::Matrix<casacore::Complex> T(4,4,0.);
   if (isStokes(polFrameOut)) {
       if (isLinear(polFrameIn)) {
           // linear to stokes
           T(0,0)=1.; T(0,3)=1.;
           T(1,0)=1.; T(1,3)=-1.;
           T(2,1)=1.; T(2,2)=1.;
-          T(3,1)=casa::Complex(0.,-1.); T(3,2)=casa::Complex(0.,1.);
+          T(3,1)=casacore::Complex(0.,-1.); T(3,2)=casacore::Complex(0.,1.);
       } else if (isCircular(polFrameIn)) {
           // circular to stokes
           T(0,0)=1.; T(0,3)=1.;
-          T(1,1)=casa::Complex(0.,-1.); T(1,2)=casa::Complex(0.,1.);
+          T(1,1)=casacore::Complex(0.,-1.); T(1,2)=casacore::Complex(0.,1.);
           T(2,0)=1.; T(2,3)=-1.;
           T(3,1)=1.; T(3,2)=1.;
       } else if (isStokes(polFrameIn)) {
@@ -279,14 +279,14 @@ void PolConverter::fillMatrix(const casa::Vector<casa::Stokes::StokesTypes> &pol
       if (isLinear(polFrameOut)) {
           // stokes to linear
           T(0,0)=0.5; T(0,1)=0.5;
-          T(1,2)=0.5; T(1,3)=casa::Complex(0.,0.5);
-          T(2,2)=0.5; T(2,3)=casa::Complex(0.,-0.5);
+          T(1,2)=0.5; T(1,3)=casacore::Complex(0.,0.5);
+          T(2,2)=0.5; T(2,3)=casacore::Complex(0.,-0.5);
           T(3,0)=0.5; T(3,1)=-0.5;
       } else if (isCircular(polFrameOut)) {
           // stokes to circular
           T(0,0)=0.5; T(0,2)=0.5;
-          T(1,1)=casa::Complex(0.,0.5); T(1,3)=0.5;
-          T(2,1)=casa::Complex(0.,-0.5); T(2,3)=0.5;
+          T(1,1)=casacore::Complex(0.,0.5); T(1,3)=0.5;
+          T(2,1)=casacore::Complex(0.,-0.5); T(2,3)=0.5;
           T(3,0)=0.5; T(3,2)=-0.5;
       } else {
           ASKAPTHROW(AskapError, "Conversion of stokes parameters into the selected output polarisation frame is not supported");
@@ -302,26 +302,26 @@ void PolConverter::fillMatrix(const casa::Vector<casa::Stokes::StokesTypes> &pol
   ASKAPDEBUGASSERT(polFrameOut.nelements()>0);
 
   // have to copy, because the transformation may not preserve dimensionality
-  for (casa::uInt row = 0; row<itsTransform.nrow(); ++row) {
-       const casa::uInt rowIndex = getIndex(polFrameOut[row]);
+  for (casacore::uInt row = 0; row<itsTransform.nrow(); ++row) {
+       const casacore::uInt rowIndex = getIndex(polFrameOut[row]);
        ASKAPDEBUGASSERT(rowIndex<4);
        // vector of flags, true if a particular product is present in the input for the given row
        // it is used to check that all required data are present
        std::vector<bool> presentPols(4,false);
-       for (casa::uInt col = 0; col<itsTransform.ncolumn(); ++col) {
-            const casa::uInt colIndex = getIndex(polFrameIn[col]);
+       for (casacore::uInt col = 0; col<itsTransform.ncolumn(); ++col) {
+            const casacore::uInt colIndex = getIndex(polFrameIn[col]);
             ASKAPDEBUGASSERT(colIndex<4);
             presentPols[colIndex] = true;
             itsTransform(row,col) = T(rowIndex,colIndex);
        }
        // now check that nothing depends on all products that are absent in the input
        if (itsCheckUnspecifiedProducts) {
-           for (casa::uInt pol = 0; pol<presentPols.size(); ++pol) {
+           for (casacore::uInt pol = 0; pol<presentPols.size(); ++pol) {
                 if (!presentPols[pol]) {
                     ASKAPDEBUGASSERT(pol<T.ncolumn());
                     ASKAPCHECK(abs(T(rowIndex,pol))<1e-5, "Polarisation product "<<
-                          casa::Stokes::name(stokesFromIndex(pol,polFrameIn[0]))<<
-                          " is required to get "<< casa::Stokes::name(polFrameOut[row])<<
+                          casacore::Stokes::name(stokesFromIndex(pol,polFrameIn[0]))<<
+                          " is required to get "<< casacore::Stokes::name(polFrameOut[row])<<
                           " polarisation");
                 }
            }
@@ -367,29 +367,29 @@ void PolConverter::fillPARotationMatrix(double pa1, double pa2)
 /// @param[in] stokes any stokes enum from the working frame
 /// @note This method is actually used only to provide a sensible message in the exception. No
 /// other code depends on it.
-casa::Stokes::StokesTypes PolConverter::stokesFromIndex(casa::uInt index, casa::Stokes::StokesTypes stokes)
+casacore::Stokes::StokesTypes PolConverter::stokesFromIndex(casacore::uInt index, casacore::Stokes::StokesTypes stokes)
 {
-   const casa::Vector<casa::Stokes::StokesTypes> buf(1,stokes);
-   casa::uInt stokesAsuInt = index;
+   const casacore::Vector<casacore::Stokes::StokesTypes> buf(1,stokes);
+   casacore::uInt stokesAsuInt = index;
    if (isCircular(buf)) {
-       stokesAsuInt += casa::uInt(casa::Stokes::RR);
+       stokesAsuInt += casacore::uInt(casacore::Stokes::RR);
    } else if (isLinear(buf)) {
-       stokesAsuInt += casa::uInt(casa::Stokes::XX);
+       stokesAsuInt += casacore::uInt(casacore::Stokes::XX);
    } else if (isStokes(buf)) {
-       stokesAsuInt += casa::uInt(casa::Stokes::I);
+       stokesAsuInt += casacore::uInt(casacore::Stokes::I);
    }
-   return casa::Stokes::StokesTypes(stokesAsuInt);
+   return casacore::Stokes::StokesTypes(stokesAsuInt);
 }
 
 /// @brief test if frame matches a given stokes enum
 /// @param[in] polFrame polarisation frame defined as a vector of Stokes enums
 /// @param[in] stokes a single stokes enum defining the frame (should be the first in the set)
 /// @return true, if the given vector and one stokes enum belong to the same frame
-bool PolConverter::sameFrame(const casa::Vector<casa::Stokes::StokesTypes> &polFrame,
-                        casa::Stokes::StokesTypes stokes)
+bool PolConverter::sameFrame(const casacore::Vector<casacore::Stokes::StokesTypes> &polFrame,
+                        casacore::Stokes::StokesTypes stokes)
 {
   ASKAPASSERT(polFrame.nelements()!=0);
-  for (casa::uInt pol = 0; pol<polFrame.nelements(); ++pol) {
+  for (casacore::uInt pol = 0; pol<polFrame.nelements(); ++pol) {
        const int index = (int(polFrame[pol]) - int(stokes));
        if ((index<0) || (index>=4)) {
            return false;
@@ -403,15 +403,15 @@ bool PolConverter::sameFrame(const casa::Vector<casa::Stokes::StokesTypes> &polF
 /// This method does it for all supported types of polarisation products
 /// @param[in] stokes a single stokes enum of the polarisation product to convert
 /// @return unsigned index
-casa::uInt PolConverter::getIndex(casa::Stokes::StokesTypes stokes)
+casacore::uInt PolConverter::getIndex(casacore::Stokes::StokesTypes stokes)
 {
-  casa::Vector<casa::Stokes::StokesTypes> buf(1,stokes);
+  casacore::Vector<casacore::Stokes::StokesTypes> buf(1,stokes);
   if (isCircular(buf)) {
-     return casa::uInt(stokes)-casa::uInt(casa::Stokes::RR);
+     return casacore::uInt(stokes)-casacore::uInt(casacore::Stokes::RR);
   } else if (isLinear(buf)) {
-     return casa::uInt(stokes)-casa::uInt(casa::Stokes::XX);
+     return casacore::uInt(stokes)-casacore::uInt(casacore::Stokes::XX);
   } else if (isStokes(buf)) {
-     return casa::uInt(stokes)-casa::uInt(casa::Stokes::I);
+     return casacore::uInt(stokes)-casacore::uInt(casacore::Stokes::I);
   }
   ASKAPTHROW(AskapError, "Unsupported type of polarisation product in PolConverter::getIndex "<<
              int(stokes));
@@ -421,22 +421,22 @@ casa::uInt PolConverter::getIndex(casa::Stokes::StokesTypes stokes)
 /// @details casacore allows to code single-dish polarisation and there are some reserved codes
 /// as well. As we're doing lots of indexing, it is good to check that given parameter is
 /// valid before doing any further work.
-/// @note Technically, this and a few other helper methods should be part of casa::Stokes
+/// @note Technically, this and a few other helper methods should be part of casacore::Stokes
 /// @param[in] pol polarisation type
 /// @return true, if it is a normal cross-correlation or I,Q,U or V.
-bool PolConverter::isValid(casa::Stokes::StokesTypes pol)
+bool PolConverter::isValid(casacore::Stokes::StokesTypes pol)
 {
   // casacore's order is checked by unit test
-  if ((int(pol) >= int(casa::Stokes::I)) || (int(pol) <= int(casa::Stokes::V))) {
+  if ((int(pol) >= int(casacore::Stokes::I)) || (int(pol) <= int(casacore::Stokes::V))) {
       return true;
   }
-  if ((int(pol) >= int(casa::Stokes::RR)) || (int(pol) <= int(casa::Stokes::LL))) {
+  if ((int(pol) >= int(casacore::Stokes::RR)) || (int(pol) <= int(casacore::Stokes::LL))) {
       return true;
   }
-  if ((int(pol) >= int(casa::Stokes::XX)) || (int(pol) <= int(casa::Stokes::YY))) {
+  if ((int(pol) >= int(casacore::Stokes::XX)) || (int(pol) <= int(casacore::Stokes::YY))) {
       return true;
   }
-  if ((int(pol) >= int(casa::Stokes::RX)) || (int(pol) <= int(casa::Stokes::YL))) {
+  if ((int(pol) >= int(casacore::Stokes::RX)) || (int(pol) <= int(casacore::Stokes::YL))) {
       return true;
   }
   return false;
@@ -448,10 +448,10 @@ bool PolConverter::isValid(casa::Stokes::StokesTypes pol)
 /// "iquv" and "i,q,u,v" are equivalent.
 /// @param[in] frame a string representation of the frame
 /// @return vector with Stokes enums
-casa::Vector<casa::Stokes::StokesTypes> PolConverter::fromString(const std::string &frame)
+casacore::Vector<casacore::Stokes::StokesTypes> PolConverter::fromString(const std::string &frame)
 {
   if (frame.size() == 0) {
-      return casa::Vector<casa::Stokes::StokesTypes>();
+      return casacore::Vector<casacore::Stokes::StokesTypes>();
   }
   // parse the string, it is certainly not empty at this stage
   std::vector<std::string> products;
@@ -478,11 +478,11 @@ casa::Vector<casa::Stokes::StokesTypes> PolConverter::fromString(const std::stri
 /// parse the concatenated string.
 /// @param[in] products vector of strings representation of the frame
 /// @return vector with Stokes enums
-casa::Vector<casa::Stokes::StokesTypes> PolConverter::fromString(const std::vector<std::string> &products)
+casacore::Vector<casacore::Stokes::StokesTypes> PolConverter::fromString(const std::vector<std::string> &products)
 {
-  casa::Vector<casa::Stokes::StokesTypes> res(products.size());
+  casacore::Vector<casacore::Stokes::StokesTypes> res(products.size());
   for (size_t pol=0;pol<products.size();++pol) {
-       res[pol] = casa::Stokes::type(products[pol]);
+       res[pol] = casacore::Stokes::type(products[pol]);
   }
   return res;
 }
@@ -492,11 +492,11 @@ casa::Vector<casa::Stokes::StokesTypes> PolConverter::fromString(const std::vect
 /// into a vector of strings (with one to one correspondence between elements)
 /// @param[in] frame vector of stokes enums
 /// @return vector with string represenation
-std::vector<std::string> PolConverter::toString(const casa::Vector<casa::Stokes::StokesTypes> &frame)
+std::vector<std::string> PolConverter::toString(const casacore::Vector<casacore::Stokes::StokesTypes> &frame)
 {
   std::vector<std::string> res(frame.nelements());
   for (size_t pol=0; pol<res.size(); ++pol) {
-       res[pol] = casa::Stokes::name(frame[pol]);
+       res[pol] = casacore::Stokes::name(frame[pol]);
   }
   return res;
 }
@@ -508,24 +508,24 @@ std::vector<std::string> PolConverter::toString(const casa::Vector<casa::Stokes:
 /// of the transform matrix.
 /// @param[in] pol polarisation type (should be part of the input frame)
 /// @return map with the polarisation product as the key and the complex coefficient as the value
-std::map<casa::Stokes::StokesTypes, casa::Complex> PolConverter::getSparseTransform(const casa::Stokes::StokesTypes pol) const
+std::map<casacore::Stokes::StokesTypes, casacore::Complex> PolConverter::getSparseTransform(const casacore::Stokes::StokesTypes pol) const
 {
-  std::map<casa::Stokes::StokesTypes, casa::Complex> result;
-  casa::uInt product = 0;
+  std::map<casacore::Stokes::StokesTypes, casacore::Complex> result;
+  casacore::uInt product = 0;
   for (; product < itsPolFrameIn.nelements(); ++product) {
        if (itsPolFrameIn[product] == pol) {
            break;
        }
   }
-  ASKAPCHECK(product != itsPolFrameIn.nelements(), "Requested polarisation product "<<casa::Stokes::name(pol)<<
+  ASKAPCHECK(product != itsPolFrameIn.nelements(), "Requested polarisation product "<<casacore::Stokes::name(pol)<<
        " is not found in the input frame the converter is set up with");
   if (itsVoid) {
-      result[pol] = casa::Complex(1.,0.);
+      result[pol] = casacore::Complex(1.,0.);
   } else {
       ASKAPDEBUGASSERT(product < itsTransform.ncolumn());
       ASKAPDEBUGASSERT(itsPolFrameOut.nelements() <= itsTransform.nrow());
-      for (casa::uInt index = 0; index < itsPolFrameOut.nelements(); ++index) {
-           const casa::Complex val = itsTransform(index,product);
+      for (casacore::uInt index = 0; index < itsPolFrameOut.nelements(); ++index) {
+           const casacore::Complex val = itsTransform(index,product);
            if (abs(val) > 1e-5) {
                result[itsPolFrameOut[index]] = val;
            }
@@ -542,13 +542,13 @@ std::map<casa::Stokes::StokesTypes, casa::Complex> PolConverter::getSparseTransf
 /// It can be used to setup the converter when either input or output frame (or both) are to be
 /// given explicitly
 /// @return 4-element vector with polarisation products
-casa::Vector<casa::Stokes::StokesTypes> PolConverter::canonicStokes()
+casacore::Vector<casacore::Stokes::StokesTypes> PolConverter::canonicStokes()
 {
-  casa::Vector<casa::Stokes::StokesTypes> result(4);
-  result[0] = casa::Stokes::I;
-  result[1] = casa::Stokes::Q;
-  result[2] = casa::Stokes::U;
-  result[3] = casa::Stokes::V;
+  casacore::Vector<casacore::Stokes::StokesTypes> result(4);
+  result[0] = casacore::Stokes::I;
+  result[1] = casacore::Stokes::Q;
+  result[2] = casacore::Stokes::U;
+  result[3] = casacore::Stokes::V;
   return result;
 }
 
@@ -558,13 +558,13 @@ casa::Vector<casa::Stokes::StokesTypes> PolConverter::canonicStokes()
 /// It can be used to setup the converter when either input or output frame (or both) are to be
 /// given explicitly
 /// @return 4-element vector with polarisation products
-casa::Vector<casa::Stokes::StokesTypes> PolConverter::canonicLinear()
+casacore::Vector<casacore::Stokes::StokesTypes> PolConverter::canonicLinear()
 {
-  casa::Vector<casa::Stokes::StokesTypes> result(4);
-  result[0] = casa::Stokes::XX;
-  result[1] = casa::Stokes::XY;
-  result[2] = casa::Stokes::YX;
-  result[3] = casa::Stokes::YY;
+  casacore::Vector<casacore::Stokes::StokesTypes> result(4);
+  result[0] = casacore::Stokes::XX;
+  result[1] = casacore::Stokes::XY;
+  result[2] = casacore::Stokes::YX;
+  result[3] = casacore::Stokes::YY;
   return result;
 }
 
@@ -574,12 +574,12 @@ casa::Vector<casa::Stokes::StokesTypes> PolConverter::canonicLinear()
 /// It can be used to setup the converter when either input or output frame (or both) are to be
 /// given explicitly
 /// @return 4-element vector with polarisation products
-casa::Vector<casa::Stokes::StokesTypes> PolConverter::canonicCircular()
+casacore::Vector<casacore::Stokes::StokesTypes> PolConverter::canonicCircular()
 {
-  casa::Vector<casa::Stokes::StokesTypes> result(4);
-  result[0] = casa::Stokes::RR;
-  result[1] = casa::Stokes::RL;
-  result[2] = casa::Stokes::LR;
-  result[3] = casa::Stokes::LL;
+  casacore::Vector<casacore::Stokes::StokesTypes> result(4);
+  result[0] = casacore::Stokes::RR;
+  result[1] = casacore::Stokes::RL;
+  result[2] = casacore::Stokes::LR;
+  result[3] = casacore::Stokes::LL;
   return result;
 }

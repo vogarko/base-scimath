@@ -93,7 +93,7 @@ struct NormalEquationsStub : public INormalEquations {
   /// @param[in] par1 the name of the first parameter
   /// @param[in] par2 the name of the second parameter
   /// @return one element of the sparse normal matrix (a dense matrix)
-  virtual const casa::Matrix<double>& normalMatrix(const std::string &par1, 
+  virtual const casacore::Matrix<double>& normalMatrix(const std::string &par1, 
                         const std::string &par2) const;
   
   /// @brief data vector for a given parameter
@@ -105,7 +105,7 @@ struct NormalEquationsStub : public INormalEquations {
   /// parameter each element of data vector is a vector of unit length.
   /// @param[in] par the name of the parameter of interest
   /// @return one element of the sparse data vector (a dense vector)     
-  virtual const casa::Vector<double>& dataVector(const std::string &par) const;
+  virtual const casacore::Vector<double>& dataVector(const std::string &par) const;
   
   
   /// @brief obtain all parameters dealt with by these normal equations

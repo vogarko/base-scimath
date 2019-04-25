@@ -41,8 +41,8 @@ using namespace askap::scimath;
 /// @brief setup the iterator
 /// @details 
 /// @param[in] shape shape of the full hypercube (or array-valued parameter) 
-MultiDimArrayPlaneIter::MultiDimArrayPlaneIter(const casa::IPosition &shape) : 
-     ArrayPositionIterator(shape,casa::IPosition(shape.nelements(),0),2u), itsShape(shape),
+MultiDimArrayPlaneIter::MultiDimArrayPlaneIter(const casacore::IPosition &shape) : 
+     ArrayPositionIterator(shape,casacore::IPosition(shape.nelements(),0),2u), itsShape(shape),
      itsPlaneShape(planeShape(shape)), itsSequenceNumber(0)
 {
   ASKAPASSERT(itsShape.product()>0);
@@ -57,11 +57,11 @@ MultiDimArrayPlaneIter::MultiDimArrayPlaneIter(const casa::IPosition &shape) :
 /// the object has been initialised with.
 /// @param[in] shape shape of the full cube
 /// @return a shape of the single plane preserving degenerate dimensions
-casa::IPosition MultiDimArrayPlaneIter::planeShape(const casa::IPosition &shape)
+casacore::IPosition MultiDimArrayPlaneIter::planeShape(const casacore::IPosition &shape)
 {
   ASKAPASSERT(shape.nelements()>=2);
-  casa::IPosition planeShape(shape);
-  for (casa::uInt dim=2; dim<planeShape.nelements(); ++dim) {
+  casacore::IPosition planeShape(shape);
+  for (casacore::uInt dim=2; dim<planeShape.nelements(); ++dim) {
        ASKAPDEBUGASSERT(planeShape[dim]>0);
        planeShape[dim] = 1;
   }  
@@ -77,9 +77,9 @@ casa::IPosition MultiDimArrayPlaneIter::planeShape(const casa::IPosition &shape)
 std::string MultiDimArrayPlaneIter::tag() const
 {
   std::string res;
-  const casa::IPosition curPlane = position();
+  const casacore::IPosition curPlane = position();
   ASKAPDEBUGASSERT(curPlane.nelements() == itsShape.nelements());
-  for (casa::uInt dim = 2; dim<curPlane.nelements(); ++dim) {
+  for (casacore::uInt dim = 2; dim<curPlane.nelements(); ++dim) {
        // we skip all degenerate dimensions in the tag
        if (itsShape[dim]>1) {
            if (dim == 2) {
@@ -89,7 +89,7 @@ std::string MultiDimArrayPlaneIter::tag() const
            }  else {
                res += ".";
            }       
-           res += utility::toString<casa::uInt>(curPlane[dim]);
+           res += utility::toString<casacore::uInt>(curPlane[dim]);
        }
   }
   return res;
