@@ -8,7 +8,7 @@ pipeline {
   stages {
     stage('Building base-askap') {
       steps {
-        dir(path: '/var/lib/jenkins/workspace/base-scimath_develop') {
+        dir(path: '.') {
           sh '''if [ -d base-askap ]; then
 echo "base-askap directory already exists"
 rm -rf base-askap
@@ -27,7 +27,7 @@ make -j2 install
     }
     stage('Building base-logfilters') {
       steps {
-        dir(path: '/var/lib/jenkins/workspace/base-scimath_develop') {
+        dir(path: '.') {
           sh '''if [ -d base-logfilters ]; then
 echo "base-logfilters directory already exists"
 rm -rf base-logfilters
@@ -46,7 +46,7 @@ make -j2 install
     }
     stage('Building base-imagemath') {
       steps {
-        dir(path: '/var/lib/jenkins/workspace/base-scimath_develop') {
+        dir(path: '.') {
           sh '''if [ -d base-imagemath ]; then
 echo "base-imagemath directory already exists"
 rm -rf base-imagemath
@@ -66,7 +66,7 @@ make -j2 install
 
     stage('Building base-scimath') {
       steps {
-        dir(path: '/var/lib/jenkins/workspace/base-scimath_develop') {
+        dir(path: '.') {
           sh '''if [ -d build ]; then
 echo "base-imagemath build directory already exists"
 cd build
@@ -81,7 +81,7 @@ mkdir build
 fi'''
         }
 
-        dir(path: '/var/lib/jenkins/workspace/base-scimath_develop/build') {
+        dir(path: 'build') {
           sh '''cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} ../
 make -j2
 make -j2 install
@@ -92,7 +92,7 @@ make -j2 install
     }
   }
   environment {
-    WORKSPACE = '/var/lib/jenkins/workspace'
-    PREFIX = '/var/lib/jenkins/workspace/base-scimath_develop/install'
+    WORKSPACE = pwd()
+    PREFIX = "${WORKSPACE}/install"
   }
 }
