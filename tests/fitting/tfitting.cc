@@ -37,7 +37,7 @@
 #include <AxesTest.h>
 #include <PolXProductsTest.h>
 
-#include <askap/AskapLogging.h>
+#include <askap/askap/AskapLogging.h>
 
 int main(int argc, char *argv[])
 {

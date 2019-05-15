@@ -37,7 +37,7 @@
 #ifndef CHANGE_MONITOR_H
 #define CHANGE_MONITOR_H
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 namespace askap {
 

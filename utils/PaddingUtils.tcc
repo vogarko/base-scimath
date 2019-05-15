@@ -31,7 +31,7 @@
 #ifndef PADDING_UTILS_TCC
 #define PADDING_UTILS_TCC
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 #include <casacore/casa/Arrays/Array.h>
 namespace askap {
 

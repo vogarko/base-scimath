@@ -29,8 +29,8 @@
 /// @author Max Voronkov <maxim.voronkov@csiro.au>
 
 // own includes
-#include "askap/IndexedCompare.h"
-#include "askap/AskapError.h"
+#include "askap/askap/IndexedCompare.h"
+#include "askap/askap/AskapError.h"
 #include "utils/EigenDecompose.h"
 #include "utils/SharedGSLTypes.h"
 

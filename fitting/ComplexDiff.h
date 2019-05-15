@@ -39,8 +39,8 @@
 #ifndef COMPLEX_DIFF_H
 #define COMPLEX_DIFF_H
 
-#include <askap/MapKeyIterator.h>
-#include <askap/AskapError.h>
+#include <askap/askap/MapKeyIterator.h>
+#include <askap/askap/AskapError.h>
 
 
 // casa includes

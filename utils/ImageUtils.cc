@@ -31,8 +31,8 @@
 
 // own includes
 #include <utils/ImageUtils.h>
-#include <askap/AskapError.h>
-#include <profile/AskapProfiler.h>
+#include <askap/askap/AskapError.h>
+#include <askap/profile/AskapProfiler.h>
 
 
 

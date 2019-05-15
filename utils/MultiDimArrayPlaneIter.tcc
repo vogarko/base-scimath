@@ -34,7 +34,7 @@
 #ifndef MULTI_DIM_ARRAY_PLANE_ITER_TCC
 #define MULTI_DIM_ARRAY_PLANE_ITER_TCC
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 
 namespace askap {

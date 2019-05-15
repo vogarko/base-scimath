@@ -28,7 +28,7 @@
 #define SCIMATH_CASABLOBUTILS_H
 
 // ASKAPsoft includes
-#include "askap/AskapError.h"
+#include "askap/askap/AskapError.h"
 
 // casacore's includes
 #include <casacore/casa/aips.h>

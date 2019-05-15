@@ -40,7 +40,7 @@
 /// @author Max Voronkov <maxim.voronkov@csiro.au>
 
 #include <utils/SpheroidalFunction.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>

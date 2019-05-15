@@ -69,8 +69,8 @@ make -j2 install
         dir(path: '.') {
           sh '''if [ -d build ]; then
 echo "base-imagemath build directory already exists"
+if [ -f build/install_manifest.txt ]; then
 cd build
-if [ -f install_manifest.txt ]; then
 make uninstall
 cd ..
 fi

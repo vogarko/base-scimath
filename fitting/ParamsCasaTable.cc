@@ -56,7 +56,7 @@
 #include <casacore/casa/Utilities/GenSort.h>
 #include <casacore/casa/BasicMath/Math.h>
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 using namespace askap;
 

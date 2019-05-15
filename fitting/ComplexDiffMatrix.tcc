@@ -42,8 +42,8 @@
 #define COMPLEXDIFFMATRIX_TCC
 
 // own includes
-#include <askap/AskapError.h>
-#include <askap/MapKeyIterator.h>
+#include <askap/askap/AskapError.h>
+#include <askap/askap/MapKeyIterator.h>
 
 namespace askap {
 

@@ -39,7 +39,7 @@
 
 // own includes
 #include <fitting/ComplexDiff.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <iostream>
 

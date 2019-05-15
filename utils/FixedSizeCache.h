@@ -33,7 +33,7 @@
 #ifndef FIXED_SIZE_CACHE_H
 #define FIXED_SIZE_CACHE_H
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <boost/shared_ptr.hpp>
 

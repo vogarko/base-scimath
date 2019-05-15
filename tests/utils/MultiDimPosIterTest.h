@@ -35,7 +35,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <utils/MultiDimPosIter.h>
-#include <askap/AskapUtil.h>
+#include <askap/askap/AskapUtil.h>
 
 #include <vector>
 

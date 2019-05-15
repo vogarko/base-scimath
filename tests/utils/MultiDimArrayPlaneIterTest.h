@@ -38,7 +38,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <utils/MultiDimArrayPlaneIter.h>
-#include <askap/AskapUtil.h>
+#include <askap/askap/AskapUtil.h>
 
 namespace askap {
 

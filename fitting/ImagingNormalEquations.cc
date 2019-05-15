@@ -36,7 +36,7 @@
 #include <fitting/DesignMatrix.h>
 #include <fitting/ImagingNormalEquations.h>
 #include <fitting/Params.h>
-#include <profile/AskapProfiler.h>
+#include <askap/profile/AskapProfiler.h>
 
 #include <casacore/casa/aips.h>
 #include <casacore/casa/Arrays/Array.h>
@@ -51,7 +51,7 @@
 #include <Blob/BlobArray.h>
 #include <Blob/BlobSTL.h>
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <utils/DeepCopyUtils.h>
 

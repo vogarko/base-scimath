@@ -32,7 +32,7 @@
 #include <Blob/BlobIStream.h>
 
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 #include <boost/shared_ptr.hpp>
 
 #include <algorithm>

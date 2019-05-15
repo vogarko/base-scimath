@@ -31,7 +31,7 @@
 
 
 #include <utils/PolConverter.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 using namespace askap;
 using namespace askap::scimath;
