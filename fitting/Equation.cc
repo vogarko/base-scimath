@@ -28,7 +28,7 @@
 ///
 #include <fitting/Params.h>
 #include <fitting/Equation.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <stdexcept>
 

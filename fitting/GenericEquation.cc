@@ -35,7 +35,7 @@
 ///
 
 #include <fitting/GenericEquation.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <stdexcept>
 

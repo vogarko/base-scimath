@@ -32,7 +32,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 // own includes
 #include <utils/SpheroidalFunction.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 //#include <fstream>
 
 namespace askap {

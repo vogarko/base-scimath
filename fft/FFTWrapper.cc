@@ -32,8 +32,8 @@
 #include "fft/FFTWrapper.h"
 
 // ASKAPsoft includes
-#include "askap/AskapError.h"
-#include "profile/AskapProfiler.h"
+#include "askap/askap/AskapError.h"
+#include "askap/profile/AskapProfiler.h"
 #include "casacore/casa/Arrays/Vector.h"
 #include "casacore/casa/Arrays/Matrix.h"
 #include "casacore/casa/Arrays/ArrayIter.h"

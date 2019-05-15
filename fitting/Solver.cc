@@ -28,7 +28,7 @@
 ///
 
 #include <fitting/Solver.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 namespace askap
 {

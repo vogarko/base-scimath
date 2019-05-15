@@ -32,7 +32,7 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 #include <casacore/coordinates/Coordinates/Projection.h>
 #include <casacore/coordinates/Coordinates/DirectionCoordinate.h>
 

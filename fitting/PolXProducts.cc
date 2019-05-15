@@ -36,7 +36,7 @@
 
 // own includes
 #include <fitting/PolXProducts.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 using namespace askap;
 using namespace askap::scimath;

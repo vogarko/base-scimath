@@ -36,7 +36,7 @@
 
 // ASKAPsoft includes
 #include "utils/PolConverter.h"
-#include "askap/AskapError.h"
+#include <askap/askap/AskapError.h>
 
 namespace askap {
 

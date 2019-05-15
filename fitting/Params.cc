@@ -38,8 +38,8 @@
 #include <Blob/BlobArray.h>
 #include <Blob/BlobSTL.h>
 
-#include <askap/AskapUtil.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapUtil.h>
+#include <askap/askap/AskapError.h>
 #include <utils/DeepCopyUtils.h>
 
 #include <iostream>

@@ -24,7 +24,7 @@
 #include <fitting/DesignMatrix.h>
 #include <fitting/ComplexDiffMatrix.h>
 #include <fitting/ComplexDiff.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 namespace askap

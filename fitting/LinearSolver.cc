@@ -33,8 +33,8 @@
 
 #include <fitting/LinearSolver.h>
 
-#include <askap/AskapError.h>
-#include <profile/AskapProfiler.h>
+#include <askap/askap/AskapError.h>
+#include <askap/profile/AskapProfiler.h>
 #include <boost/config.hpp>
 
 #include <casacore/casa/aips.h>
@@ -51,7 +51,7 @@
 #include <lsqr_solver/LSQRSolver.h>
 #include <lsqr_solver/ModelDamping.h>
 
-#include <askap/AskapLogging.h>
+#include <askap/askap/AskapLogging.h>
 ASKAP_LOGGER(logger, ".linearsolver");
 
 #include <iostream>

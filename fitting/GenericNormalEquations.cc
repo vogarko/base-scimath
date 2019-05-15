@@ -37,7 +37,7 @@
 // own includes
 #include <fitting/GenericNormalEquations.h>
 #include <fitting/DesignMatrix.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 #include <utils/DeepCopyUtils.h>
 
 #include <Blob/BlobArray.h>

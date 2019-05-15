@@ -36,7 +36,7 @@
 #include <casacore/casa/Arrays/MatrixMath.h>
 #include <casacore/casa/Arrays/ArrayMath.h>
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <iostream>
 #include <string>

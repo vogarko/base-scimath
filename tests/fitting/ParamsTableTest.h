@@ -26,7 +26,7 @@
 
 #include <casacore/tables/Tables/TableError.h>
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 

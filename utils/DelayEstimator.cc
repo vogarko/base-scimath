@@ -35,7 +35,7 @@
 #include "utils/PhaseUnwrapper.h"
 #include "fft/FFTWrapper.h"
 #include <casacore/casa/BasicSL/Constants.h>
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 #include <vector>
 #include <cmath>

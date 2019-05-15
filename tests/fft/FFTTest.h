@@ -27,7 +27,7 @@
 #include <casacore/casa/Arrays/Matrix.h>
 #include <fft/FFTWrapper.h>
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <stdexcept>
