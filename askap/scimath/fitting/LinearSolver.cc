@@ -415,7 +415,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
 
         // Define the right-hand side (the data misfit part).
         for (std::vector<std::pair<string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1) {
-            const casa::Vector<double> &dv = normalEquations().dataVector(indit1->first);
+            const casacore::Vector<double> &dv = normalEquations().dataVector(indit1->first);
             for (size_t row=0; row<dv.nelements(); ++row) {
                  const double elem = dv(row);
                  ASKAPCHECK(!std::isnan(elem), "Data vector seems to have NaN for row = "<<row<<", this shouldn't happen!");
@@ -475,8 +475,8 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
             int counter = 0;
             for (std::vector<std::pair<string, int> >::const_iterator indit = indices.begin();
                              indit != indices.end(); ++indit) {
-                casa::IPosition vecShape(1, params.value(indit->first).nelements());
-                casa::Vector<double> value(params.value(indit->first).reform(vecShape));
+                casacore::IPosition vecShape(1, params.value(indit->first).nelements());
+                casacore::Vector<double> value(params.value(indit->first).reform(vecShape));
                 for (size_t i=0; i<value.nelements(); ++i) {
                     x0[indit->second + i] = value(i);
                     counter++;
@@ -485,15 +485,15 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
             ASKAPCHECK(counter == nParameters, "Wrong number of parameters!");
 
             // Build indexes maps (needed to add smoothness constraints to the matrix).
-            std::map<std::pair<casa::uInt, std::string>, size_t> gainIndexesReal;
-            std::map<std::pair<casa::uInt, std::string>, size_t> gainIndexesImag;
+            std::map<std::pair<casacore::uInt, std::string>, size_t> gainIndexesReal;
+            std::map<std::pair<casacore::uInt, std::string>, size_t> gainIndexesImag;
             for (std::vector<std::pair<string, int> >::const_iterator indit = indices.begin();
                  indit != indices.end(); ++indit) {
                 // Make sure there are two unknowns per parameter: real and imaginary parts of the complex gain value.
                 ASKAPCHECK(params.value(indit->first).nelements() == 2, "Number of unknowns per parameter name is not correct!");
 
                 // Extracting channel and parameter name.
-                std::pair<casa::uInt, std::string> paramInfo = extractChannelInfo(indit->first);
+                std::pair<casacore::uInt, std::string> paramInfo = extractChannelInfo(indit->first);
 
                 gainIndexesReal.insert(make_pair(paramInfo, indit->second));     // real part
                 gainIndexesImag.insert(make_pair(paramInfo, indit->second + 1)); // imaginary part
@@ -503,7 +503,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
             for (std::vector<std::pair<string, int> >::const_iterator indit = indices.begin();
                              indit != indices.end(); ++indit) {
                 // Extracting channel and parameter name.
-                std::pair<casa::uInt, std::string> paramInfo = extractChannelInfo(indit->first);
+                std::pair<casacore::uInt, std::string> paramInfo = extractChannelInfo(indit->first);
                 size_t channel = paramInfo.first;
 
                 bool lastChannel = (channel == nChannels - 1);
@@ -614,12 +614,12 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
 
         //------------------------------------------------------------------------
         // Update the parameters for the calculated changes.
-        // Exploit reference semantics of casa::Array.
+        // Exploit reference semantics of casacore::Array.
         //------------------------------------------------------------------------
         std::vector<std::pair<string, int> >::const_iterator indit;
         for (indit=indices.begin();indit!=indices.end();++indit) {
-            casa::IPosition vecShape(1, params.value(indit->first).nelements());
-            casa::Vector<double> value(params.value(indit->first).reform(vecShape));
+            casacore::IPosition vecShape(1, params.value(indit->first).nelements());
+            casacore::Vector<double> value(params.value(indit->first).reform(vecShape));
             for (size_t i=0; i<value.nelements(); ++i) {
                 const double adjustment = x[indit->second + i];
                 ASKAPCHECK(!std::isnan(adjustment), "Solution resulted in NaN as an update for parameter "<<(indit->second + i));
@@ -722,12 +722,12 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
     /// has coded channel present.
     /// @param[in] name full name of the parameter
     /// @return a pair with extracted channel and the base parameter name
-    std::pair<casa::uInt, std::string> LinearSolver::extractChannelInfo(const std::string &name)
+    std::pair<casacore::uInt, std::string> LinearSolver::extractChannelInfo(const std::string &name)
     {
       size_t pos = name.rfind(".");
       ASKAPCHECK(pos != std::string::npos, "Expect dot in the parameter name passed to extractChannelInfo, name="<<name);
       ASKAPCHECK(pos + 1 != name.size(), "Parameter name="<<name<<" ends with a dot");
-      return std::pair<casa::uInt, std::string>(utility::fromString<casa::uInt>(name.substr(pos+1)),name.substr(0,pos));
+      return std::pair<casacore::uInt, std::string>(utility::fromString<casacore::uInt>(name.substr(pos+1)),name.substr(0,pos));
     }
 
   }
