@@ -34,7 +34,7 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <utils/MultiDimPosIter.h>
+#include <askap/scimath/utils/MultiDimPosIter.h>
 #include <askap/askap/AskapUtil.h>
 
 #include <vector>

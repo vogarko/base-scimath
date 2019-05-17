@@ -84,116 +84,116 @@ endif (CPPUNIT_FOUND)
 
 add_library(askap_scimath
 
-./fitting/ParamsTable.cc
-./fitting/ComplexDiffMatrix.cc
-./fitting/Quality.cc
-./fitting/CompositeEquation.cc
-./fitting/Axes.cc
-./fitting/NormalEquationsStub.cc
-./fitting/PolXProducts.cc
-./fitting/ImagingEquation.cc
-./fitting/LinearSolver.cc
-./fitting/Solveable.cc
-./fitting/DesignMatrix.cc
-./fitting/GenericEquation.cc
-./fitting/Equation.cc
-./fitting/PolynomialEquation.cc
-./fitting/ParamsCasaTable.cc
-./fitting/ImagingNormalEquations.cc
-./fitting/Params.cc
-./fitting/ComplexDiff.cc
-./fitting/ISerializable.cc
-./fitting/Solver.cc
-./fitting/GenericNormalEquations.cc
-./utils/ComplexGaussianNoise.cc
-./utils/ImageUtils.cc
-./utils/PolConverter.cc
-./utils/CasaBlobUtils.cc
-./utils/EigenDecompose.cc
-./utils/SharedGSLTypes.cc
-./utils/SpheroidalFunction.cc
-./utils/DelayEstimator.cc
-./utils/MultiDimArrayPlaneIter.cc
-./utils/PaddingUtils.cc
-./utils/MultiDimPosIter.cc
-./fft/FFTWrapper.cc
-./lsqr_solver/LSQRSolver.cc
-./lsqr_solver/MathUtils.cc
-./lsqr_solver/ModelDamping.cc
-./lsqr_solver/ParallelTools.cc
-./lsqr_solver/SparseMatrix.cc
+./askap/scimath/fitting/ParamsTable.cc
+./askap/scimath/fitting/ComplexDiffMatrix.cc
+./askap/scimath/fitting/Quality.cc
+./askap/scimath/fitting/CompositeEquation.cc
+./askap/scimath/fitting/Axes.cc
+./askap/scimath/fitting/NormalEquationsStub.cc
+./askap/scimath/fitting/PolXProducts.cc
+./askap/scimath/fitting/ImagingEquation.cc
+./askap/scimath/fitting/LinearSolver.cc
+./askap/scimath/fitting/Solveable.cc
+./askap/scimath/fitting/DesignMatrix.cc
+./askap/scimath/fitting/GenericEquation.cc
+./askap/scimath/fitting/Equation.cc
+./askap/scimath/fitting/PolynomialEquation.cc
+./askap/scimath/fitting/ParamsCasaTable.cc
+./askap/scimath/fitting/ImagingNormalEquations.cc
+./askap/scimath/fitting/Params.cc
+./askap/scimath/fitting/ComplexDiff.cc
+./askap/scimath/fitting/ISerializable.cc
+./askap/scimath/fitting/Solver.cc
+./askap/scimath/fitting/GenericNormalEquations.cc
+./askap/scimath/utils/ComplexGaussianNoise.cc
+./askap/scimath/utils/ImageUtils.cc
+./askap/scimath/utils/PolConverter.cc
+./askap/scimath/utils/CasaBlobUtils.cc
+./askap/scimath/utils/EigenDecompose.cc
+./askap/scimath/utils/SharedGSLTypes.cc
+./askap/scimath/utils/SpheroidalFunction.cc
+./askap/scimath/utils/DelayEstimator.cc
+./askap/scimath/utils/MultiDimArrayPlaneIter.cc
+./askap/scimath/utils/PaddingUtils.cc
+./askap/scimath/utils/MultiDimPosIter.cc
+./askap/scimath/fft/FFTWrapper.cc
+./askap/scimath/lsqr_solver/LSQRSolver.cc
+./askap/scimath/lsqr_solver/MathUtils.cc
+./askap/scimath/lsqr_solver/ModelDamping.cc
+./askap/scimath/lsqr_solver/ParallelTools.cc
+./askap/scimath/lsqr_solver/SparseMatrix.cc
 )
 
 install (FILES
 
-./fitting/PolynomialEquation.h
-./fitting/INormalEquations.h
-./fitting/Params.h
-./fitting/Equation.h
-./fitting/SVDecompose.h
-./fitting/NormalEquationsStub.h
-./fitting/Solver.h
-./fitting/Quality.h
-./fitting/GenericNormalEquations.h
-./fitting/ComplexDiff.h
-./fitting/ImagingEquation.h
-./fitting/LinearSolver.h
-./fitting/Axes.h
-./fitting/ComplexDiffMatrix.h
-./fitting/CompositeEquation.h
-./fitting/ISerializable.h
-./fitting/ParamsTable.h
-./fitting/PolXProducts.h
-./fitting/GenericEquation.h
-./fitting/DesignMatrix.h
-./fitting/Solveable.h
-./fitting/ParamsCasaTable.h
-./fitting/ImagingNormalEquations.h
-./fitting/ComplexDiffMatrix.tcc
+./askap/scimath/fitting/PolynomialEquation.h
+./askap/scimath/fitting/INormalEquations.h
+./askap/scimath/fitting/Params.h
+./askap/scimath/fitting/Equation.h
+./askap/scimath/fitting/SVDecompose.h
+./askap/scimath/fitting/NormalEquationsStub.h
+./askap/scimath/fitting/Solver.h
+./askap/scimath/fitting/Quality.h
+./askap/scimath/fitting/GenericNormalEquations.h
+./askap/scimath/fitting/ComplexDiff.h
+./askap/scimath/fitting/ImagingEquation.h
+./askap/scimath/fitting/LinearSolver.h
+./askap/scimath/fitting/Axes.h
+./askap/scimath/fitting/ComplexDiffMatrix.h
+./askap/scimath/fitting/CompositeEquation.h
+./askap/scimath/fitting/ISerializable.h
+./askap/scimath/fitting/ParamsTable.h
+./askap/scimath/fitting/PolXProducts.h
+./askap/scimath/fitting/GenericEquation.h
+./askap/scimath/fitting/DesignMatrix.h
+./askap/scimath/fitting/Solveable.h
+./askap/scimath/fitting/ParamsCasaTable.h
+./askap/scimath/fitting/ImagingNormalEquations.h
+./askap/scimath/fitting/ComplexDiffMatrix.tcc
 
 DESTINATION include/askap/scimath/fitting
 )
 
 install (FILES
 
-./utils/SpheroidalFunction.h
-./utils/SharedGSLTypes.h
-./utils/MultiDimPosIter.h
-./utils/CasaBlobUtils.h
-./utils/DelayEstimator.h
-./utils/ChangeMonitor.h
-./utils/ImageUtils.h
-./utils/DeepCopyUtils.h
-./utils/PaddingUtils.h
-./utils/ComplexGaussianNoise.h
-./utils/FixedSizeCache.h
-./utils/MultiDimArrayPlaneIter.h
-./utils/EigenDecompose.h
-./utils/PhaseUnwrapper.h
-./utils/PolConverter.h
-./utils/PaddingUtils.tcc
-./utils/PhaseUnwrapper.tcc
-./utils/MultiDimArrayPlaneIter.tcc
-./utils/CasaBlobUtils.tcc
-./utils/FixedSizeCache.tcc
+./askap/scimath/utils/SpheroidalFunction.h
+./askap/scimath/utils/SharedGSLTypes.h
+./askap/scimath/utils/MultiDimPosIter.h
+./askap/scimath/utils/CasaBlobUtils.h
+./askap/scimath/utils/DelayEstimator.h
+./askap/scimath/utils/ChangeMonitor.h
+./askap/scimath/utils/ImageUtils.h
+./askap/scimath/utils/DeepCopyUtils.h
+./askap/scimath/utils/PaddingUtils.h
+./askap/scimath/utils/ComplexGaussianNoise.h
+./askap/scimath/utils/FixedSizeCache.h
+./askap/scimath/utils/MultiDimArrayPlaneIter.h
+./askap/scimath/utils/EigenDecompose.h
+./askap/scimath/utils/PhaseUnwrapper.h
+./askap/scimath/utils/PolConverter.h
+./askap/scimath/utils/PaddingUtils.tcc
+./askap/scimath/utils/PhaseUnwrapper.tcc
+./askap/scimath/utils/MultiDimArrayPlaneIter.tcc
+./askap/scimath/utils/CasaBlobUtils.tcc
+./askap/scimath/utils/FixedSizeCache.tcc
 
 DESTINATION include/askap/scimath/utils
 )
 
 install (FILES
 
-./fft/FFTWrapper.h
+./askap/scimath/fft/FFTWrapper.h
 DESTINATION include/askap/scimath/fft 
 
 )
 install (FILES
 	
-lsqr_solver/GlobalTypedefs.h
-lsqr_solver/LSQRSolver.h
-lsqr_solver/MathUtils.h
-lsqr_solver/ModelDamping.h
-lsqr_solver/ParallelTools.h
-lsqr_solver/SparseMatrix.h
+./askap/scimath/lsqr_solver/GlobalTypedefs.h
+./askap/scimath/lsqr_solver/LSQRSolver.h
+./askap/scimath/lsqr_solver/MathUtils.h
+./askap/scimath/lsqr_solver/ModelDamping.h
+./askap/scimath/lsqr_solver/ParallelTools.h
+./askap/scimath/lsqr_solver/SparseMatrix.h
 
 DESTINATION include/askap/scimath/lqsr_solver
 )

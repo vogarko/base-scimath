@@ -1,7 +1,7 @@
 /// @file
 ///
-/// Tests of the gaussian noise generator (giving complex numbers, independent real and imaginary part).
-///
+/// Wraps around casacore's random generators to provide complex noise generator with
+/// a given variance.
 ///
 /// @copyright (c) 2007 CSIRO
 /// Australia Telescope National Facility (ATNF)
@@ -27,44 +27,33 @@
 ///
 /// @author Max Voronkov <maxim.voronkov@csiro.au>
 
-#include <cppunit/extensions/HelperMacros.h>
 #include <askap/scimath/utils/ComplexGaussianNoise.h>
 
 namespace askap {
 
 namespace scimath {
 
-class ComplexGaussianNoiseTest : public CppUnit::TestFixture 
+/// @brief constructor, initializes random generators
+/// @param[in] variance required variance of the noise (same as rms
+/// squared here because the mean is always zero)
+/// @param[in] seed1 a first seed to initialize the random generator
+/// @param[in] seed2 a second seed to initialize the random generator 
+ComplexGaussianNoise::ComplexGaussianNoise(double variance, casacore::Int seed1, 
+                                            casacore::Int seed2) :
+    itsGen(seed1, seed2), itsNoiseGen(&itsGen,0.,variance)
 {
-   CPPUNIT_TEST_SUITE(ComplexGaussianNoiseTest);
-   CPPUNIT_TEST(testStats);
-   CPPUNIT_TEST_SUITE_END();
-public:
-   void testStats() 
-   {
-     ComplexGaussianNoise cgn(2.);
-     const size_t nTests = 10000;
-     casa::Complex mean(0.,0.);
-     float reSumSq = 0., imSumSq = 0.;
-     for (size_t test = 0; test<nTests; ++test) {
-          const casa::Complex val = cgn();
-          mean += val;
-          reSumSq += casa::square(casa::real(val));
-          imSumSq += casa::square(casa::imag(val));
-     }
-     mean /= float(nTests);
-     reSumSq /= float(nTests);
-     imSumSq /= float(nTests);
-     reSumSq -= casa::square(casa::real(mean));
-     imSumSq -= casa::square(casa::imag(mean));
-     CPPUNIT_ASSERT_DOUBLES_EQUAL(0., casa::real(mean), 0.02);
-     CPPUNIT_ASSERT_DOUBLES_EQUAL(0., casa::imag(mean), 0.02);
-     CPPUNIT_ASSERT_DOUBLES_EQUAL(2., reSumSq, 0.01);
-     CPPUNIT_ASSERT_DOUBLES_EQUAL(2., imSumSq, 0.01);
-   }
-}; // ComplexGaussianNoiseTest
+}
+
+/// @brief main method to obtain a random complex number.
+/// @details It runs the generator twice for real and imaginary part,
+/// composes a complex number and returns it.
+/// @return a random complex number
+casacore::Complex ComplexGaussianNoise::operator()() const
+{
+  return casacore::Complex(itsNoiseGen(),itsNoiseGen());
+}
+
 
 } // namespace scimath
 
 } // namespace askap
-

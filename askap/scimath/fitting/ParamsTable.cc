@@ -1,8 +1,6 @@
 /// @file
 ///
-/// Test of ChangeMonitor (helper class to assist keeping track of changes in e.g. parameters or
-/// some other variable which can be cached)
-///
+/// Holds the parameters in a table
 ///
 /// @copyright (c) 2007 CSIRO
 /// Australia Telescope National Facility (ATNF)
@@ -26,38 +24,39 @@
 /// along with this program; if not, write to the Free Software
 /// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 ///
-/// @author Max Voronkov <maxim.voronkov@csiro.au>
+/// @author Tim Cornwell <tim.cornwell@csiro.au>
+///
+#include <askap/scimath/fitting/ParamsTable.h>
+#include <askap/scimath/fitting/Params.h>
 
-#include <cppunit/extensions/HelperMacros.h>
-
-#include <askap/scimath/utils/ChangeMonitor.h>
-
-
-namespace askap {
-
-namespace scimath {
-
-class ChangeMonitorTest : public CppUnit::TestFixture 
+namespace askap
 {
-   CPPUNIT_TEST_SUITE(ChangeMonitorTest);
-   CPPUNIT_TEST(testChangeMonitor);
-   CPPUNIT_TEST_SUITE_END();
-public:
-   
-   void testChangeMonitor() {
-      ChangeMonitor cm;
-      const ChangeMonitor cm2 = cm;
-      CPPUNIT_ASSERT(cm2 == cm);
-      cm.notifyOfChanges();
-      CPPUNIT_ASSERT(cm2 != cm);
-      for (size_t i=0; i<20; ++i) {
-           cm.notifyOfChanges();
-      }
-      CPPUNIT_ASSERT(cm2 != cm);      
-   }
-};
-    
-} // namespace scimath
+  namespace scimath
+  {
 
-} // namespace askap
+    ParamsTable::ParamsTable()
+    {
+    }
 
+    ParamsTable::~ParamsTable()
+    {
+    }
+
+    void ParamsTable::getParameters(Params&) const
+    {
+    };
+
+    void ParamsTable::getParameters(Params&, const Domain&) const
+    {
+    };
+
+    void ParamsTable::setParameters(const Params&)
+    {
+    }
+
+    void ParamsTable::setParameters(const Params&, const Domain&)
+    {
+    }
+
+  }
+}

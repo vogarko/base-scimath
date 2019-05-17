@@ -31,7 +31,7 @@
 #include <casacore/casa/Arrays/Vector.h>
 #include <casacore/casa/Arrays/Matrix.h>
 
-#include <utils/EigenDecompose.h>
+#include <askap/scimath/utils/EigenDecompose.h>
 
 namespace askap {
 

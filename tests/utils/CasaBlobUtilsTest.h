@@ -44,7 +44,7 @@
 #include "Blob/BlobOBufVector.h"
 
 // Classes to test
-#include "utils/CasaBlobUtils.h"
+#include "askap/scimath/utils/CasaBlobUtils.h"
 
 using namespace casa;
 using namespace LOFAR;
