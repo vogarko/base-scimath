@@ -36,7 +36,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <boost/shared_ptr.hpp>
-#include <utils/FixedSizeCache.h>
+#include <askap/scimath/utils/FixedSizeCache.h>
 #include <askap/askap/AskapUtil.h>
 #include <string>
 

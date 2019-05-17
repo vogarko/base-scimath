@@ -31,7 +31,7 @@
 // cppunit includes
 #include <cppunit/extensions/HelperMacros.h>
 // own includes
-#include <utils/SpheroidalFunction.h>
+#include <askap/scimath/utils/SpheroidalFunction.h>
 #include <askap/askap/AskapError.h>
 //#include <fstream>
 

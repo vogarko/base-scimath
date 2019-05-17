@@ -30,7 +30,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 // own includes
-#include "utils/SharedGSLTypes.h"
+#include "askap/scimath/utils/SharedGSLTypes.h"
 
 // gsl includes
 #include <gsl/gsl_matrix.h>

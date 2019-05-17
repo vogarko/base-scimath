@@ -29,7 +29,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <casacore/casa/Arrays/Vector.h>
-#include <utils/DelayEstimator.h>
+#include <askap/scimath/utils/DelayEstimator.h>
 #include <casacore/casa/BasicSL/Complex.h>
 #include <casacore/casa/BasicSL/Constants.h>
 #include <casacore/casa/BasicMath/Random.h>

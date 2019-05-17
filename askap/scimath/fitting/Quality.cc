@@ -1,8 +1,6 @@
 /// @file
 ///
-/// Test of ChangeMonitor (helper class to assist keeping track of changes in e.g. parameters or
-/// some other variable which can be cached)
-///
+/// Captures quality of a solution from a Solver
 ///
 /// @copyright (c) 2007 CSIRO
 /// Australia Telescope National Facility (ATNF)
@@ -26,38 +24,43 @@
 /// along with this program; if not, write to the Free Software
 /// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 ///
-/// @author Max Voronkov <maxim.voronkov@csiro.au>
+/// @author Tim Cornwell <tim.cornwell@csiro.au>
+///
 
-#include <cppunit/extensions/HelperMacros.h>
+#include <askap/scimath/fitting/Quality.h>
 
-#include <askap/scimath/utils/ChangeMonitor.h>
-
-
-namespace askap {
-
-namespace scimath {
-
-class ChangeMonitorTest : public CppUnit::TestFixture 
+namespace askap
 {
-   CPPUNIT_TEST_SUITE(ChangeMonitorTest);
-   CPPUNIT_TEST(testChangeMonitor);
-   CPPUNIT_TEST_SUITE_END();
-public:
-   
-   void testChangeMonitor() {
-      ChangeMonitor cm;
-      const ChangeMonitor cm2 = cm;
-      CPPUNIT_ASSERT(cm2 == cm);
-      cm.notifyOfChanges();
-      CPPUNIT_ASSERT(cm2 != cm);
-      for (size_t i=0; i<20; ++i) {
-           cm.notifyOfChanges();
+  namespace scimath
+  {
+
+    Quality::Quality() : itsCond(0.0), itsRank(0), itsDOF(0), itsInfo("")
+    {
+    }
+
+    Quality::~Quality()
+    {
+    }
+
+    std::ostream& operator<<(std::ostream& os, const Quality& q)
+    {
+      if(q.info()!="") {
+        os << "Solution : " << q.info();
       }
-      CPPUNIT_ASSERT(cm2 != cm);      
-   }
-};
-    
-} // namespace scimath
+      if(q.DOF()>0)
+      {
+        os << " : degrees of freedom " << q.DOF();
+      }
+      if(q.rank()>0)
+      {
+        os << ", rank = " << q.rank();
+      }
+      if(q.cond()>0.0)
+      {
+        os << ", condition number = " << q.cond();
+      }
+      return os;
+    }
 
-} // namespace askap
-
+  }
+}

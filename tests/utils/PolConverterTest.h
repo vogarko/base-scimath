@@ -35,7 +35,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 // ASKAPsoft includes
-#include "utils/PolConverter.h"
+#include "askap/scimath/utils/PolConverter.h"
 #include <askap/askap/AskapError.h>
 
 namespace askap {

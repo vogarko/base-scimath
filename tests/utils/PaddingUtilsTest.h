@@ -35,7 +35,7 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include <utils/PaddingUtils.h>
+#include <askap/scimath/utils/PaddingUtils.h>
 #include <casacore/casa/Arrays/Matrix.h>
 
 
