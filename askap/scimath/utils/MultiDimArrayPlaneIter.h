@@ -73,7 +73,7 @@ struct MultiDimArrayPlaneIter : protected casacore::ArrayPositionIterator {
    /// @param[in] in different position in iterator
    /// @return output array (single plane)
    template<typename T>
-   casa::Array<T> getPlane(casa::Array<T> &in, const casa::IPosition &pos) const;
+   casacore::Array<T> getPlane(casacore::Array<T> &in, const casacore::IPosition &pos) const;
    
    /// @brief extract a single plane form a 1D array
    /// @details This method extracts a single slice from an array flattened to a 1D vector. The slice 

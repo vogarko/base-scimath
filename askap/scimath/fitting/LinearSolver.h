@@ -132,7 +132,7 @@ namespace askap
          /// has coded channel present.
          /// @param[in] name full name of the parameter
          /// @return a pair with extracted channel and the base parameter name
-         static std::pair<casa::uInt, std::string> extractChannelInfo(const std::string &name);
+         static std::pair<casacore::uInt, std::string> extractChannelInfo(const std::string &name);
     };
 
   }

@@ -71,12 +71,12 @@ casacore::Array<T> MultiDimArrayPlaneIter::getPlane(casacore::Array<T> &in) cons
 /// @param[in] in input array
 /// @return output array (single plane)
 template<typename T>
-casa::Array<T> MultiDimArrayPlaneIter::getPlane(casa::Array<T> &in, const casa::IPosition &pos) const
+casacore::Array<T> MultiDimArrayPlaneIter::getPlane(casacore::Array<T> &in, const casacore::IPosition &pos) const
 {
   // we may need to add more functionality to this method to take care of situations
   // when the PSF is defined for a single polarisation/channel only
-  const casa::IPosition blc(pos);
-  casa::IPosition trc(blc);
+  const casacore::IPosition blc(pos);
+  casacore::IPosition trc(blc);
   trc += itsPlaneShape;
   for (casacore::uInt dim = 0; dim<trc.nelements(); ++dim) {
        trc[dim] -= 1;
