@@ -42,7 +42,7 @@ endif(ENABLE_SHARED)
 
 
 # find packages
-find_package(Boost REQUIRED COMPONENTS system signals program_options thread chrono )
+find_package(Boost REQUIRED COMPONENTS system program_options thread chrono )
 find_package(LofarCommon REQUIRED)
 find_package(log4cxx REQUIRED)
 find_package(Casacore REQUIRED COMPONENTS  ms images mirlib coordinates fits lattices measures scimath scimath_f tables casa)
