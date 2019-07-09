@@ -67,7 +67,7 @@ include_directories(${ASKAP_INCLUDE_DIRS})
 include_directories(${IMAGEMATH_INCLUDE_DIRS})
 message(STATUS ${IMAGEMATH_INCLUDE_DIRS})
 include_directories(${LofarBlob_INCLUDE_DIRS})
-include_directories(${FFTW_INCLUDE_DIRS})
+include_directories(${FFTW_INCLUDES})
 
 if (NOT GSL_VERSION VERSION_LESS 2.0)
 	add_definitions(-DHAVE_GSL2)
