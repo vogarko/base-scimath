@@ -253,5 +253,8 @@ if (CPPUNIT_FOUND)
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/fitting)
   add_subdirectory(tests/fitting)
+  
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/utils)
+  add_subdirectory(tests/utils)
 endif()
 
