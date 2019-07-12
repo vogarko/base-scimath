@@ -40,15 +40,40 @@ option (BUILD_SHARED_LIBS "" YES)
     endif (ENABLE_RPATH)
 endif(ENABLE_SHARED)
 
+# Yanda packages
+include(install_yanda_depends)
+
+set (EXTERNAL_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+find_package(LofarCommon)
+if (NOT LofarCommon_FOUND)
+	install_yanda_depends(lofar-common)
+	find_package(LofarCommon REQUIRED)
+endif ()
+
+find_package(LofarBlob)
+if (NOT LofarBlob_FOUND)
+	install_yanda_depends(lofar-blob)
+	find_package(LofarBlob REQUIRED)
+endif ()
+
+
+find_package(Askap)
+if (NOT ASKAP_FOUND)
+	install_yanda_depends(base-askap)
+	find_package(Askap REQUIRED)
+endif ()
+
+find_package(Imagemath)
+if (NOT IMAGEMATH_FOUND)
+	install_yanda_depends(base-imagemath)
+	find_package(Imagemath REQUIRED)
+endif ()
+
 
 # find packages
 find_package(Boost REQUIRED COMPONENTS system program_options thread chrono )
-find_package(LofarCommon REQUIRED)
 find_package(log4cxx REQUIRED)
 find_package(Casacore REQUIRED COMPONENTS  ms images mirlib coordinates fits lattices measures scimath scimath_f tables casa)
-find_package(Askap REQUIRED)
-find_package(Imagemath REQUIRED)
-find_package(LofarBlob REQUIRED)
 find_package(FFTW REQUIRED)
 find_package(GSL REQUIRED)
 find_package(CPPUnit)
@@ -220,23 +245,13 @@ LIBRARY PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUT
 )
 
 if (CPPUNIT_FOUND)
-	add_executable(
-		tutils
-		tests/utils/tutils.cc
-	)
-	target_include_directories(
-		tutils
-		PRIVATE
-		tests/utils/
-	)
-	target_link_libraries(
-		tutils
-		askap_scimath
-		${CPPUNIT_LIBRARIES}
-	)
-	install (
-	TARGETS tutils
-	DESTINATION bin
-	)
+  
+  include(CTest)
+  enable_testing()
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/fft)
+  add_subdirectory(tests/fft)
+
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/fitting)
+  add_subdirectory(tests/fitting)
 endif()
 

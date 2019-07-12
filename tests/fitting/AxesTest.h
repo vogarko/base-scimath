@@ -21,7 +21,7 @@
 /// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 ///
 
-#include <fitting/Axes.h>
+#include <askap/scimath/fitting/Axes.h>
 #include <Blob/BlobString.h>
 #include <Blob/BlobOBufString.h>
 #include <Blob/BlobIBufString.h>

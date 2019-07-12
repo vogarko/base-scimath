@@ -21,7 +21,7 @@
 /// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 ///
 
-#include <fitting/ImagingNormalEquations.h>
+#include <askap/scimath/fitting/ImagingNormalEquations.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 

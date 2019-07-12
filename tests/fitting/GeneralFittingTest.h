@@ -35,8 +35,8 @@
 #include <casacore/casa/Arrays/Cube.h>
 #include <casacore/casa/Arrays/Matrix.h>
 
-#include <fitting/LinearSolver.h>
-#include <fitting/GenericNormalEquations.h>
+#include <askap/scimath/fitting/LinearSolver.h>
+#include <askap/scimath/fitting/GenericNormalEquations.h>
 
 #include <askap/askap/AskapError.h>
 #include <askap/askap/AskapUtil.h>

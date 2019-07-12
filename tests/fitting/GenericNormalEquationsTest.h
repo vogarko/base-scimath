@@ -36,10 +36,10 @@
 #include <casacore/casa/Arrays/MatrixMath.h>
 
 
-#include <fitting/GenericNormalEquations.h>
-#include <fitting/DesignMatrix.h>
-#include <fitting/ComplexDiffMatrix.h>
-#include <fitting/PolXProducts.h>
+#include <askap/scimath/fitting/GenericNormalEquations.h>
+#include <askap/scimath/fitting/DesignMatrix.h>
+#include <askap/scimath/fitting/ComplexDiffMatrix.h>
+#include <askap/scimath/fitting/PolXProducts.h>
 
 
 #include <cppunit/extensions/HelperMacros.h>

@@ -21,9 +21,9 @@
 /// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 ///
 
-#include <fitting/DesignMatrix.h>
-#include <fitting/ComplexDiffMatrix.h>
-#include <fitting/ComplexDiff.h>
+#include <askap/scimath/fitting/DesignMatrix.h>
+#include <askap/scimath/fitting/ComplexDiffMatrix.h>
+#include <askap/scimath/fitting/ComplexDiff.h>
 #include <askap/askap/AskapError.h>
 
 #include <cppunit/extensions/HelperMacros.h>

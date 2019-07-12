@@ -32,7 +32,7 @@
 #define POL_X_PRODUCTS_TEST
 
 #include <cppunit/extensions/HelperMacros.h>
-#include <fitting/PolXProducts.h>
+#include <askap/scimath/fitting/PolXProducts.h>
 #include <askap/askap/AskapError.h>
 
 namespace askap {

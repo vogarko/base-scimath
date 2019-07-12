@@ -22,7 +22,7 @@
 ///
 
 // ASKAPsoft includes
-#include <AskapTestRunner.h>
+#include <askap/askap/AskapTestRunner.h>
 
 // Test includes
 #include <FFTTest.h>

@@ -21,8 +21,8 @@
 /// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 ///
 
-#include <fitting/Params.h>
-#include <fitting/ParamsCasaTable.h>
+#include <askap/scimath/fitting/Params.h>
+#include <askap/scimath/fitting/ParamsCasaTable.h>
 
 #include <casacore/tables/Tables/TableError.h>
 

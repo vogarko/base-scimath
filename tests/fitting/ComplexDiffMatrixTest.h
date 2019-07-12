@@ -39,8 +39,8 @@
 
 
 // own includes
-#include <fitting/ComplexDiff.h>
-#include <fitting/ComplexDiffMatrix.h>
+#include <askap/scimath/fitting/ComplexDiff.h>
+#include <askap/scimath/fitting/ComplexDiffMatrix.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 
@@ -64,7 +64,12 @@ class ComplexDiffMatrixTest : public CppUnit::TestFixture
   CPPUNIT_TEST(testMultiply);
   CPPUNIT_TEST(testMatrixMultiply);
   CPPUNIT_TEST(testBlockMultiply);
+  /// Exception is only tested if we compiled in DEBUG mode
+#ifdef ASKAP_DEBUG
   CPPUNIT_TEST_EXCEPTION(testBlockMultiplyFail, AskapError);
+#endif
+  ///
+  //
   CPPUNIT_TEST(testBlockMultiplyRectangular);
   CPPUNIT_TEST(testBlockExtract);
   CPPUNIT_TEST(testBlockAdd);

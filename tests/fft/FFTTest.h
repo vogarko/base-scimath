@@ -25,7 +25,7 @@
 #include <fftw3.h>
 #include <casacore/casa/Arrays/Vector.h>
 #include <casacore/casa/Arrays/Matrix.h>
-#include <fft/FFTWrapper.h>
+#include <askap/scimath/fft/FFTWrapper.h>
 
 #include <askap/askap/AskapError.h>
 #include <cppunit/extensions/HelperMacros.h>

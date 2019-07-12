@@ -21,7 +21,7 @@
 /// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
 // ASKAPsoft includes
-#include <AskapTestRunner.h>
+#include <askap/askap/AskapTestRunner.h>
 
 // Test includes
 #include <ParamsTest.h>

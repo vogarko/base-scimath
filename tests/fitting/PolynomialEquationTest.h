@@ -21,10 +21,10 @@
 /// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 ///
 
-#include <fitting/PolynomialEquation.h>
-#include <fitting/CompositeEquation.h>
-#include <fitting/GenericNormalEquations.h>
-#include <fitting/LinearSolver.h>
+#include <askap/scimath/fitting/PolynomialEquation.h>
+#include <askap/scimath/fitting/CompositeEquation.h>
+#include <askap/scimath/fitting/GenericNormalEquations.h>
+#include <askap/scimath/fitting/LinearSolver.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 

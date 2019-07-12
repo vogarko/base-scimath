@@ -29,9 +29,9 @@
 #ifndef NORMAL_EQUATIONS_STUB_TEST_H
 #define NORMAL_EQUATIONS_STUB_TEST_H
 
-#include <fitting/NormalEquationsStub.h>
-#include <fitting/GenericNormalEquations.h>
-#include <fitting/DesignMatrix.h>
+#include <askap/scimath/fitting/NormalEquationsStub.h>
+#include <askap/scimath/fitting/GenericNormalEquations.h>
+#include <askap/scimath/fitting/DesignMatrix.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 
