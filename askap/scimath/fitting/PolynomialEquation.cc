@@ -102,10 +102,10 @@ namespace askap
     {
     	itsModel.set(0.0);
 
-      std::vector<string> completions(parameters().completions("poly"));
+      std::vector<std::string> completions(parameters().completions("poly"));
       if(completions.size()>0) {
 // Loop over all polynomials adding to the values. 
-        for (std::vector<string>::const_iterator it=completions.begin();it!=completions.end();it++)
+        for (std::vector<std::string>::const_iterator it=completions.begin();it!=completions.end();it++)
         {
           string polyName("poly"+(*it));
           const casacore::Vector<double> par(parameters().value(polyName));
@@ -118,7 +118,7 @@ namespace askap
     {
     	itsModel.set(0.0);
 
-    	std::vector<string> completions(parameters().completions("poly"));
+    	std::vector<std::string> completions(parameters().completions("poly"));
       if(completions.size()>0) {
         DesignMatrix designmatrix; // old parameters: parameters();
 
@@ -126,7 +126,7 @@ namespace askap
         values=0.0;
 
 // Loop over all polynomials adding to the values. 
-        for (std::vector<string>::const_iterator it=completions.begin();it!=completions.end();it++)
+        for (std::vector<std::string>::const_iterator it=completions.begin();it!=completions.end();it++)
         {
           string polyName("poly"+(*it));
           const casacore::Vector<double> par(parameters().value(polyName));

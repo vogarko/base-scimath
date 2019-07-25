@@ -141,7 +141,7 @@ namespace askap
                         return -1;
 		}
 
-		const std::vector<string>& Axes::names() const
+		const std::vector<std::string>& Axes::names() const
 		{
 			return itsNames;
 		}
@@ -255,8 +255,8 @@ namespace askap
 		std::ostream& operator<<(std::ostream& os, const Axes& axes)
 		{
 
-			vector<string> names(axes.names());
-			for(vector<string>::const_iterator it = names.begin();
+			vector<std::string> names(axes.names());
+			for(vector<std::string>::const_iterator it = names.begin();
 					it != names.end(); it++)
 			{
 				os << *it << " from " << axes.start(*it) << " to " << axes.end(*it)

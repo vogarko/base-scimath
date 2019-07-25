@@ -396,7 +396,7 @@ namespace askap
 
         bool Params::isCongruent(const Params& other) const
         {
-            for(std::map<string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
+            for(std::map<std::string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
             {
                 if (other.itsFree.find(iter->first) == other.itsFree.end()) {
 					return false;
@@ -407,8 +407,8 @@ namespace askap
 
 		void Params::merge(const Params& other)
 		{
-			std::vector<string> names(other.names());
-			for(std::vector<string>::const_iterator iter = names.begin(); iter != names.end(); iter++)
+			std::vector<std::string> names(other.names());
+			for(std::vector<std::string>::const_iterator iter = names.begin(); iter != names.end(); iter++)
 			{
 				/// @todo Improve merging logic for Params
 				if(!has(*iter))
@@ -424,10 +424,10 @@ namespace askap
 			}
 		}
 
-		std::vector<string> Params::names() const
+		std::vector<std::string> Params::names() const
 		{
-			std::vector<string> names;
-			for(std::map<string,bool>::const_iterator iter = itsFree.begin();
+			std::vector<std::string> names;
+			for(std::map<std::string,bool>::const_iterator iter = itsFree.begin();
 					iter != itsFree.end(); iter++)
 			{
 				names.push_back(iter->first);
@@ -435,33 +435,33 @@ namespace askap
 			return names;
 		}
 
-		std::vector<string> Params::freeNames() const
+		std::vector<std::string> Params::freeNames() const
 		{
-			std::vector<string> names;
-			for(std::map<string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
+			std::vector<std::string> names;
+			for(std::map<std::string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
 			{
 				if(isFree(iter->first)) names.push_back(iter->first);
 			}
 			return names;
 		}
 
-		std::vector<string> Params::fixedNames() const
+		std::vector<std::string> Params::fixedNames() const
 		{
-			std::vector<string> names;
-			for(std::map<string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
+			std::vector<std::string> names;
+			for(std::map<std::string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
 			{
 				if(!isFree(iter->first)) names.push_back(iter->first);
 			}
 			return names;
 		}
 
-		std::vector<string> Params::completions(const std::string& pattern, const bool useAll) const
+		std::vector<std::string> Params::completions(const std::string& pattern, const bool useAll) const
 		{
 			casacore::Regex regex(casacore::Regex::fromPattern(pattern+"*"));
 			casacore::Regex sub(casacore::Regex::fromPattern(pattern));
-			std::vector<string> completions;
+			std::vector<std::string> completions;
 			uint ncomplete=0;
-			for(std::map<string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
+			for(std::map<std::string,bool>::const_iterator iter = itsFree.begin(); iter != itsFree.end(); iter++)
 			{
 				if(casacore::String(iter->first).matches(regex))
 				{
@@ -513,10 +513,10 @@ namespace askap
             const size_t showAtEnd = 5;
             ASKAPDEBUGASSERT(lengthLimit > showAtEnd);
             
-			std::vector<string> names(params.names());
+			std::vector<std::string> names(params.names());
 			
 			size_t counter = 1;			
-			for(std::vector<string>::const_iterator it = names.begin(); it != names.end(); ++it,++counter)
+			for(std::vector<std::string>::const_iterator it = names.begin(); it != names.end(); ++it,++counter)
 			{
 				os << *it << " : ";
 				if(params.isScalar(*it))
