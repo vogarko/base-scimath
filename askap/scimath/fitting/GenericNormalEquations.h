@@ -158,7 +158,21 @@ struct GenericNormalEquations : public INormalEquations {
   /// @return one element of the sparse normal matrix (a dense matrix)
   virtual const casacore::Matrix<double>& normalMatrix(const std::string &par1, 
                         const std::string &par2) const;
-  
+
+  /// @brief Returns iterator to the beginning of normal matrix row, defined by input parameter.
+  /// @param[in] par the name of the parameter describing the matrix row
+  std::map<string, casa::Matrix<double> >::const_iterator getNormalMatrixRowBegin(const std::string &par) const;
+
+  /// @brief Returns iterator to the end of normal matrix row, defined by input parameter.
+  /// @details It is used together with getNormalMatrixRowBegin() to iterate through the (sparse) matrix elements.
+  /// @param[in] par the name of the parameter describing the matrix row
+  std::map<string, casa::Matrix<double> >::const_iterator getNormalMatrixRowEnd(const std::string &par) const;
+
+  /// @brief Returns the number of (scalar) elements in the normal matrix.
+  /// @details This should be close to the number of non zero elements,
+  /// depending if the elements-matrices (casa::Matrix) have non diagonal nonzero elements (or leakages).
+  size_t getNumberElements() const;
+
   /// @brief data vector for a given parameter
   /// @details In the current framework, parameters are essentially 
   /// vectors, not scalars. Each element of such vector is treated
@@ -203,36 +217,8 @@ struct GenericNormalEquations : public INormalEquations {
   /// @brief obtain const reference to metadata
   /// @details This is a const version of the metadata() method
   /// @return const reference to metadata
-  inline const Params& metadata() const { return itsMetadata;}
+  inline const Params& metadata() const { return itsMetadata; }
 
-  /// @brief A lifetime watcher needed for initializeNormalMatrixParameters().
-  class NMInitializedParametersLifetimeWatcher {
-  public:
-      NMInitializedParametersLifetimeWatcher(const GenericNormalEquations &gne) : itsGne(gne) {}
-      void setInitializationFlag() {
-          nonconst().metadata().add("NMParametersInitialized", 0);
-      }
-      ~NMInitializedParametersLifetimeWatcher() {
-          if (itsGne.metadata().has("NMParametersInitialized")) {
-              // Removing the initialization flag.
-              nonconst().metadata().remove("NMParametersInitialized");
-          }
-      }
-  private:
-      const GenericNormalEquations &itsGne;
-      GenericNormalEquations& nonconst() {
-          return const_cast<GenericNormalEquations &>(itsGne);
-      }
-  };
-
-  /// @brief Performs advanced initialization of the normal matrix parameters.
-  /// It is used for performance optimization to avoid initializing parameters
-  /// inside addParameter() which leads to O(N^2) complexity when N parameters are being added one by one.
-  /// @param[in] names Parameter names to be added to the normal matrix.
-  /// @param[in] watcher Lifetime watcher, to remove the "ParametersInitialized" flag when go out of scope.
-  void initializeNormalMatrixParameters(const std::vector<std::string> &names,
-                                        NMInitializedParametersLifetimeWatcher &watcher);
-    
 protected:
   /// @brief map of matrices (data element of each row map)
   typedef std::map<std::string, casacore::Matrix<double> > MapOfMatrices;
@@ -268,8 +254,18 @@ protected:
   /// @param[in] inNM input normal matrix
   /// @param[in] inDV input data vector 
   void addParameter(const std::string &par, const MapOfMatrices &inNM,
-                    const casacore::Vector<double>& inDV);
-  
+                    const casa::Vector<double>& inDV);
+
+  /// @brief Add/update one parameter to/in sparse matrix, using given matrix and data vector.
+  /// @details Similar to addParameter, but does not initialize the full matrix.
+  /// Instead, only elements (cross-terms) used in calculations get initialized,
+  /// essentially allowing for building a sparse matrix.
+  /// @param[in] par name of the parameter to work with
+  /// @param[in] inNM input normal matrix
+  /// @param[in] inDV input data vector
+  void addParameterSparsely(const std::string &par, const MapOfMatrices &inNM,
+                            const casa::Vector<double>& inDV);
+
   /// @brief extract dimension of a parameter from the given row
   /// @details This helper method analyses the matrices stored in the supplied
   /// map (effectively a row of a sparse matrix) and extracts the dimension of
@@ -279,9 +275,8 @@ protected:
   /// all elements).
   /// @param[in] nmRow a row of the sparse normal matrix to work with
   /// @return dimension of the corresponding parameter
-  static casacore::uInt parameterDimension(const MapOfMatrices &nmRow);  
-  
-  
+  static casa::uInt parameterDimension(const MapOfMatrices &nmRow);
+
   /// @brief Calculate an element of A^tA
   /// @details Each element of a sparse normal matrix is also a matrix
   /// in general. However, due to some limitations of CASA operators, a
@@ -304,9 +299,9 @@ protected:
   /// @param[in] dm an element of the design matrix
   /// @param[in] dv an element of the data vector
   /// @return element of the right-hand side of the normal equations
-  static casacore::Vector<double> dvElement(const casacore::Matrix<double> &dm,
-              const casacore::Vector<double> &dv); 
-  
+  static casa::Vector<double> dvElement(const casa::Matrix<double> &dm,
+              const casa::Vector<double> &dv); 
+
   /// @brief Extract derivatives from design matrix
   /// @details This method extracts an appropriate derivative matrix
   /// from the given design matrix. Effectively, it implements
@@ -320,7 +315,15 @@ protected:
              const std::string &par, casacore::uInt dataPoint);
   
 private:
-  
+  // Adding the data vector for a parameter.
+  void addDataVector(const std::string &par, const casa::Vector<double>& inDV);
+
+  /// @brief test that all matrix elements are zero
+  /// @details This is a helper method to test all matrix elements
+  /// @param[in] matrix matrix to test
+  /// @return true if all elements are zero
+  static bool allMatrixElementsAreZeros(const casa::Matrix<double>& matrix);
+
   /// @brief normal matrix
   /// @details Normal matrices stored as a map or maps of Matrixes - 
   /// it's really just a big matrix.

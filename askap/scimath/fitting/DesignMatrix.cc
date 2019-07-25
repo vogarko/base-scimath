@@ -71,7 +71,7 @@ namespace askap
         itsWeight.clear();
         itsParameterNamesInvalid = true;
         // We need to do a deep copy to ensure that future changes don't propagate here
-        for (std::map<string, DMAMatrix>::const_iterator AIt=other.itsAMatrix.begin(); AIt!=other.itsAMatrix.end(); ++AIt) {
+        for (std::map<std::string, DMAMatrix>::const_iterator AIt=other.itsAMatrix.begin(); AIt!=other.itsAMatrix.end(); ++AIt) {
           const DMAMatrix& otherDMAMatrix(AIt->second);
           DMAMatrix& thisDMAMatrix(itsAMatrix[AIt->first]);
           for (DMAMatrix::const_iterator it=otherDMAMatrix.begin(); it!=otherDMAMatrix.end(); ++it) {
@@ -288,7 +288,7 @@ void DesignMatrix::addModel(const ComplexDiffMatrix &cdm,
     int DesignMatrix::nParameters() const
     {
       int nParameters=0;
-      for (std::map<string, DMAMatrix>::const_iterator AIt=itsAMatrix.begin();AIt!=itsAMatrix.end();++AIt)
+      for (std::map<std::string, DMAMatrix>::const_iterator AIt=itsAMatrix.begin();AIt!=itsAMatrix.end();++AIt)
       {
         for (DMAMatrix::const_iterator it=AIt->second.begin();it!=AIt->second.end();++it)
         {

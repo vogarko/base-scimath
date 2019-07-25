@@ -220,10 +220,10 @@ namespace askap
       ArrayColumn<double> domainEndCol (itsTable, colDomainEnd);
       ScalarColumn<bool> freeCol (itsTable, colFree);
 
-      std::vector<string> names(ip.names());
+      std::vector<std::string> names(ip.names());
       int rownr=itsTable.nrow();
 
-      for (std::vector<string>::iterator it=names.begin();it!=names.end();it++)
+      for (std::vector<std::string>::iterator it=names.begin();it!=names.end();it++)
       {
         itsTable.addRow();
         nameCol.put(rownr, *it);
