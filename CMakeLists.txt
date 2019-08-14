@@ -77,6 +77,12 @@ find_package(Casacore REQUIRED COMPONENTS  ms images mirlib coordinates fits lat
 find_package(FFTW REQUIRED)
 find_package(GSL REQUIRED)
 find_package(CPPUnit)
+find_package(MPI REQUIRED)
+
+if (MPI_FOUND)
+    add_definitions(-DHAVE_MPI)
+endif()
+
 
 # include directories
 include_directories( ${CMAKE_SOURCE_DIR} )
@@ -93,6 +99,7 @@ include_directories(${IMAGEMATH_INCLUDE_DIRS})
 message(STATUS ${IMAGEMATH_INCLUDE_DIRS})
 include_directories(${LofarBlob_INCLUDE_DIRS})
 include_directories(${FFTW_INCLUDES})
+
 
 if (NOT GSL_VERSION VERSION_LESS 2.0)
 	add_definitions(-DHAVE_GSL2)
