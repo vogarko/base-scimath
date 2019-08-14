@@ -81,6 +81,7 @@ find_package(MPI REQUIRED)
 
 if (MPI_FOUND)
     add_definitions(-DHAVE_MPI)
+    include_directories(${MPI_INCLUDE_PATH})
 endif()
 
 
@@ -242,6 +243,11 @@ target_link_libraries(
 	${FFTW_LIBRARIES}
 	${GSL_LIBRARIES}
 )
+if (MPI_FOUND)
+	target_link_libraries(askap_scimath
+		${MPI_LIBRARIES}
+	)
+endif (MPI_FOUND)
 
 install (
 TARGETS askap_scimath
