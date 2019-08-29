@@ -37,8 +37,8 @@
 #include <AxesTest.h>
 #include <PolXProductsTest.h>
 
-#include <askap/AskapLogging.h>
-#include <askapparallel/AskapParallel.h>
+#include <askap/askap/AskapLogging.h>
+#include <askap/askapparallel/AskapParallel.h>
 
 int main(int argc, char *argv[])
 {

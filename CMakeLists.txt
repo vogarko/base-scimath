@@ -70,6 +70,13 @@ if (NOT IMAGEMATH_FOUND)
 endif ()
 
 
+find_package(AskapParallel)
+if (NOT ASKAPPARALLEL_FOUND)
+	install_yanda_depends(base-askapparallel)
+	find_package(AskapParallel REQUIRED)
+endif ()
+
+
 # find packages
 find_package(Boost REQUIRED COMPONENTS system program_options thread chrono )
 find_package(log4cxx REQUIRED)
@@ -89,6 +96,7 @@ include_directories(${CASACORE_INCLUDE_DIRS})
 add_definitions(-DHAVE_AIPSPP)
 add_definitions(-Dcasa=casacore)
 include_directories(${ASKAP_INCLUDE_DIRS})
+include_directories(${ASKAPPARALLEL_INCLUDE_DIRS})
 include_directories(${IMAGEMATH_INCLUDE_DIRS})
 message(STATUS ${IMAGEMATH_INCLUDE_DIRS})
 include_directories(${LofarBlob_INCLUDE_DIRS})
@@ -227,6 +235,7 @@ target_link_libraries(
 	askap_scimath
 	${CASACORE_LIBRARIES}
 	${ASKAP_LIBRARY}
+	${ASKAPPARALLEL_LIBRARY}
 	${IMAGEMATH_LIBRARY}
 	${log4cxx_LIBRARY}
 	${Boost_LIBRARIES}
