@@ -37,13 +37,13 @@ namespace askap
 
     /// @brief default constructor
     Solver::Solver() {};
-    
+
     Solver::Solver(const Solver& other) : Solveable(other) {
         if (other.itsNormalEquations) {
             itsNormalEquations = other.itsNormalEquations->clone();
         }
     }
-    
+
     /// @brief assignment operator
     /// @param[in] other solver to take the data from
     /// @return reference to itself
@@ -54,23 +54,22 @@ namespace askap
         }    
         return *this;
     }
-    
+
     /// @return a reference to normal equations object
     const INormalEquations& Solver::normalEquations() const
     {
       ASKAPDEBUGASSERT(itsNormalEquations);
       return *itsNormalEquations;
     }
-    
+
     /// @brief reset normal equations
     void Solver::resetNormalEquations() const
     {
       if (itsNormalEquations) {
-          itsNormalEquations->reset();   
+          itsNormalEquations->reset();
       }
     }
-    
-    
+
     void Solver::copyNormalEquations(const Solver& other)
     {
       ASKAPCHECK(other.itsNormalEquations, "NormalEquations not defined in other Solver");
@@ -86,7 +85,7 @@ namespace askap
           itsNormalEquations = normeq.clone();
       }
     }
-    
+
     /// @brief solve for parameters
     /// The solution is constructed from the normal equations and given
     /// parameters are updated
@@ -96,12 +95,12 @@ namespace askap
     {
      return false;
     }
-    
+
     Solver::ShPtr Solver::clone() const
     {
       return Solver::ShPtr(new Solver(*this));
     }
-    
+
     void Solver::init()
     {
       if (itsNormalEquations) {
@@ -109,6 +108,6 @@ namespace askap
        	 ASKAPCHECK(itsNormalEquations, "NormalEquations not defined in Solver after reset");
       }
     }
-    
+
   }
 }

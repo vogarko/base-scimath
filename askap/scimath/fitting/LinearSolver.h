@@ -30,6 +30,10 @@
 #ifndef SCIMATHLINEARSOLVER_H_
 #define SCIMATHLINEARSOLVER_H_
 
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
+
 #include <askap/scimath/fitting/Solver.h>
 #include <askap/scimath/fitting/INormalEquations.h>
 #include <askap/scimath/fitting/DesignMatrix.h>
@@ -51,7 +55,7 @@ namespace askap
       public:
        /// @brief no limit on the condition number
        static BOOST_CONSTEXPR_OR_CONST double KeepAllSingularValues = -1.;
-      
+
        /// @brief Constructor
        /// @details Optionally, it is possible to limit the condition number of
        /// normal equation matrix to a given number.
@@ -64,7 +68,9 @@ namespace askap
        /// thing to do!). A very large threshold has the same effect. Zero
        /// threshold is not allowed and will cause an exception.
        explicit LinearSolver(double maxCondNumber = 1e3);
-        
+
+       ~LinearSolver();
+
         /// Initialize this solver
         virtual void init();
 
@@ -80,11 +86,13 @@ namespace askap
         /// @brief Clone this object
         virtual Solver::ShPtr clone() const;
 
-        // @brief Setter for workers communicator.
-        virtual void SetWorkersCommunicator(void *comm);
-
         // @brief Setter for the major loop iteration number.
-        virtual void SetMajorLoopIterationNumber(size_t it);
+        virtual void setMajorLoopIterationNumber(size_t it);
+
+#ifdef HAVE_MPI
+        // @brief Setter for workers communicator.
+        virtual void setWorkersCommunicator(const MPI_Comm &comm);
+#endif
 
        protected:
 
@@ -94,8 +102,8 @@ namespace askap
         /// @param[in] quality Quality of the solution
         /// @param[in] names names for parameters to solve for
         /// @return pair of minimum and maximum eigenvalues
-        std::pair<double,double>  solveSubsetOfNormalEquations(Params &params, Quality& quality,
-                   const std::vector<std::string> &names) const;
+        std::pair<double,double> solveSubsetOfNormalEquations(Params &params, Quality& quality,
+                   const std::vector<std::string> &__names) const;
 
         /// @brief extract an independent subset of parameters
         /// @details This method analyses the normal equations and forms a subset of 
@@ -120,9 +128,6 @@ namespace askap
          /// taken into account in the svd method
          double itsMaxCondNumber;
 
-         // MPI communicator of all workers (for LSQR solver).
-         void *itsWorkersComm;
-
          // Iteration number in the major loop (for LSQR solver with constraints).
          size_t itsMajorLoopIterationNumber;
 
@@ -132,7 +137,14 @@ namespace askap
          /// has coded channel present.
          /// @param[in] name full name of the parameter
          /// @return a pair with extracted channel and the base parameter name
-         static std::pair<casacore::uInt, std::string> extractChannelInfo(const std::string &name);
+         static std::pair<casa::uInt, std::string> extractChannelInfo(const std::string &name);
+
+         static bool compareGainNames(const std::string& gainA, const std::string& gainB);
+
+#ifdef HAVE_MPI
+         // MPI communicator of all workers (for LSQR solver).
+         MPI_Comm itsWorkersComm;
+#endif
     };
 
   }
