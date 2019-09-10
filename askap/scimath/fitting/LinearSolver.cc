@@ -215,8 +215,12 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
     bool algorithmLSQR = (algorithm() == "LSQR");
 
     std::vector<std::string> names = __names;
-    std::sort(names.begin(), names.end(), compareGainNames);
-
+    try {
+        std::sort(names.begin(), names.end(), compareGainNames);
+    }
+    catch (AskapError e) {
+        ASKAPLOG_WARN_STR(logger,"Likely non-fatal sort on parameter name has failed: " << e.what());
+    } 
     // Solving A^T Q^-1 V = (A^T Q^-1 A) P
 
     int nParameters = 0;
