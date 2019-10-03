@@ -527,7 +527,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         }
 
         // Calculate the smoothing weight.
-        double smoothingWeight = getSmoothingWeight();
+        double smoothingWeight = lsqrutils::getSmoothingWeight(parameters(), itsMajorLoopIterationNumber);
 
         //--------------------------------------------------------------
         // Extract the solution at the current major iteration (before the update).
@@ -680,41 +680,5 @@ void LinearSolver::setMajorLoopIterationNumber(size_t it)
     itsMajorLoopIterationNumber = it;
 }
 
-double LinearSolver::getSmoothingWeight() const {
-
-    double smoothingWeight = 0.;
-
-    double smoothingMinWeight = 0.;
-    if (parameters().count("smoothingMinWeight") > 0) {
-        smoothingMinWeight = std::atof(parameters().at("smoothingMinWeight").c_str());
-    }
-
-    double smoothingMaxWeight = 3.e+6;
-    if (parameters().count("smoothingMaxWeight") > 0) {
-        smoothingMaxWeight = std::atof(parameters().at("smoothingMaxWeight").c_str());
-    }
-
-    size_t smoothingNsteps = 10;
-    if (parameters().count("smoothingNsteps") > 0) {
-        smoothingNsteps = std::atoi(parameters().at("smoothingNsteps").c_str());
-    }
-
-    if (itsMajorLoopIterationNumber < smoothingNsteps) {
-        if (smoothingMinWeight == smoothingMaxWeight) {
-            smoothingWeight = smoothingMaxWeight;
-        } else {
-            double span = smoothingMaxWeight - smoothingMinWeight;
-            ASKAPCHECK(span > 0, "Wrong smoothing weight!");
-
-            // Logarithmic sweep (between the min and max weights).
-            smoothingWeight = smoothingMinWeight + std::pow(10., log10(span) / (double)(smoothingNsteps) * (double)(itsMajorLoopIterationNumber));
-        }
-    } else {
-        // Relaxation with constant weight.
-        smoothingWeight = smoothingMaxWeight;
-    }
-    return smoothingWeight;
 }
-
-  }
 }

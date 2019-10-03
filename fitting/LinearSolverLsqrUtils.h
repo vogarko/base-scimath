@@ -42,7 +42,8 @@ namespace askap { namespace scimath { namespace lsqrutils {
     /// @details Continuous channel number is needed to apply smoothing constraints.
     bool compareGainNames(const std::string& gainA, const std::string& gainB);
 
-    /// @brief /Copy matrix elements from normal matrix (map of map of matrixes) to the LSQR solver sparse matrix (in CSR format).
+    /// @brief Builds a sparse matrix for the LSQR solver.
+    /// @details Copy matrix elements from normal matrix (map of map of matrixes) to the LSQR solver sparse matrix (in CSR format).
     /// @param[in] ne Normal equation.
     /// @param[in] indices List of gain name/index pairs.
     /// @param[in] matrix The output sparse matrix.
@@ -61,6 +62,14 @@ namespace askap { namespace scimath { namespace lsqrutils {
     void getCurrentSolutionVector(const std::vector<std::pair<std::string, int> >& indices,
                                   const Params& params,
                                   std::vector<double>& solution);
+
+    /// @brief Calculates the smoothing weight for given major loop iteration.
+    /// @details This smoothing weight is used to weight the smoothing constraints in the cost function.
+    /// @param[in] parameters Configuration parameters.
+    /// @param[in] majorLoopIterationNumber Major loop iteration number.
+    /// @return The smoothing weight.
+    double getSmoothingWeight(const std::map<std::string, std::string>& parameters,
+                              size_t majorLoopIterationNumber);
 
     /// @brief Adding smoothness constraints to the system of equations.
     /// @details Extends the matrix and right-hand side with smoothness constraints,

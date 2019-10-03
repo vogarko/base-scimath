@@ -139,13 +139,10 @@ namespace askap
          /// @param[in] names Names of gain parameters to solve for.
          /// @param[in] params Equation parameters.
          /// @param[in] indices Calculated indices.
-         /// @param[out] Returns the number of parameters (to solve for).
+         /// @return The number of parameters (to solve for).
          size_t calculateGainNameIndices(const std::vector<std::string> &names,
                                          const Params &params,
                                          std::vector<std::pair<string, int> > &indices) const;
-
-         /// @brief Calculates the smoothing weight for the current major loop iteration.
-         double getSmoothingWeight() const;
 
          /// @brief Populate the right-hand side vector b (in the system of equations Ax = b).
          /// @param[in] indices List of gain name/index pairs.
