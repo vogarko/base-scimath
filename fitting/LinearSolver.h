@@ -137,16 +137,6 @@ namespace askap
          // Iteration number in the major loop (for LSQR solver with constraints).
          size_t itsMajorLoopIterationNumber;
 
-         // NOTE: Copied from "calibaccess/CalParamNameHelper.h", as currently accessors depends of scimath.
-         /// @brief extract coded channel and parameter name
-         /// @details This is a reverse operation to codeInChannel. Note, no checks are done that the name passed
-         /// has coded channel present.
-         /// @param[in] name full name of the parameter
-         /// @return a pair with extracted channel and the base parameter name
-         static std::pair<casa::uInt, std::string> extractChannelInfo(const std::string &name);
-
-         static bool compareGainNames(const std::string& gainA, const std::string& gainB);
-
          /// @brief Calculates the list of gain name/index pairs.
          /// @param[in] names Names of gain parameters to solve for.
          /// @param[in] params Equation parameters.
@@ -180,6 +170,18 @@ namespace askap
          MPI_Comm itsWorkersComm;
 #endif
     };
+
+    // NOTE: Copied from "calibaccess/CalParamNameHelper.h", as currently accessors depends of scimath.
+    /// @brief extract coded channel and parameter name
+    /// @details This is a reverse operation to codeInChannel. Note, no checks are done that the name passed
+    /// has coded channel present.
+    /// @param[in] name full name of the parameter
+    /// @return a pair with extracted channel and the base parameter name
+    std::pair<casa::uInt, std::string> extractChannelInfo(const std::string &name);
+
+    /// @brief Used for sorting gain names to have continuous channel number.
+    /// @details Continuous channel number is needed to apply smoothing constraints.
+    bool compareGainNames(const std::string& gainA, const std::string& gainB);
 
     /// @brief Returns a current solution vector of doubles.
     /// @param[in] indices List of gain name/index pairs (note two solution parameters per gain - real & imaginary part).

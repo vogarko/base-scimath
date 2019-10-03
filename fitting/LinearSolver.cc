@@ -226,36 +226,6 @@ double retrieve_from_gsl_vector(const gsl_vector *X, std::size_t index)
     return gsl_vector_get(X, index);
 }
 
-bool LinearSolver::compareGainNames(const std::string& gainA, const std::string& gainB) {
-    try {
-        std::pair<casa::uInt, std::string> paramInfoA = LinearSolver::extractChannelInfo(gainA);
-        std::pair<casa::uInt, std::string> paramInfoB = LinearSolver::extractChannelInfo(gainB);
-
-        // Parameter name excluding channel number.
-        std::string parNameA = paramInfoA.second;
-        std::string parNameB = paramInfoB.second;
-
-        casa::uInt chanA = paramInfoA.first;
-        casa::uInt chanB = paramInfoB.first;
-
-        int res = parNameA.compare(parNameB);
-
-        if (res == 0) {
-        // Same names, sort by channel number.
-            return (chanA <= chanB);
-        } else {
-            if (res < 0) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-    catch (AskapError &e) {
-        return (gainA.compare(gainB) < 0);
-    }
-}
-
 size_t LinearSolver::calculateGainNameIndices(const std::vector<std::string> &names,
                                               const Params &params,
                                               std::vector<std::pair<string, int> > &indices) const
@@ -801,20 +771,6 @@ void LinearSolver::setMajorLoopIterationNumber(size_t it)
     itsMajorLoopIterationNumber = it;
 }
 
-// NOTE: Copied from "calibaccess/CalParamNameHelper.h", as currently accessors depends of scimath.
-/// @brief extract coded channel and parameter name
-/// @details This is a reverse operation to codeInChannel. Note, no checks are done that the name passed
-/// has coded channel present.
-/// @param[in] name full name of the parameter
-/// @return a pair with extracted channel and the base parameter name
-std::pair<casa::uInt, std::string> LinearSolver::extractChannelInfo(const std::string &name)
-{
-    size_t pos = name.rfind(".");
-    ASKAPCHECK(pos != std::string::npos, "Expect dot in the parameter name passed to extractChannelInfo, name="<<name);
-    ASKAPCHECK(pos + 1 != name.size(), "Parameter name="<<name<<" ends with a dot");
-    return std::pair<casa::uInt, std::string>(utility::fromString<casa::uInt>(name.substr(pos+1)),name.substr(0,pos));
-}
-
 double LinearSolver::getSmoothingWeight() const {
 
     double smoothingWeight = 0.;
@@ -849,6 +805,50 @@ double LinearSolver::getSmoothingWeight() const {
         smoothingWeight = smoothingMaxWeight;
     }
     return smoothingWeight;
+}
+
+// NOTE: Copied from "calibaccess/CalParamNameHelper.h", as currently accessors depends of scimath.
+/// @brief extract coded channel and parameter name
+/// @details This is a reverse operation to codeInChannel. Note, no checks are done that the name passed
+/// has coded channel present.
+/// @param[in] name full name of the parameter
+/// @return a pair with extracted channel and the base parameter name
+std::pair<casa::uInt, std::string> extractChannelInfo(const std::string &name)
+{
+    size_t pos = name.rfind(".");
+    ASKAPCHECK(pos != std::string::npos, "Expect dot in the parameter name passed to extractChannelInfo, name="<<name);
+    ASKAPCHECK(pos + 1 != name.size(), "Parameter name="<<name<<" ends with a dot");
+    return std::pair<casa::uInt, std::string>(utility::fromString<casa::uInt>(name.substr(pos+1)),name.substr(0,pos));
+}
+
+bool compareGainNames(const std::string& gainA, const std::string& gainB) {
+    try {
+        std::pair<casa::uInt, std::string> paramInfoA = extractChannelInfo(gainA);
+        std::pair<casa::uInt, std::string> paramInfoB = extractChannelInfo(gainB);
+
+        // Parameter name excluding channel number.
+        std::string parNameA = paramInfoA.second;
+        std::string parNameB = paramInfoB.second;
+
+        casa::uInt chanA = paramInfoA.first;
+        casa::uInt chanB = paramInfoB.first;
+
+        int res = parNameA.compare(parNameB);
+
+        if (res == 0) {
+        // Same names, sort by channel number.
+            return (chanA <= chanB);
+        } else {
+            if (res < 0) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+    catch (AskapError &e) {
+        return (gainA.compare(gainB) < 0);
+    }
 }
 
 void getCurrentSolutionVector(const std::vector<std::pair<std::string, int> >& indices,
