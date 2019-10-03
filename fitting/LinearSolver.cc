@@ -256,13 +256,13 @@ bool LinearSolver::compareGainNames(const std::string& gainA, const std::string&
     }
 }
 
-int LinearSolver::calculateGainNameIndices(const std::vector<std::string> &names,
-                                           const Params &params,
-                                           std::vector<std::pair<string, int> > &indices) const
+size_t LinearSolver::calculateGainNameIndices(const std::vector<std::string> &names,
+                                              const Params &params,
+                                              std::vector<std::pair<string, int> > &indices) const
 {
     ASKAPCHECK(indices.size() == names.size(), "Wrong vector size in calculateGainNameIndices!");
 
-    int nParameters = 0;
+    size_t nParameters = 0;
     std::vector<std::pair<string, int> >::iterator it = indices.begin();
     for (vector<string>::const_iterator cit = names.begin();
             cit != names.end(); ++cit, ++it) {
@@ -445,88 +445,35 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
     return result;
 }
 
-std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &params, Quality& quality,
-                   const std::vector<std::string> &__names) const
+void buildLSQRSparseMatrix(const INormalEquations &ne,
+                           const std::vector<std::pair<string, int> > &indices,
+                           lsqr::SparseMatrix &matrix,
+                           size_t nParameters,
+                           bool matrixIsParallel)
 {
-    ASKAPTRACE("LinearSolver::solveSubsetOfNormalEquationsLSQR");
 #ifdef HAVE_MPI
-    ASKAPLOG_INFO_STR(logger, "Started LinearSolver::solveSubsetOfNormalEquationsLSQR, with MPI.");
-#else
-    ASKAPLOG_INFO_STR(logger, "Started LinearSolver::solveSubsetOfNormalEquationsLSQR, without MPI.");
-#endif
+    MPI_Comm workersComm = matrix.GetComm();
+    ASKAPCHECK(workersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
 
-    std::pair<double, double> result(0.,0.);
+    int myrank, nbproc;
+    MPI_Comm_rank(workersComm, &myrank);
+    MPI_Comm_size(workersComm, &nbproc);
 
-    std::vector<std::string> names = __names;
-    std::sort(names.begin(), names.end(), compareGainNames);
-
-    // Solving A^T Q^-1 V = (A^T Q^-1 A) P
-
-    std::vector<std::pair<string, int> > indices(names.size());
-    int nParameters = calculateGainNameIndices(names, params, indices);
-    ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
-
-    //------------------------------------------------------------------------------
-    // Define MPI partitioning.
-    //------------------------------------------------------------------------------
-
-    int myrank = 0;
-    int nbproc = 1;
-    bool matrixIsParallel = false;
-#ifdef HAVE_MPI
-    MPI_Comm mpi_comm = MPI_COMM_WORLD;
-#endif
-
-#ifdef HAVE_MPI
-    if (parameters().count("parallelMatrix") > 0
-        && parameters().at("parallelMatrix") == "true") {
-        matrixIsParallel = true;
-    }
-
-    if (matrixIsParallel) {
-    // The parallel matrix case - need to define the parallel partitioning.
-        ASKAPCHECK(itsWorkersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
-        MPI_Comm_rank(itsWorkersComm, &myrank);
-        MPI_Comm_size(itsWorkersComm, &nbproc);
-
-        mpi_comm = itsWorkersComm;
-    } else {
-        mpi_comm = MPI_COMM_SELF;
-    }
-#endif
-    if (myrank == 0)
-        ASKAPLOG_DEBUG_STR(logger, "it, matrixIsParallel, nbproc = " << itsMajorLoopIterationNumber
-                                    << ", " << matrixIsParallel << ", " << nbproc);
-
-    //------------------------------------------------------------------------------
-    // Define LSQR solver sparse matrix.
-    //------------------------------------------------------------------------------
-#ifdef HAVE_MPI
-    size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, itsWorkersComm);
-    size_t nParametersSmaller = lsqr::ParallelTools::get_nsmaller(nParameters, myrank, nbproc, itsWorkersComm);
+    size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, workersComm);
+    size_t nParametersSmaller = lsqr::ParallelTools::get_nsmaller(nParameters, myrank, nbproc, workersComm);
 #else
     size_t nParametersTotal = nParameters;
     size_t nParametersSmaller = 0;
 #endif
-    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParameters = " << nParameters);
-    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParametersTotal = " << nParametersTotal);
-
-#ifdef HAVE_MPI
-    lsqr::SparseMatrix matrix(nParametersTotal, mpi_comm);
-#else
-    lsqr::SparseMatrix matrix(nParametersTotal);
-#endif
-
-    //----------------------------------------------------------------------------------------------------------------
-    // Copy matrix elements from normal matrix (map of map of matrixes) to the solver sparse matrix (in CSR format).
-    //----------------------------------------------------------------------------------------------------------------
-    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(normalEquations());
 
     std::map<string, size_t> indicesMap;
     for (std::vector<std::pair<string, int> >::const_iterator it = indices.begin();
          it != indices.end(); ++it) {
         indicesMap[it->first] = (size_t)(it->second);
     }
+
+    //------------------------------------------------------------------------------------------------------------------------
+    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(ne);
 
     if (matrixIsParallel) {
         // Adding starting matrix empty rows, i.e., the rows in a big block-diagonal matrix above the current block.
@@ -570,7 +517,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         } else {
         // Adding empty matrix rows.
             // Need to add corresponding empty rows in the sparse matrix.
-            const size_t nrow = normalEquations().dataVector(indit1->first).nelements();
+            const size_t nrow = gne.dataVector(indit1->first).nelements();
             for (size_t i = 0; i < nrow; ++i) {
                 matrix.NewRow();
             }
@@ -587,13 +534,84 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     }
     ASKAPCHECK(matrix.GetCurrentNumberRows() == nParametersTotal, "Wrong number of matrix rows!");
     matrix.Finalize(nParameters);
+}
 
-    //----------------------------------------------------------------------------------------------------------------------------
+std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &params, Quality& quality,
+                   const std::vector<std::string> &__names) const
+{
+    ASKAPTRACE("LinearSolver::solveSubsetOfNormalEquationsLSQR");
+#ifdef HAVE_MPI
+    ASKAPLOG_INFO_STR(logger, "Started LinearSolver::solveSubsetOfNormalEquationsLSQR, with MPI.");
+#else
+    ASKAPLOG_INFO_STR(logger, "Started LinearSolver::solveSubsetOfNormalEquationsLSQR, without MPI.");
+#endif
+
+    std::pair<double, double> result(0.,0.);
+
+    std::vector<std::string> names = __names;
+    std::sort(names.begin(), names.end(), compareGainNames);
+
+    // Solving A^T Q^-1 V = (A^T Q^-1 A) P
+
+    std::vector<std::pair<string, int> > indices(names.size());
+    size_t nParameters = calculateGainNameIndices(names, params, indices);
+    ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
+
+    //------------------------------------------------------------------------------
+    // Define MPI partitioning.
+    //------------------------------------------------------------------------------
+    int myrank = 0;
+    int nbproc = 1;
+
+    bool matrixIsParallel = false;
+    if (parameters().count("parallelMatrix") > 0
+        && parameters().at("parallelMatrix") == "true") {
+        matrixIsParallel = true;
+    }
+
+#ifdef HAVE_MPI
+    MPI_Comm mpi_comm = MPI_COMM_WORLD;
+
+    if (matrixIsParallel) {
+    // The parallel matrix case - need to define the parallel partitioning.
+        ASKAPCHECK(itsWorkersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
+        MPI_Comm_rank(itsWorkersComm, &myrank);
+        MPI_Comm_size(itsWorkersComm, &nbproc);
+
+        mpi_comm = itsWorkersComm;
+    } else {
+        mpi_comm = MPI_COMM_SELF;
+    }
+#endif
+    if (myrank == 0) {
+        ASKAPLOG_DEBUG_STR(logger, "it, matrixIsParallel, nbproc = " << itsMajorLoopIterationNumber
+                                    << ", " << matrixIsParallel << ", " << nbproc);
+    }
+
+    //------------------------------------------------------------------------------
+    // Define LSQR solver sparse matrix.
+    //------------------------------------------------------------------------------
+#ifdef HAVE_MPI
+    size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, itsWorkersComm);
+#else
+    size_t nParametersTotal = nParameters;
+#endif
+    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParameters = " << nParameters);
+    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParametersTotal = " << nParametersTotal);
+
+#ifdef HAVE_MPI
+    lsqr::SparseMatrix matrix(nParametersTotal, mpi_comm);
+#else
+    lsqr::SparseMatrix matrix(nParametersTotal);
+#endif
+
+    // Copy matrix elements from normal matrix (map of map of matrixes) to the solver sparse matrix (in CSR format).
+    buildLSQRSparseMatrix(normalEquations(), indices, matrix, nParameters, matrixIsParallel);
+
     size_t nonzeros = matrix.GetNumberElements();
     double sparsity = (double)(nonzeros) / (double)(nParameters) / (double)(nParameters);
     ASKAPLOG_DEBUG_STR(logger, "Jacobian nonzeros, sparsity = " << nonzeros << ", " << sparsity << " on rank " << myrank);
 
-    //=============================================================================================================================
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Solving normal equations using the LSQR solver");
 
     //----------------------------------------------------
@@ -850,7 +868,8 @@ void getCurrentSolutionVector(const std::vector<std::pair<std::string, int> >& i
 }
 
 /// @brief Adding smoothness constraints to the system of equations.
-void addSmoothnessConstraints(lsqr::SparseMatrix& matrix, lsqr::Vector& b_RHS,
+void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
+                              lsqr::Vector& b_RHS,
                               const std::vector<std::pair<std::string, int> >& indices,
                               const std::vector<double>& x0,
                               size_t nParameters,

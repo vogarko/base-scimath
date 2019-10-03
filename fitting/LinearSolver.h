@@ -150,10 +150,11 @@ namespace askap
          /// @brief Calculates the list of gain name/index pairs.
          /// @param[in] names Names of gain parameters to solve for.
          /// @param[in] params Equation parameters.
-         /// @param[out] indices Calculated indices.
-         int calculateGainNameIndices(const std::vector<std::string> &names,
-                                      const Params &params,
-                                      std::vector<std::pair<string, int> > &indices) const;
+         /// @param[in] indices Calculated indices.
+         /// @param[out] Returns the number of parameters (to solve for).
+         size_t calculateGainNameIndices(const std::vector<std::string> &names,
+                                         const Params &params,
+                                         std::vector<std::pair<string, int> > &indices) const;
 
          /// @brief Calculates the smoothing weight for the current major loop iteration.
          double getSmoothingWeight() const;
@@ -181,12 +182,24 @@ namespace askap
     };
 
     /// @brief Returns a current solution vector of doubles.
-    /// @param[in] indices List of gain name/index pairs (note two parameters per gain - real & imaginary part).
+    /// @param[in] indices List of gain name/index pairs (note two solution parameters per gain - real & imaginary part).
     /// @param[in] params Normal equation parameters.
     /// @param[in] solution A container where the solution will be returned.
     void getCurrentSolutionVector(const std::vector<std::pair<std::string, int> >& indices,
                                   const Params& params,
                                   std::vector<double>& solution);
+
+    /// @brief /Copy matrix elements from normal matrix (map of map of matrixes) to the LSQR solver sparse matrix (in CSR format).
+    /// @param[in] ne Normal equation.
+    /// @param[in] indices List of gain name/index pairs.
+    /// @param[in] matrix The output sparse matrix.
+    /// @param[in] nParameters Local number of parameters (at the current worker).
+    /// @param[in] matrixIsParallel Flag for whether the matrix is parallel (columns distributed among workers).
+    void buildLSQRSparseMatrix(const INormalEquations &ne,
+                               const std::vector<std::pair<string, int> > &indices,
+                               lsqr::SparseMatrix &matrix,
+                               size_t nParameters,
+                               bool matrixIsParallel);
 
     /// @brief Adding smoothness constraints to the system of equations.
     /// @details Extends the matrix and right-hand side with smoothness constraints,
@@ -199,7 +212,8 @@ namespace askap
     /// @param[in] nChannels The total number of channels.
     /// @param[in] smoothingWeight The smoothing weight.
     /// @param[in] gradientType The type of gradient approximation (0 - forward difference, 1- central difference).
-    void addSmoothnessConstraints(lsqr::SparseMatrix& matrix, lsqr::Vector& b_RHS,
+    void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
+                                  lsqr::Vector& b_RHS,
                                   const std::vector<std::pair<std::string, int> >& indices,
                                   const std::vector<double>& x0,
                                   size_t nParameters,
