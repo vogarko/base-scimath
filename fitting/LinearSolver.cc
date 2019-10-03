@@ -109,7 +109,7 @@ void LinearSolver::init()
 /// @param[in] matr matrix to test
 /// @param[in] tolerance tolerance on the element absolute values
 /// @return true if all elements are zero within the tolerance
-bool LinearSolver::allMatrixElementsAreZeros(const casa::Matrix<double> &matr, const double tolerance)
+static bool allMatrixElementsAreZeros(const casa::Matrix<double> &matr, const double tolerance)
 {
   for (casa::uInt row = 0; row < matr.nrow(); ++row) {
        for (casa::uInt col = 0; col < matr.ncolumn(); ++col) {

@@ -36,7 +36,6 @@
 
 #include <fitting/Solver.h>
 #include <fitting/INormalEquations.h>
-#include <fitting/DesignMatrix.h>
 #include <fitting/Params.h>
 
 #include <boost/config.hpp>
@@ -118,13 +117,6 @@ namespace askap
         /// @param[in] tolerance tolerance on the matrix elements to decide whether they can be considered independent
         /// @return names of parameters in this subset
         std::vector<std::string> getIndependentSubset(std::vector<std::string> &names, const double tolerance) const;
-
-        /// @brief test that all matrix elements are below tolerance by absolute value
-        /// @details This is a helper method to test all matrix elements
-        /// @param[in] matr matrix to test
-        /// @param[in] tolerance tolerance on the element absolute values
-        /// @return true if all elements are zero within the tolerance
-        static bool allMatrixElementsAreZeros(const casa::Matrix<double> &matr, const double tolerance);
 
        private:
          /// @brief maximum condition number allowed
