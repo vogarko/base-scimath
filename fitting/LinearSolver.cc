@@ -385,11 +385,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     int myrank = 0;
     int nbproc = 1;
 
-    bool matrixIsParallel = false;
-    if (parameters().count("parallelMatrix") > 0
-        && parameters().at("parallelMatrix") == "true") {
-        matrixIsParallel = true;
-    }
+    bool matrixIsParallel = solverutils::getParameter("parallelMatrix", parameters(), false);
 
 #ifdef HAVE_MPI
     MPI_Comm mpi_comm = MPI_COMM_WORLD;
@@ -454,20 +450,13 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     //------------------------------------------------------------------
     // Adding smoothness constraints.
     //------------------------------------------------------------------
-    bool addSmoothing = false;
-    if (parameters().count("smoothing") > 0
-        && parameters().at("smoothing") == "true") {
-        addSmoothing = true;
-    }
+    bool addSmoothing = solverutils::getParameter("smoothing", parameters(), false);
 
     if (addSmoothing) {
         ASKAPCHECK(matrixIsParallel, "Smoothing constraints should be used in the parallel matrix mode!");
 
         // Reading the number of channels.
-        size_t nChannels = 0;
-        if (parameters().count("nChan") > 0) {
-            nChannels = std::atoi(parameters().at("nChan").c_str());
-        }
+        size_t nChannels = solverutils::getParameter("nChan", parameters(), 0);
 
         // Calculate the smoothing weight.
         double smoothingWeight = lsqrutils::getSmoothingWeight(parameters(), itsMajorLoopIterationNumber);
@@ -496,15 +485,8 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     // Adding damping.
     //------------------------------------------------------------------
     // Setting damping parameters.
-    double alpha = 0.01;
-    if (parameters().count("alpha") > 0) {
-        alpha = std::atof(parameters().at("alpha").c_str());
-    }
-
-    double norm = 2.0;
-    if (parameters().count("norm") > 0) {
-        norm = std::atof(parameters().at("norm").c_str());
-    }
+    double alpha = solverutils::getParameter("alpha", parameters(), 0.01);
+    double norm = solverutils::getParameter("norm", parameters(), 2.0);
 
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding model damping, with alpha = " << alpha);
 
@@ -523,21 +505,9 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     //-----------------------------------------------
     // Setting solver parameters.
     //-----------------------------------------------
-    int niter = 100;
-    if (parameters().count("niter") > 0) {
-        niter = std::atoi(parameters().at("niter").c_str());
-    }
-
-    double rmin = 1.e-13;
-    if (parameters().count("rmin") > 0) {
-        rmin = std::atof(parameters().at("rmin").c_str());
-    }
-
-    bool suppress_output = true;
-    if (parameters().count("verbose") > 0
-        && parameters().at("verbose") == "true") {
-        suppress_output = false;
-    }
+    int niter = solverutils::getParameter("niter", parameters(), 100);
+    double rmin = solverutils::getParameter("rmin", parameters(), 1.e-13);
+    bool suppress_output = !(solverutils::getParameter("verbose", parameters(), false));
 
     //-----------------------------------------------
     // Solving the matrix system.

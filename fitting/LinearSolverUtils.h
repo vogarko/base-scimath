@@ -40,6 +40,12 @@
 namespace askap { namespace scimath { namespace solverutils {
 
     typedef std::vector<double> Vector;
+    typedef std::map<std::string, std::string> SolverParameters;
+
+    // @brief Helper functions to retrieve solver configuration parameters.
+    double getParameter(std::string parname, const SolverParameters& parameters, double defaultValue);
+    int getParameter(std::string parname, const SolverParameters& parameters, int defaultValue);
+    bool getParameter(std::string parname, const SolverParameters& parameters, bool defaultValue);
 
     /// @brief Assignment routines for populate_B function.
     void assign_to_lsqr_vector(Vector &B, std::size_t index, double elem);

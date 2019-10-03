@@ -27,6 +27,7 @@
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
 #include <fitting/LinearSolverLsqrUtils.h>
+#include <fitting/LinearSolverUtils.h>
 #include <fitting/GenericNormalEquations.h>
 #include <lsqr_solver/ParallelTools.h>
 
@@ -198,20 +199,9 @@ double getSmoothingWeight(const std::map<std::string, std::string>& parameters,
 
     double smoothingWeight = 0.;
 
-    double smoothingMinWeight = 0.;
-    if (parameters.count("smoothingMinWeight") > 0) {
-        smoothingMinWeight = std::atof(parameters.at("smoothingMinWeight").c_str());
-    }
-
-    double smoothingMaxWeight = 3.e+6;
-    if (parameters.count("smoothingMaxWeight") > 0) {
-        smoothingMaxWeight = std::atof(parameters.at("smoothingMaxWeight").c_str());
-    }
-
-    size_t smoothingNsteps = 10;
-    if (parameters.count("smoothingNsteps") > 0) {
-        smoothingNsteps = std::atoi(parameters.at("smoothingNsteps").c_str());
-    }
+    double smoothingMinWeight = solverutils::getParameter("smoothingMinWeight", parameters, 0.);
+    double smoothingMaxWeight = solverutils::getParameter("smoothingMaxWeight", parameters, 3.e+6);
+    size_t smoothingNsteps = solverutils::getParameter("smoothingNsteps", parameters, 10);
 
     if (majorLoopIterationNumber < smoothingNsteps) {
         if (smoothingMinWeight == smoothingMaxWeight) {
@@ -220,7 +210,7 @@ double getSmoothingWeight(const std::map<std::string, std::string>& parameters,
             double span = smoothingMaxWeight - smoothingMinWeight;
             ASKAPCHECK(span > 0, "Wrong smoothing weight!");
 
-            // Logarithmic sweep (between the min and max weights).
+            // Logarithmic sweep (between the minimum and maximum weights).
             smoothingWeight = smoothingMinWeight + std::pow(10., log10(span) / (double)(smoothingNsteps) * (double)(majorLoopIterationNumber));
         }
     } else {

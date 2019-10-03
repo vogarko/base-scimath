@@ -32,6 +32,37 @@
 
 namespace askap { namespace scimath { namespace solverutils {
 
+double getParameter(std::string parname, const SolverParameters& parameters, double defaultValue)
+{
+    double value = defaultValue;
+    if (parameters.count(parname) > 0) {
+        value = std::atof(parameters.at(parname).c_str());
+    }
+    return value;
+}
+
+int getParameter(std::string parname, const SolverParameters& parameters, int defaultValue)
+{
+    int value = defaultValue;
+    if (parameters.count(parname) > 0) {
+        value = std::atoi(parameters.at(parname).c_str());
+    }
+    return value;
+}
+
+bool getParameter(std::string parname, const SolverParameters& parameters, bool defaultValue)
+{
+    bool value = defaultValue;
+    if (parameters.count(parname) > 0) {
+        if (parameters.at(parname) == "true") {
+            value = true;
+        } else if (parameters.at(parname) == "false") {
+            value = false;
+        }
+    }
+    return value;
+}
+
 void assign_to_lsqr_vector(Vector &B, std::size_t index, double elem)
 {
     B[index] = elem;
