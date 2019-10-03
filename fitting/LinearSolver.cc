@@ -28,6 +28,7 @@
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
 #include <fitting/LinearSolver.h>
+#include <fitting/LinearSolverUtils.h>
 #include <fitting/LinearSolverLsqrUtils.h>
 
 #include <askap/AskapError.h>
@@ -168,64 +169,6 @@ std::vector<std::string> LinearSolver::getIndependentSubset(std::vector<std::str
     return resultNames;
 }
 
-template <typename DataHolder, typename AssignmentFunc>
-size_t LinearSolver::populate_B(const std::vector<std::pair<string, int> > &indices, DataHolder &B, AssignmentFunc assignment) const
-{
-    size_t counter = 0;
-    for (std::vector<std::pair<string, int> >::const_iterator indit = indices.begin();
-            indit != indices.end(); ++indit) {
-        const casa::Vector<double> &dv = normalEquations().dataVector(indit->first);
-        for (size_t row = 0; row < dv.nelements(); ++row) {
-             const double elem = dv(row);
-             ASKAPCHECK(!std::isnan(elem), "Data vector seems to have NaN for row = " << row << ", this shouldn't happen!");
-             assignment(B, row + indit->second, elem);
-             counter++;
-        }
-    }
-    return counter;
-}
-
-template <typename DataHolder, typename RetrievalFunc>
-void LinearSolver::update_solution(const std::vector<std::pair<string, int> > &indices, Params &params,
-                                   const DataHolder &delta_X, RetrievalFunc retrieval) const
-{
-    // Exploit reference semantics of casa::Array.
-    std::vector<std::pair<string, int> >::const_iterator indit;
-    for (indit = indices.begin(); indit != indices.end(); ++indit) {
-        casa::IPosition vecShape(1, params.value(indit->first).nelements());
-        casa::Vector<double> value(params.value(indit->first).reform(vecShape));
-        for (size_t i = 0; i < value.nelements(); ++i) {
-            double adjustment = retrieval(delta_X, indit->second + i);
-            ASKAPCHECK(!std::isnan(adjustment), "Solution resulted in NaN as an update for parameter " << (indit->second + i));
-            value(i) += adjustment;
-        }
-    }
-}
-
-static
-void assign_to_lsqr_vector(lsqr::Vector &B, std::size_t index, double elem)
-{
-    B[index] = elem;
-}
-
-static
-void assign_to_gsl_vector(gsl_vector *B, std::size_t index, double elem)
-{
-    gsl_vector_set(B, index, elem);
-}
-
-static
-double retrieve_from_lsqr_vector(const lsqr::Vector &X, std::size_t index)
-{
-    return X[index];
-}
-
-static
-double retrieve_from_gsl_vector(const gsl_vector *X, std::size_t index)
-{
-    return gsl_vector_get(X, index);
-}
-
 size_t LinearSolver::calculateGainNameIndices(const std::vector<std::string> &names,
                                               const Params &params,
                                               std::vector<std::pair<string, int> > &indices) const
@@ -301,7 +244,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
     }
 
     // Populate the right-hand side vector B.
-    populate_B(indices, B, assign_to_gsl_vector);
+    solverutils::populate_B(normalEquations(), indices, B, solverutils::assign_to_gsl_vector);
 
     if (algorithm() == "SVD") {
         ASKAPLOG_INFO_STR(logger, "Solving normal equations using the SVD solver");
@@ -386,7 +329,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
         }
 
         // Update the parameters for the calculated changes.
-        update_solution(indices, params, X, retrieve_from_gsl_vector);
+        solverutils::update_solution(indices, params, X, solverutils::retrieve_from_gsl_vector);
 
         gsl_vector_free(S);
         gsl_vector_free(work);
@@ -401,7 +344,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
         gsl_linalg_cholesky_solve(A, B, X);
 
         // Update the parameters for the calculated changes.
-        update_solution(indices, params, X, retrieve_from_gsl_vector);
+        solverutils::update_solution(indices, params, X, solverutils::retrieve_from_gsl_vector);
     }
     else {
         ASKAPTHROW(AskapError, "Wrong calibration solver type: " << algorithm());
@@ -499,7 +442,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     lsqr::Vector b_RHS(nParametersTotal, 0.);
 
     // Populate the right-hand side vector B.
-    size_t nDataAdded = populate_B(indices, b_RHS, assign_to_lsqr_vector);
+    size_t nDataAdded = solverutils::populate_B(normalEquations(), indices, b_RHS, solverutils::assign_to_lsqr_vector);
     ASKAPCHECK(nDataAdded == (size_t)(nParameters), "Wrong number of data added on rank " << myrank);
 
     if (matrixIsParallel) {
@@ -611,7 +554,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 
     //------------------------------------------------------------------------
     // Update the parameters for the calculated changes.
-    update_solution(indices, params, x, retrieve_from_lsqr_vector);
+    solverutils::update_solution(indices, params, x, solverutils::retrieve_from_lsqr_vector);
 
     //------------------------------------------------------------------------
     // Set approximate solution quality.
@@ -638,8 +581,7 @@ bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
     // Find all the free parameters.
     vector<string> names(params.freeNames());
     if (names.size() == 0) {
-        // List of parameters is empty, will solve for all
-        // unknowns in the equation.
+        // List of parameters is empty, will solve for all unknowns in the equation.
         names = normalEquations().unknowns();
     }
     ASKAPCHECK(names.size() > 0, "No free parameters in Linear Solver");
