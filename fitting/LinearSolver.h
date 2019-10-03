@@ -39,8 +39,6 @@
 #include <fitting/DesignMatrix.h>
 #include <fitting/Params.h>
 
-#include <lsqr_solver/SparseMatrix.h>
-
 #include <boost/config.hpp>
 
 #include <utility>
@@ -170,58 +168,6 @@ namespace askap
          MPI_Comm itsWorkersComm;
 #endif
     };
-
-    // NOTE: Copied from "calibaccess/CalParamNameHelper.h", as currently accessors depends of scimath.
-    /// @brief extract coded channel and parameter name
-    /// @details This is a reverse operation to codeInChannel. Note, no checks are done that the name passed
-    /// has coded channel present.
-    /// @param[in] name full name of the parameter
-    /// @return a pair with extracted channel and the base parameter name
-    std::pair<casa::uInt, std::string> extractChannelInfo(const std::string &name);
-
-    /// @brief Used for sorting gain names to have continuous channel number.
-    /// @details Continuous channel number is needed to apply smoothing constraints.
-    bool compareGainNames(const std::string& gainA, const std::string& gainB);
-
-    /// @brief Returns a current solution vector of doubles.
-    /// @param[in] indices List of gain name/index pairs (note two solution parameters per gain - real & imaginary part).
-    /// @param[in] params Normal equation parameters.
-    /// @param[in] solution A container where the solution will be returned.
-    void getCurrentSolutionVector(const std::vector<std::pair<std::string, int> >& indices,
-                                  const Params& params,
-                                  std::vector<double>& solution);
-
-    /// @brief /Copy matrix elements from normal matrix (map of map of matrixes) to the LSQR solver sparse matrix (in CSR format).
-    /// @param[in] ne Normal equation.
-    /// @param[in] indices List of gain name/index pairs.
-    /// @param[in] matrix The output sparse matrix.
-    /// @param[in] nParameters Local number of parameters (at the current worker).
-    /// @param[in] matrixIsParallel Flag for whether the matrix is parallel (columns distributed among workers).
-    void buildLSQRSparseMatrix(const INormalEquations &ne,
-                               const std::vector<std::pair<string, int> > &indices,
-                               lsqr::SparseMatrix &matrix,
-                               size_t nParameters,
-                               bool matrixIsParallel);
-
-    /// @brief Adding smoothness constraints to the system of equations.
-    /// @details Extends the matrix and right-hand side with smoothness constraints,
-    /// which are defined for the least squares minimization framework.
-    /// @param[in] matrix The matrix where constraints will be added.
-    /// @param[in] b_RHS The right-hand side where constraints will be added.
-    /// @param[in] indices List of gain name/index pairs (note two parameters in x0 per gain: real & imaginary parts).
-    /// @param[in] x0 The current global solution (at all workers).
-    /// @param[in] nParameters Local number of parameters (at the current worker).
-    /// @param[in] nChannels The total number of channels.
-    /// @param[in] smoothingWeight The smoothing weight.
-    /// @param[in] gradientType The type of gradient approximation (0 - forward difference, 1- central difference).
-    void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
-                                  lsqr::Vector& b_RHS,
-                                  const std::vector<std::pair<std::string, int> >& indices,
-                                  const std::vector<double>& x0,
-                                  size_t nParameters,
-                                  size_t nChannels,
-                                  double smoothingWeight,
-                                  int gradientType = 0);
 
   }
 }
