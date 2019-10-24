@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <cassert>
 
-#include <lsqr_solver/ParallelTools.h>
+#include <askap/scimath/lsqr_solver/ParallelTools.h>
 
 namespace askap { namespace lsqr { namespace ParallelTools {
 

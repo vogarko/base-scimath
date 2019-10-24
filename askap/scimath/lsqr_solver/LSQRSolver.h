@@ -7,7 +7,7 @@
 #ifndef LSQRSOLVER_H_
 #define LSQRSOLVER_H_
 
-#include <lsqr_solver/SparseMatrix.h>
+#include <askap/scimath/lsqr_solver/SparseMatrix.h>
 
 namespace askap { namespace lsqr {
 

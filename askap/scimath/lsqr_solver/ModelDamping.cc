@@ -8,8 +8,8 @@
 #include <cmath>
 #include <cassert>
 
-#include <lsqr_solver/ModelDamping.h>
-#include <lsqr_solver/ParallelTools.h>
+#include <askap/scimath/lsqr_solver/ModelDamping.h>
+#include <askap/scimath/lsqr_solver/ParallelTools.h>
 
 namespace askap { namespace lsqr {
 

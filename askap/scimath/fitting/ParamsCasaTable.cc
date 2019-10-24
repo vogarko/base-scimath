@@ -30,7 +30,7 @@
 #include <askap/scimath/fitting/Params.h>
 #include <askap/scimath/fitting/Axes.h>
 
-#include <std::string>
+#include <string>
 #include <iostream>
 
 #include <casacore/casa/aips.h>

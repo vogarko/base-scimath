@@ -2,7 +2,7 @@
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
 
-#include <lsqr_solver/MathUtils.h>
+#include <askap/scimath/lsqr_solver/MathUtils.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 

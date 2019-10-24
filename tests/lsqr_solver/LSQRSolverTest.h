@@ -2,8 +2,8 @@
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
 
-#include <lsqr_solver/LSQRSolver.h>
-#include <lsqr_solver/ModelDamping.h>
+#include <askap/scimath/lsqr_solver/LSQRSolver.h>
+#include <askap/scimath/lsqr_solver/ModelDamping.h>
 
 #include <cppunit/extensions/HelperMacros.h>
 

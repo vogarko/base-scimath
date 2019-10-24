@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <cassert>
 
-#include <lsqr_solver/SparseMatrix.h>
+#include <askap/scimath/lsqr_solver/SparseMatrix.h>
 
 namespace askap { namespace lsqr {
 

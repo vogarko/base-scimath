@@ -2,7 +2,7 @@
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
 
-#include <lsqr_solver/SparseMatrix.h>
+#include <askap/scimath/lsqr_solver/SparseMatrix.h>
 #include <stdexcept>
 
 #include <cppunit/extensions/HelperMacros.h>

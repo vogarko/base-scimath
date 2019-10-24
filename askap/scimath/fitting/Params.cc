@@ -44,7 +44,7 @@
 
 #include <iostream>
 #include <map>
-#include <std::string>
+#include <string>
 
 using std::map;
 using std::string;

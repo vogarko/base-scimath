@@ -13,8 +13,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <lsqr_solver/LSQRSolver.h>
-#include <lsqr_solver/MathUtils.h>
+#include <askap/scimath/lsqr_solver/LSQRSolver.h>
+#include <askap/scimath/lsqr_solver/MathUtils.h>
 
 #include <askap/AskapLogging.h>
 ASKAP_LOGGER(logger, ".lsqr_solver");

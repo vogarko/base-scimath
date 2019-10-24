@@ -282,5 +282,9 @@ if (CPPUNIT_FOUND)
   
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/utils)
   add_subdirectory(tests/utils)
+
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/lsqr_solver)
+  add_subdirectory(tests/lsqr_solver)
+
 endif()
 
