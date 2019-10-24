@@ -34,9 +34,9 @@
 #include <mpi.h>
 #endif
 
-#include <fitting/Solver.h>
-#include <fitting/INormalEquations.h>
-#include <fitting/Params.h>
+#include <askap/scimath/fitting/Solver.h>
+#include <askap/scimath/fitting/INormalEquations.h>
+#include <askap/scimath/fitting/Params.h>
 
 #include <boost/config.hpp>
 

@@ -29,8 +29,8 @@
 #ifndef LinearSolverUtils_h_
 #define LinearSolverUtils_h_
 
-#include <fitting/INormalEquations.h>
-#include <fitting/Params.h>
+#include <askap/scimath/fitting/INormalEquations.h>
+#include <askap/scimath/fitting/Params.h>
 
 #include <vector>
 #include <string>

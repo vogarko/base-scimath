@@ -29,9 +29,9 @@
 #ifndef LinearSolverLsqrUtils_h_
 #define LinearSolverLsqrUtils_h_
 
-#include <fitting/INormalEquations.h>
-#include <fitting/Params.h>
-#include <lsqr_solver/SparseMatrix.h>
+#include <askap/scimath/fitting/INormalEquations.h>
+#include <askap/scimath/fitting/Params.h>
+#include <askap/scimath/lsqr_solver/SparseMatrix.h>
 
 #include <vector>
 #include <string>

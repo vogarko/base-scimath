@@ -27,9 +27,9 @@
 /// @author Tim Cornwell <tim.cornwell@csiro.au>
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
-#include <fitting/LinearSolver.h>
-#include <fitting/LinearSolverUtils.h>
-#include <fitting/LinearSolverLsqrUtils.h>
+#include <askap/scimath/fitting/LinearSolver.h>
+#include <askap/scimath/fitting/LinearSolverUtils.h>
+#include <askap/scimath/fitting/LinearSolverLsqrUtils.h>
 
 #include <askap/askap/AskapError.h>
 #include <askap/profile/AskapProfiler.h>
@@ -46,9 +46,9 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 
-#include <lsqr_solver/LSQRSolver.h>
-#include <lsqr_solver/ModelDamping.h>
-#include <lsqr_solver/ParallelTools.h>
+#include <askap/scimath/lsqr_solver/LSQRSolver.h>
+#include <askap/scimath/lsqr_solver/ModelDamping.h>
+#include <askap/scimath/lsqr_solver/ParallelTools.h>
 
 #include <askap/askap/AskapLogging.h>
 ASKAP_LOGGER(logger, ".linearsolver");
@@ -171,13 +171,13 @@ std::vector<std::string> LinearSolver::getIndependentSubset(std::vector<std::str
 
 size_t LinearSolver::calculateGainNameIndices(const std::vector<std::string> &names,
                                               const Params &params,
-                                              std::vector<std::pair<string, int> > &indices) const
+                                              std::vector<std::pair<std::string, int> > &indices) const
 {
     ASKAPCHECK(indices.size() == names.size(), "Wrong vector size in calculateGainNameIndices!");
 
     size_t nParameters = 0;
-    std::vector<std::pair<string, int> >::iterator it = indices.begin();
-    for (vector<string>::const_iterator cit = names.begin();
+    std::vector<std::pair<std::string, int> >::iterator it = indices.begin();
+    for (std::vector<std::string>::const_iterator cit = names.begin();
             cit != names.end(); ++cit, ++it) {
         ASKAPDEBUGASSERT(it != indices.end());
         it->second = nParameters;
@@ -212,7 +212,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
 
     // Solving A^T Q^-1 V = (A^T Q^-1 A) P
 
-    std::vector<std::pair<string, int> > indices(names.size());
+    std::vector<std::pair<std::string, int> > indices(names.size());
     int nParameters = calculateGainNameIndices(names, params, indices);
     ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
 
@@ -221,8 +221,8 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
     gsl_vector * B = gsl_vector_alloc(nParameters);
     gsl_vector * X = gsl_vector_alloc(nParameters);
 
-    for (std::vector<std::pair<string, int> >::const_iterator indit2=indices.begin();indit2!=indices.end(); ++indit2)  {
-        for (std::vector<std::pair<string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1)  {
+    for (std::vector<std::pair<std::string, int> >::const_iterator indit2=indices.begin();indit2!=indices.end(); ++indit2)  {
+        for (std::vector<std::pair<std::string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1)  {
 
              // Axes are dof, dof for each parameter.
              // Take a deep breath for const-safe indexing into the double layered map.
@@ -375,7 +375,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 
     // Solving A^T Q^-1 V = (A^T Q^-1 A) P
 
-    std::vector<std::pair<string, int> > indices(names.size());
+    std::vector<std::pair<std::string, int> > indices(names.size());
     size_t nParameters = calculateGainNameIndices(names, params, indices);
     ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
 
@@ -549,7 +549,7 @@ bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
 
     // Solving A^T Q^-1 V = (A^T Q^-1 A) P
     // Find all the free parameters.
-    vector<string> names(params.freeNames());
+    std::vector<std::string> names(params.freeNames());
     if (names.size() == 0) {
         // List of parameters is empty, will solve for all unknowns in the equation.
         names = normalEquations().unknowns();

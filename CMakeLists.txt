@@ -134,6 +134,8 @@ add_library(askap_scimath
 ./askap/scimath/fitting/PolXProducts.cc
 ./askap/scimath/fitting/ImagingEquation.cc
 ./askap/scimath/fitting/LinearSolver.cc
+./askap/scimath/fitting/LinearSolverLsqrUtils.cc
+./askap/scimath/fitting/LinearSolverUtils.cc
 ./askap/scimath/fitting/Solveable.cc
 ./askap/scimath/fitting/DesignMatrix.cc
 ./askap/scimath/fitting/GenericEquation.cc
@@ -179,6 +181,8 @@ install (FILES
 ./askap/scimath/fitting/ComplexDiff.h
 ./askap/scimath/fitting/ImagingEquation.h
 ./askap/scimath/fitting/LinearSolver.h
+./askap/scimath/fitting/LinearSolverLsqrUtils.cc
+./askap/scimath/fitting/LinearSolverUtils.cc
 ./askap/scimath/fitting/Axes.h
 ./askap/scimath/fitting/ComplexDiffMatrix.h
 ./askap/scimath/fitting/CompositeEquation.h

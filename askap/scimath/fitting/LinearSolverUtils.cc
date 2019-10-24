@@ -26,9 +26,9 @@
 ///
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
-#include <fitting/LinearSolverUtils.h>
+#include <askap/scimath/fitting/LinearSolverUtils.h>
 
-#include <askap/AskapError.h>
+#include <askap/askap/AskapError.h>
 
 namespace askap { namespace scimath { namespace solverutils {
 
@@ -85,12 +85,12 @@ double retrieve_from_gsl_vector(const gsl_vector *X, std::size_t index)
 
 template <typename DataHolder, typename AssignmentFunc>
 size_t populate_B(const INormalEquations &ne,
-                  const std::vector<std::pair<string, int> > &indices,
+                  const std::vector<std::pair<std::string, int> > &indices,
                   DataHolder &B,
                   AssignmentFunc assignment)
 {
     size_t counter = 0;
-    for (std::vector<std::pair<string, int> >::const_iterator indit = indices.begin();
+    for (std::vector<std::pair<std::string, int> >::const_iterator indit = indices.begin();
             indit != indices.end(); ++indit) {
         const casa::Vector<double> &dv = ne.dataVector(indit->first);
         for (size_t row = 0; row < dv.nelements(); ++row) {
@@ -105,24 +105,24 @@ size_t populate_B(const INormalEquations &ne,
 
 template
 size_t populate_B<Vector, typeof(&assign_to_lsqr_vector)>(const INormalEquations &,
-                                                          const std::vector<std::pair<string, int> > &,
+                                                          const std::vector<std::pair<std::string, int> > &,
                                                           Vector &,
                                                           typeof(&assign_to_lsqr_vector));
 
 template
 size_t populate_B<gsl_vector *, typeof(&assign_to_gsl_vector)>(const INormalEquations &,
-                                                               const std::vector<std::pair<string, int> > &,
+                                                               const std::vector<std::pair<std::string, int> > &,
                                                                gsl_vector *&,
                                                                typeof(&assign_to_gsl_vector));
 
 template <typename DataHolder, typename RetrievalFunc>
-void update_solution(const std::vector<std::pair<string, int> > &indices,
+void update_solution(const std::vector<std::pair<std::string, int> > &indices,
                      Params &params,
                      const DataHolder &delta_X,
                      RetrievalFunc retrieval)
 {
     // Exploit reference semantics of casa::Array.
-    std::vector<std::pair<string, int> >::const_iterator indit;
+    std::vector<std::pair<std::string, int> >::const_iterator indit;
     for (indit = indices.begin(); indit != indices.end(); ++indit) {
         casa::IPosition vecShape(1, params.value(indit->first).nelements());
         casa::Vector<double> value(params.value(indit->first).reform(vecShape));
@@ -135,13 +135,13 @@ void update_solution(const std::vector<std::pair<string, int> > &indices,
 }
 
 template
-void update_solution<Vector, typeof(&retrieve_from_lsqr_vector)>(const std::vector<std::pair<string, int> > &,
+void update_solution<Vector, typeof(&retrieve_from_lsqr_vector)>(const std::vector<std::pair<std::string, int> > &,
                                                                  Params &,
                                                                  const Vector &,
                                                                  typeof(&retrieve_from_lsqr_vector));
 
 template
-void update_solution<gsl_vector *, typeof(&retrieve_from_gsl_vector)>(const std::vector<std::pair<string, int> > &,
+void update_solution<gsl_vector *, typeof(&retrieve_from_gsl_vector)>(const std::vector<std::pair<std::string, int> > &,
                                                                       Params &,
                                                                       gsl_vector * const &,
                                                                       typeof(&retrieve_from_gsl_vector));

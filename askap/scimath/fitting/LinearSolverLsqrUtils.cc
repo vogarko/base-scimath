@@ -26,10 +26,10 @@
 ///
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
-#include <fitting/LinearSolverLsqrUtils.h>
-#include <fitting/LinearSolverUtils.h>
-#include <fitting/GenericNormalEquations.h>
-#include <lsqr_solver/ParallelTools.h>
+#include <askap/scimath/fitting/LinearSolverLsqrUtils.h>
+#include <askap/scimath/fitting/LinearSolverUtils.h>
+#include <askap/scimath/fitting/GenericNormalEquations.h>
+#include <askap/scimath/lsqr_solver/ParallelTools.h>
 
 #include <askap/AskapError.h>
 #include <profile/AskapProfiler.h>
@@ -88,7 +88,7 @@ bool compareGainNames(const std::string& gainA, const std::string& gainB) {
 }
 
 void buildLSQRSparseMatrix(const INormalEquations &ne,
-                           const std::vector<std::pair<string, int> > &indices,
+                           const std::vector<std::pair<std::string, int> > &indices,
                            lsqr::SparseMatrix &matrix,
                            size_t nParameters,
                            bool matrixIsParallel)
@@ -108,8 +108,8 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
     size_t nParametersSmaller = 0;
 #endif
 
-    std::map<string, size_t> indicesMap;
-    for (std::vector<std::pair<string, int> >::const_iterator it = indices.begin();
+    std::map<std::string, size_t> indicesMap;
+    for (std::vector<std::pair<std::string, int> >::const_iterator it = indices.begin();
          it != indices.end(); ++it) {
         indicesMap[it->first] = (size_t)(it->second);
     }
@@ -125,21 +125,21 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
     }
 
     // Loop over matrix rows.
-    for (std::vector<std::pair<string, int> >::const_iterator indit1 = indices.begin();
+    for (std::vector<std::pair<std::string, int> >::const_iterator indit1 = indices.begin();
             indit1 != indices.end(); ++indit1) {
 
-        const std::map<string, casa::Matrix<double> >::const_iterator colItBeg = gne.getNormalMatrixRowBegin(indit1->first);
-        const std::map<string, casa::Matrix<double> >::const_iterator colItEnd = gne.getNormalMatrixRowEnd(indit1->first);
+        const std::map<std::string, casa::Matrix<double> >::const_iterator colItBeg = gne.getNormalMatrixRowBegin(indit1->first);
+        const std::map<std::string, casa::Matrix<double> >::const_iterator colItEnd = gne.getNormalMatrixRowEnd(indit1->first);
 
         if (colItBeg != colItEnd) {
             const size_t nrow = colItBeg->second.nrow();
             for (size_t row = 0; row < nrow; ++row) {
                 matrix.NewRow();
                 // Loop over column elements.
-                for (std::map<string, casa::Matrix<double> >::const_iterator colIt = colItBeg;
+                for (std::map<std::string, casa::Matrix<double> >::const_iterator colIt = colItBeg;
                         colIt != colItEnd; ++colIt) {
 
-                    const std::map<string, size_t>::const_iterator indicesMapIt = indicesMap.find(colIt->first);
+                    const std::map<std::string, size_t>::const_iterator indicesMapIt = indicesMap.find(colIt->first);
                     if (indicesMapIt != indicesMap.end()) {
                     // It is a parameter to solve for, adding it to the matrix.
 
@@ -184,7 +184,7 @@ void getCurrentSolutionVector(const std::vector<std::pair<std::string, int> >& i
 {
     ASKAPCHECK(solution.size() >= 2 * indices.size(), "Wrong size of the solution vector in getCurrentSolutionVector!");
 
-    for (std::vector<std::pair<string, int> >::const_iterator indit = indices.begin();
+    for (std::vector<std::pair<std::string, int> >::const_iterator indit = indices.begin();
             indit != indices.end(); ++indit) {
         casa::IPosition vecShape(1, params.value(indit->first).nelements());
         casa::Vector<double> value(params.value(indit->first).reform(vecShape));
