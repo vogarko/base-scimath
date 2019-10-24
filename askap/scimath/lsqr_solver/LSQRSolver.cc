@@ -16,7 +16,7 @@
 #include <askap/scimath/lsqr_solver/LSQRSolver.h>
 #include <askap/scimath/lsqr_solver/MathUtils.h>
 
-#include <askap/askap/AskapLogging.h>
+#include <askap/AskapLogging.h>
 ASKAP_LOGGER(logger, ".lsqr_solver");
 
 namespace askap { namespace lsqr {

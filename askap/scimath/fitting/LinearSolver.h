@@ -36,7 +36,6 @@
 
 #include <askap/scimath/fitting/Solver.h>
 #include <askap/scimath/fitting/INormalEquations.h>
-#include <askap/scimath/fitting/DesignMatrix.h>
 #include <askap/scimath/fitting/Params.h>
 
 #include <boost/config.hpp>
@@ -103,6 +102,10 @@ namespace askap
         /// @param[in] names names for parameters to solve for
         /// @return pair of minimum and maximum eigenvalues
         std::pair<double,double> solveSubsetOfNormalEquations(Params &params, Quality& quality,
+                   const std::vector<std::string> &names) const;
+
+        /// @brief solve for a subset of parameters using the LSQR solver.
+        std::pair<double,double> solveSubsetOfNormalEquationsLSQR(Params &params, Quality& quality,
                    const std::vector<std::string> &__names) const;
 
         /// @brief extract an independent subset of parameters
@@ -115,13 +118,6 @@ namespace askap
         /// @return names of parameters in this subset
         std::vector<std::string> getIndependentSubset(std::vector<std::string> &names, const double tolerance) const;
 
-        /// @brief test that all matrix elements are below tolerance by absolute value
-        /// @details This is a helper method to test all matrix elements
-        /// @param[in] matr matrix to test
-        /// @param[in] tolerance tolerance on the element absolute values
-        /// @return true if all elements are zero within the tolerance
-        static bool allMatrixElementsAreZeros(const casacore::Matrix<double> &matr, const double tolerance); 
-         
        private:
          /// @brief maximum condition number allowed
          /// @details Effectively, this is a threshold for singular values 
@@ -131,15 +127,14 @@ namespace askap
          // Iteration number in the major loop (for LSQR solver with constraints).
          size_t itsMajorLoopIterationNumber;
 
-         // NOTE: Copied from "calibaccess/CalParamNameHelper.h", as currently accessors depends of scimath.
-         /// @brief extract coded channel and parameter name
-         /// @details This is a reverse operation to codeInChannel. Note, no checks are done that the name passed
-         /// has coded channel present.
-         /// @param[in] name full name of the parameter
-         /// @return a pair with extracted channel and the base parameter name
-         static std::pair<casa::uInt, std::string> extractChannelInfo(const std::string &name);
-
-         static bool compareGainNames(const std::string& gainA, const std::string& gainB);
+         /// @brief Calculates the list of gain name/index pairs.
+         /// @param[in] names Names of gain parameters to solve for.
+         /// @param[in] params Equation parameters.
+         /// @param[in] indices Calculated indices.
+         /// @return The number of parameters (to solve for).
+         size_t calculateGainNameIndices(const std::vector<std::string> &names,
+                                         const Params &params,
+                                         std::vector<std::pair<string, int> > &indices) const;
 
 #ifdef HAVE_MPI
          // MPI communicator of all workers (for LSQR solver).
