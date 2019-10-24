@@ -27,8 +27,9 @@
 /// @author Tim Cornwell <tim.cornwell@csiro.au>
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
-#include <askap/scimath/fitting/LinearSolver.h>
-#include <askap/scimath/fitting/GenericNormalEquations.h>
+#include <fitting/LinearSolver.h>
+#include <fitting/LinearSolverUtils.h>
+#include <fitting/LinearSolverLsqrUtils.h>
 
 #include <askap/askap/AskapError.h>
 #include <askap/profile/AskapProfiler.h>
@@ -45,11 +46,9 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 
-#include <askap/scimath/lsqr_solver/GlobalTypedefs.h>
-#include <askap/scimath/lsqr_solver/SparseMatrix.h>
-#include <askap/scimath/lsqr_solver/LSQRSolver.h>
-#include <askap/scimath/lsqr_solver/ModelDamping.h>
-#include <askap/scimath/lsqr_solver/ParallelTools.h>
+#include <lsqr_solver/LSQRSolver.h>
+#include <lsqr_solver/ModelDamping.h>
+#include <lsqr_solver/ParallelTools.h>
 
 #include <askap/askap/AskapLogging.h>
 ASKAP_LOGGER(logger, ".linearsolver");
@@ -110,7 +109,7 @@ void LinearSolver::init()
 /// @param[in] matr matrix to test
 /// @param[in] tolerance tolerance on the element absolute values
 /// @return true if all elements are zero within the tolerance
-bool LinearSolver::allMatrixElementsAreZeros(const casacore::Matrix<double> &matr, const double tolerance)
+static bool allMatrixElementsAreZeros(const casa::Matrix<double> &matr, const double tolerance)
 {
   for (casacore::uInt row = 0; row < matr.nrow(); ++row) {
        for (casacore::uInt col = 0; col < matr.ncolumn(); ++col) {
@@ -170,38 +169,37 @@ std::vector<std::string> LinearSolver::getIndependentSubset(std::vector<std::str
     return resultNames;
 }
 
-bool LinearSolver::compareGainNames(const std::string& gainA, const std::string& gainB) {
-    std::pair<casa::uInt, std::string> paramInfoA = LinearSolver::extractChannelInfo(gainA);
-    std::pair<casa::uInt, std::string> paramInfoB = LinearSolver::extractChannelInfo(gainB);
+size_t LinearSolver::calculateGainNameIndices(const std::vector<std::string> &names,
+                                              const Params &params,
+                                              std::vector<std::pair<string, int> > &indices) const
+{
+    ASKAPCHECK(indices.size() == names.size(), "Wrong vector size in calculateGainNameIndices!");
 
-    // Parameter name excluding channel number.
-    std::string parNameA = paramInfoA.second;
-    std::string parNameB = paramInfoB.second;
+    size_t nParameters = 0;
+    std::vector<std::pair<string, int> >::iterator it = indices.begin();
+    for (vector<string>::const_iterator cit = names.begin();
+            cit != names.end(); ++cit, ++it) {
+        ASKAPDEBUGASSERT(it != indices.end());
+        it->second = nParameters;
+        it->first = *cit;
+        ASKAPLOG_DEBUG_STR(logger, "Processing " << *cit << " " << nParameters);
 
-    casa::uInt chanA = paramInfoA.first;
-    casa::uInt chanB = paramInfoB.first;
-
-    int res = parNameA.compare(parNameB);
-
-    if (res == 0) {
-    // Same names, sort by channel number.
-        return (chanA <= chanB);
-    } else {
-        if (res < 0) {
-            return true;
-        } else {
-            return false;
-        }
+        const casa::uInt newParameters = normalEquations().dataVector(*cit).nelements();
+        nParameters += newParameters;
+        ASKAPDEBUGASSERT((params.isFree(*cit) ? params.value(*cit).nelements() : newParameters) == newParameters);
     }
+    ASKAPLOG_DEBUG_STR(logger, "Done");
+
+    return nParameters;
 }
 
 /// @brief solve for a subset of parameters
 /// @details This method is used in solveNormalEquations
-/// @param[in] params parameters to be updated           
+/// @param[in] params parameters to be updated
 /// @param[in] quality Quality of the solution
 /// @param[in] names names of the parameters to solve for 
 std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &params, Quality& quality,
-                   const std::vector<std::string> &__names) const
+                   const std::vector<std::string> &names) const
 {
     ASKAPTRACE("LinearSolver::solveSubsetOfNormalEquations");
 #ifdef HAVE_MPI
@@ -210,254 +208,43 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
     ASKAPLOG_INFO_STR(logger, "Started LinearSolver::solveSubsetOfNormalEquations, without MPI.");
 #endif
 
-    std::pair<double, double> result(0.,0.);
+    std::pair<double,double> result(0.,0.);
 
-    bool algorithmLSQR = (algorithm() == "LSQR");
-
-    std::vector<std::string> names = __names;
-    try {
-        std::sort(names.begin(), names.end(), compareGainNames);
-    }
-    catch (AskapError e) {
-        ASKAPLOG_WARN_STR(logger,"Likely non-fatal sort on parameter name has failed: " << e.what());
-    } 
     // Solving A^T Q^-1 V = (A^T Q^-1 A) P
 
-    int nParameters = 0;
+    std::vector<std::pair<string, int> > indices(names.size());
+    int nParameters = calculateGainNameIndices(names, params, indices);
+    ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
 
-    std::vector<std::pair<std::string, int> > indices(names.size());
-    std::map<std::string, size_t> indicesMap;
+    // Convert the normal equations to gsl format.
+    gsl_matrix * A = gsl_matrix_alloc(nParameters, nParameters);
+    gsl_vector * B = gsl_vector_alloc(nParameters);
+    gsl_vector * X = gsl_vector_alloc(nParameters);
 
-    {
-        std::vector<std::pair<std::string, int> >::iterator it = indices.begin();
-        for (std::vector<std::string>::const_iterator cit=names.begin(); cit!=names.end(); ++cit,++it) {
-            ASKAPDEBUGASSERT(it != indices.end());
-            it->second = nParameters;
-            it->first = *cit;
+    for (std::vector<std::pair<string, int> >::const_iterator indit2=indices.begin();indit2!=indices.end(); ++indit2)  {
+        for (std::vector<std::pair<string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1)  {
 
-            indicesMap[it->first] = (size_t)(it->second);
+             // Axes are dof, dof for each parameter.
+             // Take a deep breath for const-safe indexing into the double layered map.
+             const casa::Matrix<double>& nm = normalEquations().normalMatrix(indit1->first, indit2->first);
 
-            ASKAPLOG_DEBUG_STR(logger, "Processing " << *cit << " " << nParameters);
-            const casacore::uInt newParameters = normalEquations().dataVector(*cit).nelements();
-            nParameters += newParameters;
-            ASKAPDEBUGASSERT((params.isFree(*cit) ? params.value(*cit).nelements() : newParameters) == newParameters);
-        }
-    }
-    ASKAPLOG_DEBUG_STR(logger, "Done");
-    ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations");
-
-    ASKAPDEBUGASSERT(indices.size() > 0);
-
-    gsl_matrix * A = 0;
-    gsl_vector * B = 0;
-    gsl_vector * X = 0;
-
-    if (!algorithmLSQR) {
-        // Containers to convert the normal equations to gsl format.
-        A = gsl_matrix_alloc (nParameters, nParameters);
-        B = gsl_vector_alloc (nParameters);
-        X = gsl_vector_alloc (nParameters);
-    }
-
-    //------------------------------------------------------------------------------
-    // Define MPI partitioning (needed for LSQR solver).
-    //------------------------------------------------------------------------------
-
-    int myrank = 0;
-    int nbproc = 1;
-    bool matrixIsParallel = false;
-#ifdef HAVE_MPI
-    MPI_Comm mpi_comm = MPI_COMM_WORLD;
-#endif
-
-    if (algorithmLSQR) {
-#ifdef HAVE_MPI
-        if (parameters().count("parallelMatrix") > 0
-            && parameters().at("parallelMatrix") == "true") {
-            matrixIsParallel = true;
-        }
-
-        if (matrixIsParallel) {
-        // The parallel matrix case - need to define the parallel partitioning.
-            ASKAPCHECK(itsWorkersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
-            MPI_Comm_rank(itsWorkersComm, &myrank);
-            MPI_Comm_size(itsWorkersComm, &nbproc);
-
-            mpi_comm = itsWorkersComm;
-        } else {
-            mpi_comm = MPI_COMM_SELF;
-        }
-#endif
-        if (myrank == 0)
-            ASKAPLOG_DEBUG_STR(logger, "it, matrixIsParallel, nbproc = " << itsMajorLoopIterationNumber
-                                        << ", " << matrixIsParallel << ", " << nbproc);
-    }
-
-    //------------------------------------------------------------------------------
-    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(normalEquations());
-    size_t nElements = gne.getNumberElements();
-
-    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParameters = " << nParameters << ", nElements = " << nElements);
-
-    //------------------------------------------------------------------------------
-    // Define LSQR solver sparse matrix.
-    //------------------------------------------------------------------------------
-    size_t nrows = 0;
-    size_t nnz = 0;
-    bool addSmoothnessConstraints = false;
-#ifdef HAVE_MPI
-    size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, itsWorkersComm);
-    size_t nParametersSmaller = lsqr::ParallelTools::get_nsmaller(nParameters, myrank, nbproc, itsWorkersComm);
-#else
-    size_t nParametersTotal = nParameters;
-    size_t nParametersSmaller = 0;
-#endif
-    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParametersTotal = " << nParametersTotal);
-
-    if (algorithmLSQR) {
-        // Define approximate number of nonzero elements.
-        // Note: nElements may contain elements which are not currently being solved for.
-        if (nElements <= (size_t)(nParameters * nParameters)) {
-            nnz = nElements;
-        } else {
-            nnz = nParameters * nParameters;
-        }
-
-        nrows = nParametersTotal;
-        if (parameters().count("smoothing") > 0
-            && parameters().at("smoothing") == "true") {
-            addSmoothnessConstraints = true;
-        }
-
-        if (addSmoothnessConstraints) {
-            nrows += nParametersTotal;
-            nnz += 2 * nParameters;
-        }
-    }
-
-#ifdef HAVE_MPI
-    lsqr::SparseMatrix matrix(nrows, nnz, mpi_comm);
-#else
-    lsqr::SparseMatrix matrix(nrows, nnz);
-#endif
-
-    //--------------------------------------------------------------------------------------------
-    // Copy matrix elements from normal matrix (map of map of matrixes) to the solver matrix:
-    //      - to gsl NxN matrix, for the SVD solver;
-    //      - to sparse matrix (CSR format), for the LSQR solver.
-    //--------------------------------------------------------------------------------------------
-    if (algorithmLSQR && matrixIsParallel) {
-        for (size_t i = 0; i < nParametersSmaller; ++i) {
-            matrix.NewRow();
-        }
-    }
-
-    // Loop over matrix rows.
-    for (std::vector<std::pair<std::string, int> >::const_iterator indit1 = indices.begin();
-            indit1 != indices.end(); ++indit1) {
-
-        const std::map<std::string, casacore::Matrix<double> >::const_iterator colItBeg = gne.getNormalMatrixRowBegin(indit1->first);
-        const std::map<std::string, casacore::Matrix<double> >::const_iterator colItEnd = gne.getNormalMatrixRowEnd(indit1->first);
-
-        if (colItBeg != colItEnd) {
-
-            const size_t nrow = colItBeg->second.nrow();
-
-            for (size_t row = 0; row < nrow; ++row) {
-
-                if (algorithmLSQR) {
-                    matrix.NewRow();
-                }
-
-                // Loop over column elements.
-                for (std::map<std::string, casacore::Matrix<double> >::const_iterator colIt = colItBeg;
-                        colIt != colItEnd; ++colIt) {
-
-                    const std::map<std::string, size_t>::const_iterator indicesMapIt = indicesMap.find(colIt->first);
-                    if (indicesMapIt != indicesMap.end()) {
-                    // It is a parameter to solve for, adding it to the matrix.
-
-                        const size_t colIndex = indicesMapIt->second;
-                        const casacore::Matrix<double>& nm = colIt->second;
-
-                        ASKAPCHECK(nrow == nm.nrow(), "Not consistent normal matrix element element dimension!");
-
-                        const size_t ncolumn = nm.ncolumn();
-                        for (size_t col = 0; col < ncolumn; ++col) {
-                             const double elem = nm(row, col);
-                             ASKAPCHECK(!std::isnan(elem), "Normal matrix seems to have NaN for row = "<< row << " and col = " << col << ", this shouldn't happen!");
-
-                             if (algorithmLSQR) {
-                                 matrix.Add(elem, col + colIndex);
-
-                             } else {
-                                 gsl_matrix_set(A, row + (indit1->second), col + colIndex, elem);
-                             }
-                        }
-                    }
-                }
-            }
-
-        } else {
-        // Empty normal matrix row.
-            if (algorithmLSQR) {
-                // Need to add corresponding empty rows in the sparse matrix.
-                const size_t nrow = normalEquations().dataVector(indit1->first).nelements();
-                for (size_t i = 0; i < nrow; ++i) {
-                    matrix.NewRow();
-                }
-            }
-        }
-    }
-
-    if (algorithmLSQR) {
-        ASKAPCHECK(matrix.GetCurrentNumberRows() == (nParametersSmaller + nParameters), "Wrong number of matrix rows!");
-        if (matrixIsParallel) {
-            // Adding ending matrix empty rows, i.e., the rows in a big block-diagonal matrix below the current block.
-            size_t nEndRows = nParametersTotal - nParametersSmaller - nParameters;
-            for (size_t i = 0; i < nEndRows; ++i) {
-                matrix.NewRow();
-            }
-        }
-        ASKAPCHECK(matrix.GetCurrentNumberRows() == nParametersTotal, "Wrong number of matrix rows!");
-    }
-
-    //----------------------------------------------------------------------------------------------------------------------------
-    if (algorithmLSQR) {
-        size_t nonzeros = matrix.GetNumberElements();
-        double sparsity = (double)(nonzeros) / (double)(nParameters) / (double)(nParameters);
-        ASKAPLOG_DEBUG_STR(logger, "Jacobian nonzeros, sparsity = " << nonzeros << ", " << sparsity << " on rank " << myrank);
-    }
-
-    if (!algorithmLSQR) {
-        for (std::vector<std::pair<std::string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1) {
-            const casacore::Vector<double> &dv = normalEquations().dataVector(indit1->first);
-            for (size_t row=0; row<dv.nelements(); ++row) {
-                 const double elem = dv(row);
-                 ASKAPCHECK(!std::isnan(elem), "Data vector seems to have NaN for row = "<<row<<", this shouldn't happen!");
-                 gsl_vector_set(B, row+(indit1->second), elem);
-            }
-        }
-    }
-
-      /*
-      // temporary code to export matrices, which cause problems with the GSL
-      // to write up a clear case
-      {
-        std::ofstream os("dbg.dat");
-        os<<nParameters<<std::endl;
-        for (int row=0;row<nParameters;++row) {
-             for (int col=0;col<nParameters;++col) {
-                  if (col) {
-                      os<<" ";
-                  }
-                  os<<gsl_matrix_get(A,row,col);
+             if (&nm == &emptyMatrix) {
+                 continue;
              }
-             os<<std::endl;
-        }
-      }
-      // end of the temporary code
-      */
+
+             for (size_t row=0; row<nm.nrow(); ++row)  {
+                  for (size_t col=0; col<nm.ncolumn(); ++col) {
+                       const double elem = nm(row,col);
+                       ASKAPCHECK(!std::isnan(elem), "Normal matrix seems to have NaN for row = "<<row<<" and col = "<<col<<", this shouldn't happem!");
+                       gsl_matrix_set(A, row+(indit1->second), col+(indit2->second), elem);
+                       //std::cout << "A " << row+(indit1->second) << " " << col+(indit2->second) << " " << nm(row,col) << std::endl;
+                  }
+             }
+         }
+    }
+
+    // Populate the right-hand side vector B.
+    solverutils::populate_B(normalEquations(), indices, B, solverutils::assign_to_gsl_vector);
 
     if (algorithm() == "SVD") {
         ASKAPLOG_INFO_STR(logger, "Solving normal equations using the SVD solver");
@@ -475,9 +262,9 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
         // ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status);
         gsl_set_error_handler(oldhandler);
 
-        // a hack for now. For some reason, for some matrices gsl_linalg_SV_decomp may return NaN as singular value, perhaps some
+        // A hack for now. For some reason, for some matrices gsl_linalg_SV_decomp may return NaN as singular value, perhaps some
         // numerical precision issue inside SVD. Although it needs to be investigated further  (see ASKAPSDP-2270), for now trying
-        // to replace those singular values with zeros to exclude them from processing. Note, singular vectors may also contain NaNs
+        // to replace those singular values with zeros to exclude them from processing. Note, singular vectors may also contain NaNs.
         for (int i=0; i<nParameters; ++i) {
           if (std::isnan(gsl_vector_get(S,i))) {
               gsl_vector_set(S,i,0.);
@@ -486,385 +273,67 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
                ASKAPCHECK(!std::isnan(gsl_matrix_get(V,i,k)), "NaN in V: i="<<i<<" k="<<k);
           }
         }
-
-         // end of the hack
+        // end of the hack
 
          //SVDecomp (A, V, S);
 
-         // code to put a limit on the condition number of the system
-         const double singularValueLimit = nParameters>1 ?
-                     gsl_vector_get(S,0)/itsMaxCondNumber : -1.;
-         for (int i=1; i<nParameters; ++i) {
-              if (gsl_vector_get(S,i)<singularValueLimit) {
-                  gsl_vector_set(S,i,0.);
-              }
-         }
-
-        /*
-        // temporary code for debugging
-        {
-          std::ofstream os("dbg2.dat");
-          for (int i=0; i<nParameters; ++i) {
-               os<<i<<" "<<gsl_vector_get(S,i)<<std::endl;
-          }
-
-          //std::cout<<"new singular value spectrum is ready"<<std::endl;
-          //char tst;
-          //std::cin>>tst;
-
-        }
-        // end of temporary code
-        */
-
-         gsl_vector * X = gsl_vector_alloc(nParameters);
-         ASKAPDEBUGASSERT(X!=NULL);
-
-         const int solveStatus = gsl_linalg_SV_solve (A, V, S, B, X);
-         ASKAPCHECK(solveStatus == 0, "gsl_linalg_SV_solve failed");
-
-// Now find the statistics for the decomposition
-         int rank=0;
-         double smin = 1e50;
-         double smax = 0.0;
-         for (int i=0;i<nParameters; ++i) {
-              const double sValue = std::abs(gsl_vector_get(S, i));
-              ASKAPCHECK(!std::isnan(sValue), "Got NaN as a singular value for normal matrix, this shouldn't happen S[i]="<<gsl_vector_get(S,i)<<" parameter "<<i<<" singularValueLimit="<<singularValueLimit);
-              if(sValue>0.0) {
-                 ++rank;
-                 if ((sValue>smax) || (i == 0)) {
-                     smax=sValue;
-                 }
-                 if ((sValue<smin) || (i == 0)) {
-                     smin=sValue;
-                 }
-               }
-         }
-         result.first = smin;
-         result.second = smax;
-
-         quality.setDOF(nParameters);
-         if (status != 0) {
-             ASKAPLOG_WARN_STR(logger, "Solution is considered invalid due to gsl_linalg_SV_decomp failure, main matrix is effectively rank zero");
-             quality.setRank(0);
-             quality.setCond(0.);
-             quality.setInfo("SVD decomposition rank deficient");
-         } else {
-             quality.setRank(rank);
-             quality.setCond(smax/smin);
-             if (rank==nParameters) {
-                 quality.setInfo("SVD decomposition rank complete");
-             } else {
-                 quality.setInfo("SVD decomposition rank deficient");
+        // Code to put a limit on the condition number of the system.
+        const double singularValueLimit = nParameters>1 ?
+                    gsl_vector_get(S,0)/itsMaxCondNumber : -1.;
+        for (int i=1; i<nParameters; ++i) {
+             if (gsl_vector_get(S,i)<singularValueLimit) {
+                 gsl_vector_set(S,i,0.);
              }
-         }
-
-// Update the parameters for the calculated changes. Exploit reference
-// semantics of casacore::Array.
-         std::vector<std::pair<std::string, int> >::const_iterator indit;
-         for (indit=indices.begin();indit!=indices.end();++indit) {
-              casacore::IPosition vecShape(1, params.value(indit->first).nelements());
-              casacore::Vector<double> value(params.value(indit->first).reform(vecShape));
-              for (size_t i=0; i<value.nelements(); ++i)  {
-//                 std::cout << value(i) << " " << gsl_vector_get(X, indit->second+i) << std::endl;
-                   const double adjustment = gsl_vector_get(X, indit->second+i);
-                   ASKAPCHECK(!std::isnan(adjustment), "Solution resulted in NaN as an update for parameter "<<(indit->second + i));
-                   value(i) += adjustment;
-              }
-          }
-          gsl_vector_free(S);
-          gsl_vector_free(work);
-          gsl_matrix_free(V);
-    }
-    else if (algorithmLSQR) {
-        if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Solving normal equations using the LSQR solver");
-
-        //----------------------------------------------------
-        // Define the right-hand side (the data misfit part).
-        //----------------------------------------------------
-        lsqr::Vector b_RHS(nParametersTotal, 0.);
-
-        size_t nDataAdded = 0;
-        for (std::vector<std::pair<string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1) {
-            const casa::Vector<double> &dv = normalEquations().dataVector(indit1->first);
-            for (size_t row = 0; row < dv.nelements(); ++row) {
-                 const double elem = dv(row);
-                 ASKAPCHECK(!std::isnan(elem), "Data vector seems to have NaN for row = " << row << ", this shouldn't happen!");
-                 b_RHS[row+(indit1->second)] = elem;
-                 nDataAdded++;
-            }
-        }
-        ASKAPCHECK(nDataAdded == (size_t)(nParameters), "Wrong number of data added on rank " << myrank);
-
-        if (matrixIsParallel) {
-#ifdef HAVE_MPI
-            lsqr::ParallelTools::get_full_array_in_place(nParameters, b_RHS, true, myrank, nbproc, itsWorkersComm);
-#endif
         }
 
-        if (addSmoothnessConstraints) {
-            ASKAPCHECK(matrixIsParallel, "Smoothing constraints should be used in the parallel matrix mode!");
+        gsl_vector * X = gsl_vector_alloc(nParameters);
+        ASKAPDEBUGASSERT(X!=NULL);
 
-        //-----------------------------------------------
-        // Adding smoothness constraints.
-        //-----------------------------------------------
-            b_RHS.resize(b_RHS.size() + nParametersTotal);
+        const int solveStatus = gsl_linalg_SV_solve (A, V, S, B, X);
+        ASKAPCHECK(solveStatus == 0, "gsl_linalg_SV_solve failed");
 
-            //-----------------------------------------------------------------------------
-            // Setting the smoothing weight.
-            //-----------------------------------------------------------------------------
-            double smoothingWeight = 0.;
-            if (addSmoothnessConstraints) {
-                double smoothingMinWeight = 0.;
-                if (parameters().count("smoothingMinWeight") > 0) {
-                    smoothingMinWeight = std::atof(parameters().at("smoothingMinWeight").c_str());
+        // Now find the statistics for the decomposition.
+        int rank=0;
+        double smin = 1e50;
+        double smax = 0.0;
+        for (int i=0;i<nParameters; ++i) {
+             const double sValue = std::abs(gsl_vector_get(S, i));
+             ASKAPCHECK(!std::isnan(sValue), "Got NaN as a singular value for normal matrix, this shouldn't happen S[i]="<<gsl_vector_get(S,i)<<" parameter "<<i<<" singularValueLimit="<<singularValueLimit);
+             if(sValue>0.0) {
+                ++rank;
+                if ((sValue>smax) || (i == 0)) {
+                    smax=sValue;
                 }
-
-                double smoothingMaxWeight = 3.e+6;
-                if (parameters().count("smoothingMaxWeight") > 0) {
-                    smoothingMaxWeight = std::atof(parameters().at("smoothingMaxWeight").c_str());
-                }
-
-                size_t nsteps = 10;
-                if (parameters().count("smoothingNsteps") > 0) {
-                    nsteps = std::atoi(parameters().at("smoothingNsteps").c_str());
-                }
-
-                if (itsMajorLoopIterationNumber < nsteps) {
-                    if (smoothingMinWeight == smoothingMaxWeight) {
-                        smoothingWeight = smoothingMaxWeight;
-                    } else {
-                        double span = smoothingMaxWeight - smoothingMinWeight;
-                        ASKAPCHECK(span > 0, "Wrong smoothing weight!");
-
-                        // Logarithmic sweep (between the min and max weights).
-                        smoothingWeight = smoothingMinWeight + std::pow(10., log10(span) / (double)(nsteps) * (double)(itsMajorLoopIterationNumber));
-                    }
-                } else {
-                    // Relaxation with constant weight.
-                    smoothingWeight = smoothingMaxWeight;
+                if ((sValue<smin) || (i == 0)) {
+                    smin=sValue;
                 }
             }
-            if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding smoothness constraints, with weight = " << smoothingWeight);
+        }
+        result.first = smin;
+        result.second = smax;
 
-            // Reading the number of channels.
-            size_t nChannels = 0;
-            if (parameters().count("nChan") > 0) {
-                nChannels = std::atoi(parameters().at("nChan").c_str());
+        quality.setDOF(nParameters);
+        if (status != 0) {
+            ASKAPLOG_WARN_STR(logger, "Solution is considered invalid due to gsl_linalg_SV_decomp failure, main matrix is effectively rank zero");
+            quality.setRank(0);
+            quality.setCond(0.);
+            quality.setInfo("SVD decomposition rank deficient");
+        } else {
+            quality.setRank(rank);
+            quality.setCond(smax/smin);
+            if (rank==nParameters) {
+                quality.setInfo("SVD decomposition rank complete");
+            } else {
+                quality.setInfo("SVD decomposition rank deficient");
             }
-            ASKAPCHECK(nChannels > 1, "Wrong number of channels for smoothness constraints!");
-
-            //-----------------------------------------------------------------------------
-            // Extract the solution at the current major iteration (before the update).
-            //-----------------------------------------------------------------------------
-            std::vector<double> x0(nParametersTotal);
-            int counter = 0;
-            for (std::vector<std::pair<std::string, int> >::const_iterator indit = indices.begin();
-                             indit != indices.end(); ++indit) {
-                casacore::IPosition vecShape(1, params.value(indit->first).nelements());
-                casacore::Vector<double> value(params.value(indit->first).reform(vecShape));
-                for (size_t i=0; i<value.nelements(); ++i) {
-                    x0[indit->second + i] = value(i);
-                    counter++;
-                }
-            }
-            ASKAPCHECK(counter == nParameters, "Wrong number of parameters!");
-
-#ifdef HAVE_MPI
-            lsqr::ParallelTools::get_full_array_in_place(nParameters, x0, true, myrank, nbproc, itsWorkersComm);
-#endif
-
-            //-----------------------------------------------------------------------------
-            // Assume the same number of channels at every CPU.
-            size_t nChannelsLocal = nChannels / (nParametersTotal / nParameters);
-            size_t nextChannelIndexShift = nParameters - (nChannelsLocal - 1) * 2;
-
-            if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nChannelsLocal = " << nChannelsLocal);
-
-            std::vector<int> currIndexGlobal(nParametersTotal);
-            std::vector<int> nextIndexGlobal(nParametersTotal);
-
-            // NOTE: Assume channels are ordered with the MPI rank order, i.e., the higher the rank the higher the channel number.
-            // E.g.: for 40 channels and 4 workers, rank 0 has channels 0-9, rank 1: 10-19, rank 2: 20-29, and rank 3: 30-39.
-
-            size_t localChannelNumber = 0;
-            for (size_t i = 0; i < nParametersTotal; i += 2) {
-
-                bool lastLocalChannel = (localChannelNumber == nChannelsLocal - 1);
-
-                if (lastLocalChannel) {
-                    size_t shiftedIndex = i + nextChannelIndexShift;
-
-                    if (shiftedIndex < nParametersTotal) {
-                    // Reached last local channel - shift the 'next' index.
-                        // Real part.
-                        currIndexGlobal[i] = i;
-                        nextIndexGlobal[i] = shiftedIndex;
-                        // Imaginary part.
-                        currIndexGlobal[i + 1] = currIndexGlobal[i] + 1;
-                        nextIndexGlobal[i + 1] = nextIndexGlobal[i] + 1;
-                    } else {
-                    // Reached last global channel - do not add constraints - it is already coupled with previous one.
-                        // Real part.
-                        currIndexGlobal[i] = -1;
-                        nextIndexGlobal[i] = -1;
-                        // Imaginary part.
-                        currIndexGlobal[i + 1] = -1;
-                        nextIndexGlobal[i + 1] = -1;
-                    }
-
-                } else {
-                    // Real part.
-                    currIndexGlobal[i] = i;
-                    nextIndexGlobal[i] = i + 2;
-                    // Imaginary part.
-                    currIndexGlobal[i + 1] = currIndexGlobal[i] + 1;
-                    nextIndexGlobal[i + 1] = nextIndexGlobal[i] + 1;
-                }
-
-                if (lastLocalChannel) {
-                    // Reset local channel counter.
-                    localChannelNumber = 0;
-                } else {
-                    localChannelNumber++;
-                }
-            }
-
-            //-----------------------------------------------------------------------------
-            // Adding Jacobian of the gradient to the matrix.
-            //-----------------------------------------------------------------------------
-            double cost = 0.;
-
-            double matrix_val[2];
-            matrix_val[0] = - smoothingWeight;
-            matrix_val[1] = + smoothingWeight;
-
-            for (size_t i = 0; i < nParametersTotal; i++) {
-
-                //----------------------------------------------------
-                // Adding matrix values.
-                //----------------------------------------------------
-                matrix.NewRow();
-
-                // Global matrix column indexes.
-                size_t globIndex[2];
-                globIndex[0] = currIndexGlobal[i]; // Current index: negative term in forward difference x[i+1] - x[i].
-                globIndex[1] = nextIndexGlobal[i]; // Next index: positive term in forward difference x[i+1] - x[i].
-
-                for (size_t k = 0; k < 2; k++) {
-                    if (globIndex[k] >= 0
-                        && globIndex[k] >= nParametersSmaller
-                        && globIndex[k] < nParametersSmaller + nParameters) {
-
-                        // Local matrix column index (at the current CPU).
-                        size_t localColumnIndex = globIndex[k] - nParametersSmaller;
-                        matrix.Add(matrix_val[k], localColumnIndex);
-                    }
-                }
-
-                //----------------------------------------------------
-                // Adding the Right-Hand Side.
-                //----------------------------------------------------
-                double b_RHS_value = 0.;
-                if (currIndexGlobal[i] >= 0 && nextIndexGlobal[i] >= 0) {
-                    b_RHS_value = - smoothingWeight * (x0[nextIndexGlobal[i]] - x0[currIndexGlobal[i]]);
-                } else {
-                    ASKAPCHECK(currIndexGlobal[i] == -1 && nextIndexGlobal[i] == -1, "Wrong indexes!");
-                }
-                size_t b_index = matrix.GetCurrentNumberRows() - 1;
-                b_RHS[b_index] = b_RHS_value;
-
-                cost += b_RHS_value * b_RHS_value;
-            }
-
-            if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Smoothness constraints cost = " << cost / (smoothingWeight * smoothingWeight));
-        }
-        // Completed the matrix building.
-        matrix.Finalize(nParameters);
-
-        if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "Matrix nelements = " << matrix.GetNumberElements());
-
-        // A simple approximation for the upper bound of the rank of the  A'A matrix.
-        size_t rank_approx = matrix.GetNumberNonemptyRows();
-
-        //-----------------------------------------------
-        // Adding damping.
-        //-----------------------------------------------
-        // Setting damping parameters.
-        double alpha = 0.01;
-        if (parameters().count("alpha") > 0) {
-            alpha = std::atof(parameters().at("alpha").c_str());
         }
 
-        double norm = 2.0;
-        if (parameters().count("norm") > 0) {
-            norm = std::atof(parameters().at("norm").c_str());
-        }
-
-        if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding model damping, with alpha = " << alpha);
-
-        lsqr::ModelDamping damping(nParameters);
-        damping.Add(alpha, norm, matrix, b_RHS, NULL, NULL, NULL, myrank, nbproc);
-
-        //-----------------------------------------------
-        // Calculating the total cost.
-        //-----------------------------------------------
-        double total_cost = 0.;
-        for (size_t i = 0; i < b_RHS.size(); ++i) {
-            total_cost += b_RHS[i] * b_RHS[i];
-        }
-        if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Total cost = " << total_cost);
-
-        //-----------------------------------------------
-        // Setting solver parameters.
-        //-----------------------------------------------
-        int niter = 100;
-        if (parameters().count("niter") > 0) {
-            niter = std::atoi(parameters().at("niter").c_str());
-        }
-
-        double rmin = 1.e-13;
-        if (parameters().count("rmin") > 0) {
-            rmin = std::atof(parameters().at("rmin").c_str());
-        }
-
-        bool suppress_output = true;
-        if (parameters().count("verbose") > 0
-            && parameters().at("verbose") == "true") {
-            suppress_output = false;
-        }
-
-        //-----------------------------------------------
-        // Solving the matrix system.
-        //-----------------------------------------------
-        casacore::Timer timer;
-        timer.mark();
-
-        lsqr::Vector x(nParameters, 0.0);
-        lsqr::LSQRSolver solver(matrix.GetCurrentNumberRows(), nParameters);
-
-        solver.Solve(niter, rmin, matrix, b_RHS, x, suppress_output);
-
-        ASKAPLOG_INFO_STR(logger, "Completed LSQR in " << timer.real() << " seconds on rank " << myrank);
-
-        //------------------------------------------------------------------------
         // Update the parameters for the calculated changes.
-        // Exploit reference semantics of casacore::Array.
-        //------------------------------------------------------------------------
-        std::vector<std::pair<std::string, int> >::const_iterator indit;
-        for (indit=indices.begin();indit!=indices.end();++indit) {
-            casacore::IPosition vecShape(1, params.value(indit->first).nelements());
-            casacore::Vector<double> value(params.value(indit->first).reform(vecShape));
-            for (size_t i=0; i<value.nelements(); ++i) {
-                const double adjustment = x[indit->second + i];
-                ASKAPCHECK(!std::isnan(adjustment), "Solution resulted in NaN as an update for parameter "<<(indit->second + i));
-                value(i) += adjustment;
-            }
-        }
+        solverutils::update_solution(indices, params, X, solverutils::retrieve_from_gsl_vector);
 
-         //------------------------------------------------------------------------
-         // Set approximate solution quality.
-         quality.setDOF(nParameters);
-         quality.setRank(rank_approx);
+        gsl_vector_free(S);
+        gsl_vector_free(work);
+        gsl_matrix_free(V);
     }
     else if (algorithm() == "Chol") {
         // TODO: It seems this branch is never actually used. Need to remove it?
@@ -873,56 +342,226 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
         quality.setInfo("Cholesky decomposition");
         gsl_linalg_cholesky_decomp(A);
         gsl_linalg_cholesky_solve(A, B, X);
+
         // Update the parameters for the calculated changes.
-        std::vector<std::pair<std::string, int> >::const_iterator indit;
-        for (indit=indices.begin();indit!=indices.end();++indit)
-        {
-          casacore::IPosition vecShape(1, params.value(indit->first).nelements());
-          casacore::Vector<double> value(params.value(indit->first).reform(vecShape));
-          for (size_t i=0; i<value.nelements(); ++i)  {
-               value(i)+=gsl_vector_get(X, indit->second+i);
-          }
-        }
+        solverutils::update_solution(indices, params, X, solverutils::retrieve_from_gsl_vector);
     }
     else {
-        ASKAPTHROW(AskapError, "Unknown calibration solver type: " << algorithm());
+        ASKAPTHROW(AskapError, "Wrong calibration solver type: " << algorithm());
     }
 
-    if (!algorithmLSQR) {
-        // Free up gsl storage.
-        gsl_matrix_free(A);
-        gsl_vector_free(B);
-        gsl_vector_free(X);
-    }
+    // Free up gsl storage.
+    gsl_matrix_free(A);
+    gsl_vector_free(B);
+    gsl_vector_free(X);
 
     return result;
 }
 
-    /// @brief solve for parameters
-    /// The solution is constructed from the normal equations and given
-    /// parameters are updated. If there are no free parameters in the
-    /// given Params class, all unknowns in the normal
-    /// equatons will be solved for.
-    /// @param[in] params parameters to be updated 
-    /// @param[in] quality Quality of solution
-    /// @note This is fully general solver for the normal equations for any shape
-    /// parameters.
-    bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
-    {
-        ASKAPTRACE("LinearSolver::solveNormalEquations");
+std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &params, Quality& quality,
+                   const std::vector<std::string> &__names) const
+{
+    ASKAPTRACE("LinearSolver::solveSubsetOfNormalEquationsLSQR");
+#ifdef HAVE_MPI
+    ASKAPLOG_INFO_STR(logger, "Started LinearSolver::solveSubsetOfNormalEquationsLSQR, with MPI.");
+#else
+    ASKAPLOG_INFO_STR(logger, "Started LinearSolver::solveSubsetOfNormalEquationsLSQR, without MPI.");
+#endif
 
-        // Solving A^T Q^-1 V = (A^T Q^-1 A) P
-        // Find all the free parameters.
-	std::vector<std::string> names(params.freeNames());
-        if (names.size() == 0) {
-            // List of parameters is empty, will solve for all
-            // unknowns in the equation.
-            names = normalEquations().unknowns();
-        }
-        ASKAPCHECK(names.size() > 0, "No free parameters in Linear Solver");
+    std::pair<double, double> result(0.,0.);
 
-        if (names.size() < 100 // No need to extract independent blocks if number of unknowns is small.
-            || algorithm() == "LSQR") {
+    std::vector<std::string> names = __names;
+    std::sort(names.begin(), names.end(), lsqrutils::compareGainNames);
+
+    // Solving A^T Q^-1 V = (A^T Q^-1 A) P
+
+    std::vector<std::pair<string, int> > indices(names.size());
+    size_t nParameters = calculateGainNameIndices(names, params, indices);
+    ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
+
+    //------------------------------------------------------------------------------
+    // Define MPI partitioning.
+    //------------------------------------------------------------------------------
+    int myrank = 0;
+    int nbproc = 1;
+
+    bool matrixIsParallel = solverutils::getParameter("parallelMatrix", parameters(), false);
+
+#ifdef HAVE_MPI
+    MPI_Comm mpi_comm = MPI_COMM_WORLD;
+
+    if (matrixIsParallel) {
+    // The parallel matrix case - need to define the parallel partitioning.
+        ASKAPCHECK(itsWorkersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
+        MPI_Comm_rank(itsWorkersComm, &myrank);
+        MPI_Comm_size(itsWorkersComm, &nbproc);
+
+        mpi_comm = itsWorkersComm;
+    } else {
+        mpi_comm = MPI_COMM_SELF;
+    }
+#endif
+    if (myrank == 0) {
+        ASKAPLOG_DEBUG_STR(logger, "it, matrixIsParallel, nbproc = " << itsMajorLoopIterationNumber
+                                    << ", " << matrixIsParallel << ", " << nbproc);
+    }
+
+    //------------------------------------------------------------------------------
+    // Define LSQR solver sparse matrix.
+    //------------------------------------------------------------------------------
+#ifdef HAVE_MPI
+    size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, itsWorkersComm);
+#else
+    size_t nParametersTotal = nParameters;
+#endif
+    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParameters = " << nParameters);
+    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParametersTotal = " << nParametersTotal);
+
+#ifdef HAVE_MPI
+    lsqr::SparseMatrix matrix(nParametersTotal, mpi_comm);
+#else
+    lsqr::SparseMatrix matrix(nParametersTotal);
+#endif
+
+    // Copy matrix elements from normal matrix (map of map of matrixes) to the solver sparse matrix (in CSR format).
+    lsqrutils::buildLSQRSparseMatrix(normalEquations(), indices, matrix, nParameters, matrixIsParallel);
+
+    size_t nonzeros = matrix.GetNumberElements();
+    double sparsity = (double)(nonzeros) / (double)(nParameters) / (double)(nParameters);
+    ASKAPLOG_DEBUG_STR(logger, "Jacobian nonzeros, sparsity = " << nonzeros << ", " << sparsity << " on rank " << myrank);
+
+    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Solving normal equations using the LSQR solver");
+
+    //----------------------------------------------------
+    // Define the right-hand side (the data misfit part).
+    //----------------------------------------------------
+    lsqr::Vector b_RHS(nParametersTotal, 0.);
+
+    // Populate the right-hand side vector B.
+    size_t nDataAdded = solverutils::populate_B(normalEquations(), indices, b_RHS, solverutils::assign_to_lsqr_vector);
+    ASKAPCHECK(nDataAdded == (size_t)(nParameters), "Wrong number of data added on rank " << myrank);
+
+    if (matrixIsParallel) {
+#ifdef HAVE_MPI
+        lsqr::ParallelTools::get_full_array_in_place(nParameters, b_RHS, true, myrank, nbproc, itsWorkersComm);
+#endif
+    }
+
+    //------------------------------------------------------------------
+    // Adding smoothness constraints.
+    //------------------------------------------------------------------
+    bool addSmoothing = solverutils::getParameter("smoothing", parameters(), false);
+
+    if (addSmoothing) {
+        ASKAPCHECK(matrixIsParallel, "Smoothing constraints should be used in the parallel matrix mode!");
+
+        // Reading the number of channels.
+        size_t nChannels = solverutils::getParameter("nChan", parameters(), 0);
+
+        // Calculate the smoothing weight.
+        double smoothingWeight = lsqrutils::getSmoothingWeight(parameters(), itsMajorLoopIterationNumber);
+
+        //--------------------------------------------------------------
+        // Extract the solution at the current major iteration (before the update).
+        std::vector<double> x0(nParametersTotal);
+
+        // Retrieve the local solution (at the current worker).
+        lsqrutils::getCurrentSolutionVector(indices, params, x0);
+
+#ifdef HAVE_MPI
+        // Retrieve the global solution (at all workers).
+        lsqr::ParallelTools::get_full_array_in_place(nParameters, x0, true, myrank, nbproc, itsWorkersComm);
+#endif
+        //--------------------------------------------------------------
+        // Adding smoothing constraints into the system of equations.
+        lsqrutils::addSmoothnessConstraints(matrix, b_RHS, indices, x0, nParameters, nChannels, smoothingWeight);
+    }
+    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "Matrix nelements = " << matrix.GetNumberElements());
+
+    // A simple approximation for the upper bound of the rank of the  A'A matrix.
+    size_t rank_approx = matrix.GetNumberNonemptyRows();
+
+    //------------------------------------------------------------------
+    // Adding damping.
+    //------------------------------------------------------------------
+    // Setting damping parameters.
+    double alpha = solverutils::getParameter("alpha", parameters(), 0.01);
+    double norm = solverutils::getParameter("norm", parameters(), 2.0);
+
+    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding model damping, with alpha = " << alpha);
+
+    lsqr::ModelDamping damping(nParameters);
+    damping.Add(alpha, norm, matrix, b_RHS, NULL, NULL, NULL, myrank, nbproc);
+
+    //-----------------------------------------------
+    // Calculating the total cost.
+    //-----------------------------------------------
+    double total_cost = 0.;
+    for (size_t i = 0; i < b_RHS.size(); ++i) {
+        total_cost += b_RHS[i] * b_RHS[i];
+    }
+    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Total cost = " << total_cost);
+
+    //-----------------------------------------------
+    // Setting solver parameters.
+    //-----------------------------------------------
+    int niter = solverutils::getParameter("niter", parameters(), 100);
+    double rmin = solverutils::getParameter("rmin", parameters(), 1.e-13);
+    bool suppress_output = !(solverutils::getParameter("verbose", parameters(), false));
+
+    //-----------------------------------------------
+    // Solving the matrix system.
+    //-----------------------------------------------
+    casa::Timer timer;
+    timer.mark();
+
+    lsqr::Vector x(nParameters, 0.0);
+    lsqr::LSQRSolver solver(matrix.GetCurrentNumberRows(), nParameters);
+
+    solver.Solve(niter, rmin, matrix, b_RHS, x, suppress_output);
+
+    ASKAPLOG_INFO_STR(logger, "Completed LSQR in " << timer.real() << " seconds on rank " << myrank);
+
+    //------------------------------------------------------------------------
+    // Update the parameters for the calculated changes.
+    solverutils::update_solution(indices, params, x, solverutils::retrieve_from_lsqr_vector);
+
+    //------------------------------------------------------------------------
+    // Set approximate solution quality.
+    quality.setDOF(nParameters);
+    quality.setRank(rank_approx);
+
+    return result;
+}
+
+/// @brief solve for parameters
+/// The solution is constructed from the normal equations and given
+/// parameters are updated. If there are no free parameters in the
+/// given Params class, all unknowns in the normal
+/// equatons will be solved for.
+/// @param[in] params parameters to be updated
+/// @param[in] quality Quality of solution
+/// @note This is fully general solver for the normal equations for any shape
+/// parameters.
+bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
+{
+    ASKAPTRACE("LinearSolver::solveNormalEquations");
+
+    // Solving A^T Q^-1 V = (A^T Q^-1 A) P
+    // Find all the free parameters.
+    vector<string> names(params.freeNames());
+    if (names.size() == 0) {
+        // List of parameters is empty, will solve for all unknowns in the equation.
+        names = normalEquations().unknowns();
+    }
+    ASKAPCHECK(names.size() > 0, "No free parameters in Linear Solver");
+
+    if (algorithm() == "LSQR") {
+    // LSQR solver.
+        solveSubsetOfNormalEquationsLSQR(params, quality, names);
+    } else {
+    // SVD solver.
+        if (names.size() < 100) { // No need to extract independent blocks if number of unknowns is small.
             solveSubsetOfNormalEquations(params, quality, names);
         } else {
             while (names.size() > 0) {
@@ -931,40 +570,27 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
                 solveSubsetOfNormalEquations(params, quality, subsetNames);
             }
         }
-        return true;
-    };
-
-    Solver::ShPtr LinearSolver::clone() const
-    {
-      return Solver::ShPtr(new LinearSolver(*this));
     }
+    return true;
+};
+
+Solver::ShPtr LinearSolver::clone() const
+{
+    return Solver::ShPtr(new LinearSolver(*this));
+}
 
 #ifdef HAVE_MPI
-    void LinearSolver::setWorkersCommunicator(const MPI_Comm &comm)
-    {
-        assert(comm != MPI_COMM_NULL);
-        MPI_Comm_dup(comm, &itsWorkersComm);
-    }
+void LinearSolver::setWorkersCommunicator(const MPI_Comm &comm)
+{
+    assert(comm != MPI_COMM_NULL);
+    MPI_Comm_dup(comm, &itsWorkersComm);
+}
 #endif
 
-    void LinearSolver::setMajorLoopIterationNumber(size_t it)
-    {
-        itsMajorLoopIterationNumber = it;
-    }
+void LinearSolver::setMajorLoopIterationNumber(size_t it)
+{
+    itsMajorLoopIterationNumber = it;
+}
 
-    // NOTE: Copied from "calibaccess/CalParamNameHelper.h", as currently accessors depends of scimath.
-    /// @brief extract coded channel and parameter name
-    /// @details This is a reverse operation to codeInChannel. Note, no checks are done that the name passed
-    /// has coded channel present.
-    /// @param[in] name full name of the parameter
-    /// @return a pair with extracted channel and the base parameter name
-    std::pair<casacore::uInt, std::string> LinearSolver::extractChannelInfo(const std::string &name)
-    {
-      size_t pos = name.rfind(".");
-      ASKAPCHECK(pos != std::string::npos, "Expect dot in the parameter name passed to extractChannelInfo, name="<<name);
-      ASKAPCHECK(pos + 1 != name.size(), "Parameter name="<<name<<" ends with a dot");
-      return std::pair<casacore::uInt, std::string>(utility::fromString<casacore::uInt>(name.substr(pos+1)),name.substr(0,pos));
-    }
-
-  }
+}
 }
