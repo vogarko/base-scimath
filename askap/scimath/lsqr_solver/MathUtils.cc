@@ -13,7 +13,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <askap/scimath/lsqr_solver/MathUtils.h>
+#include <lsqr_solver/MathUtils.h>
 
 namespace askap { namespace lsqr { namespace MathUtils {
 

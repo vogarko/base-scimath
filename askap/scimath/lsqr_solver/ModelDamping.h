@@ -7,7 +7,7 @@
 #ifndef SRC_INVERSION_MODELDAMPING_H_
 #define SRC_INVERSION_MODELDAMPING_H_
 
-#include <askap/scimath/lsqr_solver/SparseMatrix.h>
+#include <lsqr_solver/SparseMatrix.h>
 
 namespace askap { namespace lsqr {
 
