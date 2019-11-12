@@ -183,7 +183,7 @@ casacore::Vector<casacore::Complex>& PolConverter::convert(casacore::Vector<casa
             for (casacore::uInt row = 0; row < out.nelements(); ++row) {
                  out[row] = 0.;
                  for (casacore::uInt col = 0; col < 4; ++col) {
-                      if (row == 0) casa::cout << vis1(col);
+                      //if (row == 0) casa::cout << vis1(col);
                       out[row] += itsTransform(row,col)*vis1[col];
                  }
             }
