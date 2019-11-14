@@ -263,6 +263,13 @@ struct PolConverter {
   /// @return map with the polarisation product as the key and the complex coefficient as the value
   std::map<casacore::Stokes::StokesTypes, casacore::Complex> getSparseTransform(const casacore::Stokes::StokesTypes pol) const;
 
+  /// @brief set the parallactic angles to use for conversion of linears to Stokes
+  /// @param[in] pa1 parallactic angle on the first antenna
+  /// @param[in] pa2 parallactic angle on the second antenna
+  /// @param[in] swap polarisations if true
+  inline void setParAngle(double pa1, double pa2, bool swap = false)
+  { fillPARotationMatrix(pa1,pa2,swap); }
+
 protected:
   /// @brief build transformation matrix
   /// @details This is the core of the algorithm, this method builds the transformation matrix
@@ -276,7 +283,8 @@ protected:
   /// @details
   /// @param[in] pa1 parallactic angle on the first antenna
   /// @param[in] pa2 parallactic angle on the second antenna
-  void fillPARotationMatrix(double pa1, double pa2);
+  /// @param[in] swap polarisations if true
+  void fillPARotationMatrix(double pa1, double pa2, bool swap);
 
 private:
   /// @brief no operation flag
@@ -289,7 +297,7 @@ private:
   casacore::Matrix<casacore::Complex> itsTransform;
 
   /// @brief matrix describing parallactic angle rotation
-  casacore::Matrix<casacore::Double> itsPARotation;
+  casacore::Matrix<casacore::Float> itsPARotation;
 
   // the following methods may be removed in the future
 
@@ -307,6 +315,12 @@ private:
   /// equivalent to setting all unknown polarisation products to 0 is appropriate for degridding.
   /// This is achieved if this parameter is set to false.
   bool itsCheckUnspecifiedProducts;
+
+  /// @brief True if input/output frame is linear
+  bool itsInputLinear, itsOutputLinear;
+
+  /// @brief Cache last values of pa1 and pa2
+  double itsLastpa1, itsLastpa2;
 };
 
 } // namespace scimath

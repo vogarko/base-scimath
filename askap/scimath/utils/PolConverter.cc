@@ -48,7 +48,8 @@ PolConverter::PolConverter(const casacore::Vector<casacore::Stokes::StokesTypes>
                bool checkUnspecifiedProducts) : itsVoid(false),
                itsTransform(polFrameOut.nelements(),polFrameIn.nelements(),casacore::Complex(0.,0.)),
                itsPolFrameIn(polFrameIn), itsPolFrameOut(polFrameOut),
-               itsCheckUnspecifiedProducts(checkUnspecifiedProducts)
+               itsCheckUnspecifiedProducts(checkUnspecifiedProducts),
+               itsInputLinear(false),itsOutputLinear(false)
 {
   if (equal(polFrameIn, polFrameOut)) {
       itsVoid = true;
@@ -80,7 +81,8 @@ itsTransform(other.itsTransform.copy()),
 itsPARotation(other.itsPARotation.copy()),
 itsPolFrameIn(other.itsPolFrameIn.copy()),
 itsPolFrameOut(other.itsPolFrameOut.copy()),
-itsCheckUnspecifiedProducts(other.itsCheckUnspecifiedProducts)
+itsCheckUnspecifiedProducts(other.itsCheckUnspecifiedProducts),
+itsInputLinear(other.itsInputLinear),itsOutputLinear(other.itsOutputLinear)
 {
 }
 
@@ -96,6 +98,8 @@ PolConverter & PolConverter::operator=(const PolConverter & other)
     itsPolFrameIn.assign(other.itsPolFrameIn);
     itsPolFrameOut.assign(other.itsPolFrameOut);
     itsCheckUnspecifiedProducts = other.itsCheckUnspecifiedProducts;
+    itsInputLinear = other.itsInputLinear;
+    itsOutputLinear = other.itsOutputLinear;
     return *this;
 }
 
@@ -130,14 +134,14 @@ casacore::Vector<casacore::Complex> PolConverter::operator()(casacore::Vector<ca
   if (itsVoid) {
       return vis;
   }
-  ASKAPDEBUGASSERT(vis.nelements() == itsTransform.ncolumn());
+  //ASKAPDEBUGASSERT(vis.nelements() == itsTransform.ncolumn());
   casacore::Vector<casacore::Complex> res(itsTransform.nrow(),0.);
-
-  for (casacore::uInt row = 0; row<res.nelements(); ++row) {
-       for (casacore::uInt col = 0; col<vis.nelements(); ++col) {
-            res[row] += itsTransform(row,col)*vis[col];
-       }
-  }
+  convert(res,vis);
+  // for (casacore::uInt row = 0; row<res.nelements(); ++row) {
+  //      for (casacore::uInt col = 0; col<vis.nelements(); ++col) {
+  //           res[row] += itsTransform(row,col)*vis[col];
+  //      }
+  // }
 
   return res;
 }
@@ -150,7 +154,8 @@ casacore::Vector<casacore::Complex> PolConverter::operator()(casacore::Vector<ca
 /// @return converted visibility vector
 /// @note vis should have the same size (<=4) as both polFrames passed in the constructor,
 /// the output vector should have the correct size.
-casacore::Vector<casacore::Complex>& PolConverter::convert(casacore::Vector<casacore::Complex>& out, const casacore::Vector<casacore::Complex>& vis) const
+casacore::Vector<casacore::Complex>& PolConverter::convert(casacore::Vector<casacore::Complex>& out,
+    const casacore::Vector<casacore::Complex>& vis) const
 {
     if (itsVoid) {
         out = vis;
@@ -159,13 +164,77 @@ casacore::Vector<casacore::Complex>& PolConverter::convert(casacore::Vector<casa
     ASKAPDEBUGASSERT(vis.nelements() == itsTransform.ncolumn());
     ASKAPDEBUGASSERT(out.nelements() == itsTransform.nrow());
 
-    for (casacore::uInt row = 0; row<out.nelements(); ++row) {
-         out[row] = 0.;
-         for (casacore::uInt col = 0; col<vis.nelements(); ++col) {
-              out[row] += itsTransform(row,col)*vis[col];
-         }
-    }
+    // Handle parallactic angle rotation
+    // We want to do this before converting from linear to Stokes (grid)
+    // and after converting from Stokes to linear (degrid/forward)
+    if (itsPARotation.nelements()>0 && (itsInputLinear || itsOutputLinear)) {
+        if (itsInputLinear) {
+            // Insist we have 4 input pols for this
+            ASKAPASSERT(vis.nelements() == 4);
+            casacore::Vector<casacore::Complex> vis1(4,0);
+            //casa::cout << "Input vis = ";
+            for (casacore::uInt row = 0; row < 4; ++row) {
+                 //casa::cout << vis(row);
+                 for (casacore::uInt col = 0; col < 4; ++col) {
+                      vis1[row] += itsPARotation(row,col)*vis[col];
+                 }
+            }
+            //casa::cout << casa::endl << "Rot.  vis = ";
+            for (casacore::uInt row = 0; row < out.nelements(); ++row) {
+                 out[row] = 0.;
+                 for (casacore::uInt col = 0; col < 4; ++col) {
+                      //if (row == 0) casa::cout << vis1(col);
+                      out[row] += itsTransform(row,col)*vis1[col];
+                 }
+            }
+            // casa::cout << casa::endl << "Conv. vis = ";
+            // for (casacore::uInt row = 0; row < out.nelements(); ++row) {
+            //      casa::cout << out(row);
+            //  }
+            //  casa::cout << casa::endl;
+        } else if (itsOutputLinear) {
+            // Insist we have 4 output pols for this
+            ASKAPASSERT(out.nelements() == 4);
+            casacore::Vector<casacore::Complex> vis1(4,0);
+            // casa::cout << "Input vis2 = ";
+            for (casacore::uInt row = 0; row < 4; ++row) {
+                 for (casacore::uInt col = 0; col < vis.nelements(); ++col) {
+                      // if (row == 0) casa::cout << vis(col);
+                      vis1[row] += itsTransform(row,col)*vis[col];
+                 }
+            }
+            // casa::cout << casa::endl << "Conv. vis2 = ";
+            for (casacore::uInt row = 0; row < 4; ++row) {
+                 // casa::cout << vis1(row);
+                 out[row] = 0.;
+                 for (casacore::uInt col = 0; col < 4; ++col) {
+                      out[row] += itsPARotation(row,col)*vis1[col];
+                 }
+            }
+             // casa::cout << casa::endl << "Rot.  vis2 = ";
+             // for (casacore::uInt row = 0; row < 4; ++row) {
+             //      casa::cout << out(row);
+             // }
+             // casa::cout << casa::endl;
 
+        }
+
+    } else {
+        //casa::cout << "Input vis = ";
+
+        for (casacore::uInt row = 0; row<out.nelements(); ++row) {
+             out[row] = 0.;
+             for (casacore::uInt col = 0; col<vis.nelements(); ++col) {
+                  //if (row == 0) casa::cout << vis(col);
+                  out[row] += itsTransform(row,col)*vis[col];
+             }
+        }
+        // casa::cout << casa::endl << "Conv. vis = ";
+        // for (casacore::uInt row = 0; row < out.nelements(); ++row) {
+        //      casa::cout << out(row);
+        //  }
+        //  casa::cout << casa::endl;
+    }
     return out;
 }
 
@@ -259,6 +328,7 @@ void PolConverter::fillMatrix(const casacore::Vector<casacore::Stokes::StokesTyp
   casacore::Matrix<casacore::Complex> T(4,4,0.);
   if (isStokes(polFrameOut)) {
       if (isLinear(polFrameIn)) {
+          itsInputLinear = true;
           // linear to stokes
           T(0,0)=1.; T(0,3)=1.;
           T(1,0)=1.; T(1,3)=-1.;
@@ -277,6 +347,7 @@ void PolConverter::fillMatrix(const casacore::Vector<casacore::Stokes::StokesTyp
       }
   } else if (isStokes(polFrameIn)) {
       if (isLinear(polFrameOut)) {
+          itsOutputLinear = true;
           // stokes to linear
           T(0,0)=0.5; T(0,1)=0.5;
           T(1,2)=0.5; T(1,3)=casacore::Complex(0.,0.5);
@@ -329,33 +400,68 @@ void PolConverter::fillMatrix(const casacore::Vector<casacore::Stokes::StokesTyp
   }
 }
 
-/// @brief fill matrix describing parallactic angle rotation
-/// @details
+/// @brief fill matrix describing parallactic angle rotation for linears
+/// @details (cos(pa1)  sin(pa1)) * (cos(pa2) sin(pa2)) (outerproduct)
+///          (-sin(pa1) cos(pa1))   (-sin(pa2) cos(pa2))
 /// @param[in] pa1 parallactic angle on the first antenna
 /// @param[in] pa2 parallactic angle on the second antenna
-void PolConverter::fillPARotationMatrix(double pa1, double pa2)
+/// @param[in] swap - swap the (linear) polarisations if true
+void PolConverter::fillPARotationMatrix(double pa1, double pa2, bool swap)
 {
-  itsPARotation.resize(4,4,0.);
-  const double cpa1 = cos(pa1);
-  const double cpa2 = cos(pa2);
-  const double spa1 = sin(pa1);
-  const double spa2 = sin(pa2);
-  itsPARotation(0,0) = cpa1 * cpa2;
-  itsPARotation(0,1) = cpa1 * spa2;
-  itsPARotation(0,2) = spa1 * cpa2;
-  itsPARotation(0,3) = spa1 * spa2;
-  itsPARotation(1,0) = -cpa1 * spa2;
-  itsPARotation(1,1) = cpa1 * cpa2;
-  itsPARotation(1,2) = -spa1 * spa2;
-  itsPARotation(1,3) = spa1 * cpa2;
-  itsPARotation(2,0) = -spa1 * cpa2;
-  itsPARotation(2,1) = -spa1 * spa2;
-  itsPARotation(2,2) = cpa1 * cpa2;
-  itsPARotation(2,3) = cpa1 * spa2;
-  itsPARotation(3,0) = spa1 * spa2;
-  itsPARotation(3,1) = -spa1 * cpa2;
-  itsPARotation(3,2) = -cpa1 * spa2;
-  itsPARotation(3,3) = cpa1 * cpa2;
+    if (itsInputLinear || itsOutputLinear ) {
+      if (itsPARotation.nelements() == 0) {
+          itsPARotation.resize(4,4,0.);
+      } else {
+          // reuse matrix if possible, note we assume swap is always the same (it should be)
+          if (pa1 == itsLastpa1 && pa2 == itsLastpa2) return;
+      }
+      itsLastpa1 = pa1;
+      itsLastpa2 = pa2;
+
+      const double cpa1 = cos(pa1);
+      const double cpa2 = cos(pa2);
+      double spa1 = sin(pa1);
+      double spa2 = sin(pa2);
+      // Use inverse matrix for conversion to linears in antenna frame
+      if (itsOutputLinear) {
+          spa1 = -spa1;
+          spa2 = -spa2;
+      }
+      // sort out the indexing (for non standard orders)
+      casacore::Vector<casacore::uInt> idx(4);
+      for (casacore::uInt col = 0; col<4; ++col) {
+          casacore::uInt polIndex =
+            (itsInputLinear ? getIndex(itsPolFrameIn[col]) : getIndex(itsPolFrameOut[col]));
+          // polarisations could be swapped
+          if (swap) polIndex = 3 - polIndex;
+          idx(polIndex) = col;
+      }
+      //casa::cout << "swap = "<<swap<<", idx = "<< idx(0)<<idx(1)<<idx(2)<<idx(3)<<casa::endl;
+      // Note we reindex both rows and cols because the transform matrix also does reindexing
+      itsPARotation(idx(0),idx(0)) = cpa1 * cpa2;
+      itsPARotation(idx(0),idx(1)) = cpa1 * spa2;
+      itsPARotation(idx(0),idx(2)) = spa1 * cpa2;
+      itsPARotation(idx(0),idx(3)) = spa1 * spa2;
+      itsPARotation(idx(1),idx(0)) = -cpa1 * spa2;
+      itsPARotation(idx(1),idx(1)) = cpa1 * cpa2;
+      itsPARotation(idx(1),idx(2)) = -spa1 * spa2;
+      itsPARotation(idx(1),idx(3)) = spa1 * cpa2;
+      itsPARotation(idx(2),idx(0)) = -spa1 * cpa2;
+      itsPARotation(idx(2),idx(1)) = -spa1 * spa2;
+      itsPARotation(idx(2),idx(2)) = cpa1 * cpa2;
+      itsPARotation(idx(2),idx(3)) = cpa1 * spa2;
+      itsPARotation(idx(3),idx(0)) = spa1 * spa2;
+      itsPARotation(idx(3),idx(1)) = -spa1 * cpa2;
+      itsPARotation(idx(3),idx(2)) = -cpa1 * spa2;
+      itsPARotation(idx(3),idx(3)) = cpa1 * cpa2;
+      // for (int i=0; i<4 ;i++) {
+      //     casa::cout<< "idx("<<i<<")="<<idx(i)<<casa::endl;
+      //     for (int j=0; j<4 ; j++) {
+      //         casa::cout<<itsPARotation(i,j)<<" ";
+      //     }
+      //     casa::cout<<casa::endl;
+      // }
+    } // For circulars this turns into phase and needs to be handled differently
 }
 
 /// @brief reverse method for getIndex
