@@ -220,6 +220,26 @@ double getSmoothingWeight(const std::map<std::string, std::string>& parameters,
     return smoothingWeight;
 }
 
+bool testMPIRankOrderWithChannels(int workerRank, size_t nChannelsLocal,
+                                  const std::vector<std::pair<std::string, int> >& indices)
+{
+    for (std::vector<std::pair<std::string, int> >::const_iterator indit = indices.begin();
+         indit != indices.end(); ++indit) {
+        // Extracting channel number from gain name.
+        std::string gainName = indit->first;
+        std::pair<casa::uInt, std::string> paramInfo = extractChannelInfo(gainName);
+        casa::uInt chan = paramInfo.first;
+
+        // Testing that the channel number is aligned with MPI partitioning:
+        // E.g.: for 40 channels and 4 workers, rank 0 has channels 0-9, rank 1: 10-19, rank 2: 20-29, and rank 3: 30-39.
+        if (chan < workerRank * nChannelsLocal
+            || chan >= (workerRank + 1) * nChannelsLocal) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /// @brief Adding smoothness constraints to the system of equations.
 void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               lsqr::Vector& b_RHS,
@@ -264,7 +284,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     std::vector<int> rightIndexGlobal(nParametersTotal);
 
     // NOTE: Assume channels are ordered with the MPI rank order, i.e., the higher the rank the higher the channel number.
-    // E.g.: for 40 channels and 4 workers, rank 0 has channels 0-9, rank 1: 10-19, rank 2: 20-29, and rank 3: 30-39.
+    ASKAPCHECK(testMPIRankOrderWithChannels(myrank, nChannelsLocal, indices), "Channels are not ordered with MPI ranks!");
 
     if (gradientType == 0) {
     // Forawrd difference scheme.
