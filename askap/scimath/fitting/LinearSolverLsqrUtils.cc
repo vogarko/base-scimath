@@ -403,6 +403,9 @@ void calculateIndexesCD(size_t nParametersTotal,
 }
 
 // TODO: Move to SparseMatrix class.
+// nDiag - number of diagonals of the sparse operator (e.g. two diagonals for forward difference, three for Laplacian).
+// diagIndexGlobal - column index (of the nonzero value) for each diagonal.
+// matrixValue - matrix value for each diagonal (constant for all rows).
 void addSparseOperatorToMatrix(size_t nDiag,
                                size_t nParametersLocal,
                                const std::vector<std::vector<int> >& diagIndexGlobal,
@@ -533,36 +536,12 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     b_RHS.resize(b_RHS.size() + nParametersTotal);
     double cost = 0.;
     for (size_t i = 0; i < nParametersTotal; i++) {
-
-        double b_RHS_value = 0.;
-        bool addValue = true;
-        bool allNegative = true;
-
-        for (size_t k = 0; k < nDiag; k++) {
-            if (diagIndexGlobal[k][i] < 0) {
-                addValue = false;
-            } else {
-                allNegative = false;
-            }
-        }
-
-        if (addValue) {
-            if (gradientType == 0 || gradientType == 1) {
-            // Forward or central difference.
-                b_RHS_value = - smoothingWeight * (x0[diagIndexGlobal[1][i]] - x0[diagIndexGlobal[0][i]]);
-            } else {
-            // Laplacian.
-                // TODO
-            }
-        } else {
-            ASKAPCHECK(allNegative, "Wrong finite difference indexes!");
-        }
         size_t b_index = b_size0 + i;
+        // b = - F(x0) = - A.x0.
+        double b_RHS_value = - matrix.LineMultVector(b_index, x0);
         b_RHS[b_index] = b_RHS_value;
-
         cost += b_RHS_value * b_RHS_value;
     }
-
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Smoothness constraints cost = " << cost / (smoothingWeight * smoothingWeight));
 }
 
