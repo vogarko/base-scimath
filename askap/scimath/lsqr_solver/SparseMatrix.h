@@ -97,6 +97,11 @@ public:
     void MultVector(const Vector &x, Vector &b) const;
 
     /*
+     * Computes the product between a sparse matrix row and vector x.
+     */
+    double LineMultVector(size_t lineNumber, const Vector &x) const;
+
+    /*
      * Computes the product between the transpose of sparse matrix and vector x.
      */
     void TransMultVector(const Vector &x, Vector &b) const;

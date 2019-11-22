@@ -150,6 +150,22 @@ void SparseMatrix::MultVector(const Vector& x, Vector& b) const
     }
 }
 
+double SparseMatrix::LineMultVector(size_t lineNumber, const Vector &x) const
+{
+    // Sanity check.
+    if (!finalized) {
+        throw std::runtime_error("Matrix has not been finalized yet in SparseMatrix::MultVector!");
+    }
+
+    double res = 0.;
+
+    size_t i = lineNumber;
+    for (size_t k = ijl[i]; k < ijl[i + 1]; k++) {
+        res += sa[k] * x[ija[k]];
+    }
+    return res;
+}
+
 void SparseMatrix::TransMultVector(const Vector& x, Vector& b) const
 {
     // Sanity check.
