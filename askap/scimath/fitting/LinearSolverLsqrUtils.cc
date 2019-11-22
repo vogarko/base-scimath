@@ -402,6 +402,50 @@ void calculateIndexesCD(size_t nParametersTotal,
     }
 }
 
+// TODO: Move to SparseMatrix class.
+void addSparseOperatorToMatrix(size_t nDiag,
+                               size_t nParametersLocal,
+                               const std::vector<std::vector<int> >& diagIndexGlobal,
+                               const std::vector<double>& matrixValue,
+                               lsqr::SparseMatrix& matrix)
+{
+#ifdef HAVE_MPI
+    MPI_Comm workersComm = matrix.GetComm();
+    ASKAPCHECK(workersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
+
+    int myrank, nbproc;
+    MPI_Comm_rank(workersComm, &myrank);
+    MPI_Comm_size(workersComm, &nbproc);
+
+    size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParametersLocal, nbproc, workersComm);
+    size_t nParametersSmaller = lsqr::ParallelTools::get_nsmaller(nParametersLocal, myrank, nbproc, workersComm);
+#else
+    int myrank = 0;
+    size_t nParametersTotal = nParametersLocal;
+    size_t nParametersSmaller = 0;
+#endif
+
+    matrix.Extend(nParametersTotal);
+
+    for (size_t i = 0; i < nParametersTotal; i++) {
+        matrix.NewRow();
+
+        // Loop over diagonals.
+        for (size_t k = 0; k < nDiag; k++) {
+            if (diagIndexGlobal[k][i] >= 0
+                && diagIndexGlobal[k][i] >= nParametersSmaller
+                && diagIndexGlobal[k][i] < nParametersSmaller + nParametersLocal) {
+
+                // Local matrix column index (at the current CPU).
+                size_t localColumnIndex = diagIndexGlobal[k][i] - nParametersSmaller;
+
+                matrix.Add(matrixValue[k], localColumnIndex);
+            }
+        }
+    }
+    matrix.Finalize(nParametersLocal);
+}
+
 /// @brief Adding smoothness constraints to the system of equations.
 void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               lsqr::Vector& b_RHS,
@@ -423,17 +467,12 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     MPI_Comm_size(workersComm, &nbproc);
 
     size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, workersComm);
-    size_t nParametersSmaller = lsqr::ParallelTools::get_nsmaller(nParameters, myrank, nbproc, workersComm);
 #else
     int myrank = 0;
     size_t nParametersTotal = nParameters;
-    size_t nParametersSmaller = 0;
 #endif
 
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding smoothness constraints, with weight = " << smoothingWeight);
-
-    matrix.Extend(nParametersTotal);
-    b_RHS.resize(b_RHS.size() + nParametersTotal);
 
     //-----------------------------------------------------------------------------
     // Assume the same number of channels at every CPU.
@@ -444,70 +483,87 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
 
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nChannelsLocal = " << nChannelsLocal);
 
-    std::vector<int> leftIndexGlobal(nParametersTotal);
-    std::vector<int> rightIndexGlobal(nParametersTotal);
-
-    if (gradientType == 0) {
-    // Forawrd difference scheme.
-        calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal,
-                            leftIndexGlobal, rightIndexGlobal);
+    //-----------------------------------------------------------------------------
+    size_t nDiag;
+    if (gradientType == 2) {
+        nDiag = 3;
     } else {
-    // Central difference scheme.
-        calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal,
-                           leftIndexGlobal, rightIndexGlobal);
+        nDiag = 2;
+    }
+
+    std::vector<std::vector<int> > diagIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
+    std::vector<double> matrixValue(nDiag);
+    {
+        std::vector<int> leftIndexGlobal(nParametersTotal);
+        std::vector<int> rightIndexGlobal(nParametersTotal);
+
+        if (gradientType == 0 || gradientType == 1) {
+            if (gradientType == 0) {
+            // Forawrd difference scheme.
+                calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal,
+                                    leftIndexGlobal, rightIndexGlobal);
+            }
+            else if (gradientType == 1) {
+            // Central difference scheme.
+                calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal,
+                                   leftIndexGlobal, rightIndexGlobal);
+            }
+
+            diagIndexGlobal[0] = leftIndexGlobal;
+            diagIndexGlobal[1] = rightIndexGlobal;
+
+            matrixValue[0] = - smoothingWeight;
+            matrixValue[1] = + smoothingWeight;
+        }
+        else if (gradientType == 2) {
+        // Laplacian.
+            // TODO
+        }
     }
 
     //-----------------------------------------------------------------------------
-    // Adding Jacobian of the gradient to the matrix.
+    // Adding Jacobian of the gradient/Laplacian to the matrix.
     //-----------------------------------------------------------------------------
+    addSparseOperatorToMatrix(nDiag, nParameters, diagIndexGlobal, matrixValue, matrix);
+
+    //-----------------------------------------------------------------------------
+    // Adding the Right-Hand Side.
+    //-----------------------------------------------------------------------------
+    size_t b_size0 = b_RHS.size();
+    b_RHS.resize(b_RHS.size() + nParametersTotal);
     double cost = 0.;
-
-    double matrix_val[2];
-    matrix_val[0] = - smoothingWeight;
-    matrix_val[1] = + smoothingWeight;
-
     for (size_t i = 0; i < nParametersTotal; i++) {
 
-        //----------------------------------------------------
-        // Adding matrix values.
-        //----------------------------------------------------
-        matrix.NewRow();
+        double b_RHS_value = 0.;
+        bool addValue = true;
+        bool allNegative = true;
 
-        // Global matrix column indexes.
-        size_t globIndex[2];
-        globIndex[0] = leftIndexGlobal[i];  // Left index: "minus" term in finite difference (e.g. -x[i] for x' =  x[i+1] - x[i])
-        globIndex[1] = rightIndexGlobal[i]; // Right index: "plus" term in finite difference (e.g. x[i+1] for x' =  x[i+1] - x[i]).
-
-        for (size_t k = 0; k < 2; k++) {
-            if (globIndex[k] >= 0
-                && globIndex[k] >= nParametersSmaller
-                && globIndex[k] < nParametersSmaller + nParameters) {
-
-                // Local matrix column index (at the current CPU).
-                size_t localColumnIndex = globIndex[k] - nParametersSmaller;
-                matrix.Add(matrix_val[k], localColumnIndex);
+        for (size_t k = 0; k < nDiag; k++) {
+            if (diagIndexGlobal[k][i] < 0) {
+                addValue = false;
+            } else {
+                allNegative = false;
             }
         }
 
-        //----------------------------------------------------
-        // Adding the Right-Hand Side.
-        //----------------------------------------------------
-        double b_RHS_value = 0.;
-        if (leftIndexGlobal[i] >= 0 && rightIndexGlobal[i] >= 0) {
-            b_RHS_value = - smoothingWeight * (x0[rightIndexGlobal[i]] - x0[leftIndexGlobal[i]]);
+        if (addValue) {
+            if (gradientType == 0 || gradientType == 1) {
+            // Forward or central difference.
+                b_RHS_value = - smoothingWeight * (x0[diagIndexGlobal[1][i]] - x0[diagIndexGlobal[0][i]]);
+            } else {
+            // Laplacian.
+                // TODO
+            }
         } else {
-            ASKAPCHECK(leftIndexGlobal[i] == -1 && rightIndexGlobal[i] == -1,
-                    "Wrong finite difference indexes: " << i << ", " << leftIndexGlobal[i] << ", " << rightIndexGlobal[i]);
+            ASKAPCHECK(allNegative, "Wrong finite difference indexes!");
         }
-        size_t b_index = matrix.GetCurrentNumberRows() - 1;
+        size_t b_index = b_size0 + i;
         b_RHS[b_index] = b_RHS_value;
 
         cost += b_RHS_value * b_RHS_value;
     }
 
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Smoothness constraints cost = " << cost / (smoothingWeight * smoothingWeight));
-
-    matrix.Finalize(nParameters);
 }
 
 }}}
