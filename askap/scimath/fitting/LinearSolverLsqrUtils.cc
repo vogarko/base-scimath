@@ -240,6 +240,168 @@ bool testMPIRankOrderWithChannels(int workerRank, size_t nChannelsLocal,
     return true;
 }
 
+// Calculates the index shift for the next channel located on the next MPI rank.
+// Assumes channels are ordered with MPI ranks.
+size_t getNextChannelIndexShift(size_t nParametersLocal, size_t nChannelsLocal)
+{
+    return nParametersLocal - (nChannelsLocal - 1) * 2;
+}
+
+// Calculates matrix indexes for the Forward Difference (FD) gradient operator.
+void calculateIndexesFWD(size_t nParametersTotal,
+                         size_t nParametersLocal,
+                         size_t nChannelsLocal,
+                         std::vector<int>& leftIndexGlobal,
+                         std::vector<int>& rightIndexGlobal)
+{
+    ASKAPCHECK(nParametersTotal == leftIndexGlobal.size()
+               && nParametersTotal == rightIndexGlobal.size(), "Wrong vector size in calculateIndexesFWD!");
+
+    size_t nextChannelIndexShift = getNextChannelIndexShift(nParametersLocal, nChannelsLocal);
+
+    size_t localChannelNumber = 0;
+    for (size_t i = 0; i < nParametersTotal; i += 2) {
+
+        bool lastLocalChannel = (localChannelNumber == nChannelsLocal - 1);
+
+        if (lastLocalChannel) {
+            size_t shiftedIndex = i + nextChannelIndexShift;
+
+            if (shiftedIndex < nParametersTotal) {
+            // Reached last local channel - shift the 'next' index.
+                // Real part.
+                leftIndexGlobal[i] = i;
+                rightIndexGlobal[i] = shiftedIndex;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+            } else {
+            // Reached last global channel - do not add constraints - it is already coupled with previous one.
+                // Real part.
+                leftIndexGlobal[i] = -1;
+                rightIndexGlobal[i] = -1;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = -1;
+                rightIndexGlobal[i + 1] = -1;
+            }
+
+        } else {
+            // Real part.
+            leftIndexGlobal[i] = i;
+            rightIndexGlobal[i] = i + 2;
+            // Imaginary part.
+            leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+            rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+        }
+
+        if (lastLocalChannel) {
+            // Reset local channel counter.
+            localChannelNumber = 0;
+        } else {
+            localChannelNumber++;
+        }
+    }
+}
+
+// Calculates matrix indexes for the Central Difference (CD) gradient operator.
+void calculateIndexesCD(size_t nParametersTotal,
+                         size_t nParametersLocal,
+                         size_t nChannelsLocal,
+                         std::vector<int>& leftIndexGlobal,
+                         std::vector<int>& rightIndexGlobal)
+{
+    ASKAPCHECK(nParametersTotal == leftIndexGlobal.size()
+               && nParametersTotal == rightIndexGlobal.size(), "Wrong vector size in calculateIndexesCD!");
+
+    size_t nextChannelIndexShift = getNextChannelIndexShift(nParametersLocal, nChannelsLocal);
+
+    size_t localChannelNumber = 0;
+    for (size_t i = 0; i < nParametersTotal; i += 2) {
+
+        bool firstLocalChannel = (localChannelNumber == 0);
+        bool lastLocalChannel = (localChannelNumber == nChannelsLocal - 1);
+
+        int shiftedLeftIndex = i - nextChannelIndexShift;
+        size_t shiftedRightIndex = i + nextChannelIndexShift;
+
+        if (firstLocalChannel && lastLocalChannel) {
+        // One local channel.
+            if ((shiftedLeftIndex >= 0) && (shiftedRightIndex < nParametersTotal)) {
+                // Real part.
+                leftIndexGlobal[i] = shiftedLeftIndex;
+                rightIndexGlobal[i] = shiftedRightIndex;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+
+            } else {
+            // First/last global channel - do not add constraints - it is already coupled with next/previous one.
+                // Real part.
+                leftIndexGlobal[i] = -1;
+                rightIndexGlobal[i] = -1;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = -1;
+                rightIndexGlobal[i + 1] = -1;
+            }
+
+        } else if (firstLocalChannel) {
+
+            if (shiftedLeftIndex >= 0) {
+            // First local channel - shift the 'left' index.
+                // Real part.
+                leftIndexGlobal[i] = shiftedLeftIndex;
+                rightIndexGlobal[i] = i + 2;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+
+            } else {
+            // First/last global channel - do not add constraints - it is already coupled with next/previous one.
+                // Real part.
+                leftIndexGlobal[i] = -1;
+                rightIndexGlobal[i] = -1;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = -1;
+                rightIndexGlobal[i + 1] = -1;
+            }
+        } else if (lastLocalChannel) {
+
+            if (shiftedRightIndex < nParametersTotal) {
+            // Last local channel - shift the 'right' index.
+                // Real part.
+                leftIndexGlobal[i] = i - 2;
+                rightIndexGlobal[i] = shiftedRightIndex;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+            } else {
+            // Reached last global channel - do not add constraints - it is already coupled with previous one.
+                // Real part.
+                leftIndexGlobal[i] = -1;
+                rightIndexGlobal[i] = -1;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = -1;
+                rightIndexGlobal[i + 1] = -1;
+            }
+
+        } else {
+            // Real part.
+            leftIndexGlobal[i] = i - 2;
+            rightIndexGlobal[i] = i + 2;
+            // Imaginary part.
+            leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+            rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+        }
+
+        if (lastLocalChannel) {
+            // Reset local channel counter.
+            localChannelNumber = 0;
+        } else {
+            localChannelNumber++;
+        }
+    }
+}
+
 /// @brief Adding smoothness constraints to the system of equations.
 void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               lsqr::Vector& b_RHS,
@@ -276,149 +438,23 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     //-----------------------------------------------------------------------------
     // Assume the same number of channels at every CPU.
     size_t nChannelsLocal = nChannels / (nParametersTotal / nParameters);
-    size_t nextChannelIndexShift = nParameters - (nChannelsLocal - 1) * 2;
+
+    // NOTE: Assume channels are ordered with the MPI rank order, i.e., the higher the rank the higher the channel number.
+    ASKAPCHECK(testMPIRankOrderWithChannels(myrank, nChannelsLocal, indices), "Channels are not ordered with MPI ranks!");
 
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nChannelsLocal = " << nChannelsLocal);
 
     std::vector<int> leftIndexGlobal(nParametersTotal);
     std::vector<int> rightIndexGlobal(nParametersTotal);
 
-    // NOTE: Assume channels are ordered with the MPI rank order, i.e., the higher the rank the higher the channel number.
-    ASKAPCHECK(testMPIRankOrderWithChannels(myrank, nChannelsLocal, indices), "Channels are not ordered with MPI ranks!");
-
     if (gradientType == 0) {
     // Forawrd difference scheme.
-
-        size_t localChannelNumber = 0;
-        for (size_t i = 0; i < nParametersTotal; i += 2) {
-
-            bool lastLocalChannel = (localChannelNumber == nChannelsLocal - 1);
-
-            if (lastLocalChannel) {
-                size_t shiftedIndex = i + nextChannelIndexShift;
-
-                if (shiftedIndex < nParametersTotal) {
-                // Reached last local channel - shift the 'next' index.
-                    // Real part.
-                    leftIndexGlobal[i] = i;
-                    rightIndexGlobal[i] = shiftedIndex;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                    rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-                } else {
-                // Reached last global channel - do not add constraints - it is already coupled with previous one.
-                    // Real part.
-                    leftIndexGlobal[i] = -1;
-                    rightIndexGlobal[i] = -1;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = -1;
-                    rightIndexGlobal[i + 1] = -1;
-                }
-
-            } else {
-                // Real part.
-                leftIndexGlobal[i] = i;
-                rightIndexGlobal[i] = i + 2;
-                // Imaginary part.
-                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-            }
-
-            if (lastLocalChannel) {
-                // Reset local channel counter.
-                localChannelNumber = 0;
-            } else {
-                localChannelNumber++;
-            }
-        }
+        calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal,
+                            leftIndexGlobal, rightIndexGlobal);
     } else {
     // Central difference scheme.
-
-        size_t localChannelNumber = 0;
-        for (size_t i = 0; i < nParametersTotal; i += 2) {
-
-            bool firstLocalChannel = (localChannelNumber == 0);
-            bool lastLocalChannel = (localChannelNumber == nChannelsLocal - 1);
-
-            int shiftedLeftIndex = i - nextChannelIndexShift;
-            size_t shiftedRightIndex = i + nextChannelIndexShift;
-
-            if (firstLocalChannel && lastLocalChannel) {
-            // One local channel.
-                if ((shiftedLeftIndex >= 0) && (shiftedRightIndex < nParametersTotal)) {
-                    // Real part.
-                    leftIndexGlobal[i] = shiftedLeftIndex;
-                    rightIndexGlobal[i] = shiftedRightIndex;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                    rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-
-                } else {
-                // First/last global channel - do not add constraints - it is already coupled with next/previous one.
-                    // Real part.
-                    leftIndexGlobal[i] = -1;
-                    rightIndexGlobal[i] = -1;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = -1;
-                    rightIndexGlobal[i + 1] = -1;
-                }
-
-            } else if (firstLocalChannel) {
-
-                if (shiftedLeftIndex >= 0) {
-                // First local channel - shift the 'left' index.
-                    // Real part.
-                    leftIndexGlobal[i] = shiftedLeftIndex;
-                    rightIndexGlobal[i] = i + 2;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                    rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-
-                } else {
-                // First/last global channel - do not add constraints - it is already coupled with next/previous one.
-                    // Real part.
-                    leftIndexGlobal[i] = -1;
-                    rightIndexGlobal[i] = -1;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = -1;
-                    rightIndexGlobal[i + 1] = -1;
-                }
-            } else if (lastLocalChannel) {
-
-                if (shiftedRightIndex < nParametersTotal) {
-                // Last local channel - shift the 'right' index.
-                    // Real part.
-                    leftIndexGlobal[i] = i - 2;
-                    rightIndexGlobal[i] = shiftedRightIndex;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                    rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-                } else {
-                // Reached last global channel - do not add constraints - it is already coupled with previous one.
-                    // Real part.
-                    leftIndexGlobal[i] = -1;
-                    rightIndexGlobal[i] = -1;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = -1;
-                    rightIndexGlobal[i + 1] = -1;
-                }
-
-            } else {
-                // Real part.
-                leftIndexGlobal[i] = i - 2;
-                rightIndexGlobal[i] = i + 2;
-                // Imaginary part.
-                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-            }
-
-            if (lastLocalChannel) {
-                // Reset local channel counter.
-                localChannelNumber = 0;
-            } else {
-                localChannelNumber++;
-            }
-        }
+        calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal,
+                           leftIndexGlobal, rightIndexGlobal);
     }
 
     //-----------------------------------------------------------------------------
