@@ -402,53 +402,6 @@ void calculateIndexesCD(size_t nParametersTotal,
     }
 }
 
-// TODO: Move to SparseMatrix class.
-// nDiag - number of diagonals of the sparse operator (e.g. two diagonals for forward difference, three for Laplacian).
-// diagIndexGlobal - column index (of the nonzero value) for each diagonal.
-// matrixValue - matrix value for each diagonal (constant for all rows).
-void addSparseOperatorToMatrix(size_t nDiag,
-                               size_t nParametersLocal,
-                               const std::vector<std::vector<int> >& diagIndexGlobal,
-                               const std::vector<double>& matrixValue,
-                               lsqr::SparseMatrix& matrix)
-{
-#ifdef HAVE_MPI
-    MPI_Comm workersComm = matrix.GetComm();
-    ASKAPCHECK(workersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
-
-    int myrank, nbproc;
-    MPI_Comm_rank(workersComm, &myrank);
-    MPI_Comm_size(workersComm, &nbproc);
-
-    size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParametersLocal, nbproc, workersComm);
-    size_t nParametersSmaller = lsqr::ParallelTools::get_nsmaller(nParametersLocal, myrank, nbproc, workersComm);
-#else
-    int myrank = 0;
-    size_t nParametersTotal = nParametersLocal;
-    size_t nParametersSmaller = 0;
-#endif
-
-    matrix.Extend(nParametersTotal);
-
-    for (size_t i = 0; i < nParametersTotal; i++) {
-        matrix.NewRow();
-
-        // Loop over diagonals.
-        for (size_t k = 0; k < nDiag; k++) {
-            if (diagIndexGlobal[k][i] >= 0
-                && diagIndexGlobal[k][i] >= nParametersSmaller
-                && diagIndexGlobal[k][i] < nParametersSmaller + nParametersLocal) {
-
-                // Local matrix column index (at the current CPU).
-                size_t localColumnIndex = diagIndexGlobal[k][i] - nParametersSmaller;
-
-                matrix.Add(matrixValue[k], localColumnIndex);
-            }
-        }
-    }
-    matrix.Finalize(nParametersLocal);
-}
-
 /// @brief Adding smoothness constraints to the system of equations.
 void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               lsqr::Vector& b_RHS,
@@ -527,7 +480,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     //-----------------------------------------------------------------------------
     // Adding Jacobian of the gradient/Laplacian to the matrix.
     //-----------------------------------------------------------------------------
-    addSparseOperatorToMatrix(nDiag, nParameters, diagIndexGlobal, matrixValue, matrix);
+    matrix.addParallelSparseOperator(nDiag, nParameters, diagIndexGlobal, matrixValue);
 
     //-----------------------------------------------------------------------------
     // Adding the Right-Hand Side.
