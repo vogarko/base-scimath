@@ -151,22 +151,6 @@ void SparseMatrix::MultVector(const Vector& x, Vector& b) const
     }
 }
 
-double SparseMatrix::LineMultVector(size_t lineNumber, const Vector &x) const
-{
-    // Sanity check.
-    if (!finalized) {
-        throw std::runtime_error("Matrix has not been finalized yet in SparseMatrix::MultVector!");
-    }
-
-    double res = 0.;
-
-    size_t i = lineNumber;
-    for (size_t k = ijl[i]; k < ijl[i + 1]; k++) {
-        res += sa[k] * x[ija[k]];
-    }
-    return res;
-}
-
 void SparseMatrix::TransMultVector(const Vector& x, Vector& b) const
 {
     // Sanity check.
@@ -191,7 +175,7 @@ void SparseMatrix::TransMultVector(const Vector& x, Vector& b) const
 
 void SparseMatrix::addParallelSparseOperator(size_t nDiag,
                                              size_t nParametersLocal,
-                                             const std::vector<std::vector<int> >& diagIndexGlobal,
+                                             const std::vector<std::vector<int> >& columnIndexGlobal,
                                              const std::vector<double>& matrixValue)
 {
 #ifdef HAVE_MPI
@@ -214,18 +198,29 @@ void SparseMatrix::addParallelSparseOperator(size_t nDiag,
     for (size_t i = 0; i < nParametersTotal; i++) {
         NewRow();
 
+        // For sanity check.
+        bool allNegative = true;
+        bool allNonNegative = true;
+
         // Loop over diagonals.
         for (size_t k = 0; k < nDiag; k++) {
-            if (diagIndexGlobal[k][i] >= 0
-                && diagIndexGlobal[k][i] >= nParametersSmaller
-                && diagIndexGlobal[k][i] < nParametersSmaller + nParametersLocal) {
+            if (columnIndexGlobal[k][i] >= 0
+                && columnIndexGlobal[k][i] >= nParametersSmaller
+                && columnIndexGlobal[k][i] < nParametersSmaller + nParametersLocal) {
 
                 // Local matrix column index (at the current MPI rank).
-                size_t localColumnIndex = diagIndexGlobal[k][i] - nParametersSmaller;
+                size_t localColumnIndex = columnIndexGlobal[k][i] - nParametersSmaller;
 
                 Add(matrixValue[k], localColumnIndex);
             }
+            // For sanity check.
+            if (columnIndexGlobal[k][i] >= 0) {
+                allNegative = false;
+            } else {
+                allNonNegative = false;
+            }
         }
+        assert(allNegative || allNonNegative);
     }
     Finalize(nParametersLocal);
 }

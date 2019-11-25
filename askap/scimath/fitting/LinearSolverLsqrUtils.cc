@@ -447,7 +447,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         nDiag = 2;
     }
 
-    std::vector<std::vector<int> > diagIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
+    std::vector<std::vector<int> > columnIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
     std::vector<double> matrixValue(nDiag);
     {
         std::vector<int> leftIndexGlobal(nParametersTotal);
@@ -465,8 +465,8 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                                    leftIndexGlobal, rightIndexGlobal);
             }
 
-            diagIndexGlobal[0] = leftIndexGlobal;
-            diagIndexGlobal[1] = rightIndexGlobal;
+            columnIndexGlobal[0] = leftIndexGlobal;
+            columnIndexGlobal[1] = rightIndexGlobal;
 
             matrixValue[0] = - smoothingWeight;
             matrixValue[1] = + smoothingWeight;
@@ -480,19 +480,28 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     //-----------------------------------------------------------------------------
     // Adding Jacobian of the gradient/Laplacian to the matrix.
     //-----------------------------------------------------------------------------
-    matrix.addParallelSparseOperator(nDiag, nParameters, diagIndexGlobal, matrixValue);
+    matrix.addParallelSparseOperator(nDiag, nParameters, columnIndexGlobal, matrixValue);
 
     //-----------------------------------------------------------------------------
     // Adding the Right-Hand Side.
     //-----------------------------------------------------------------------------
     size_t b_size0 = b_RHS.size();
     b_RHS.resize(b_RHS.size() + nParametersTotal);
+    assert(matrix.GetCurrentNumberRows() == b_RHS.size());
+
     double cost = 0.;
     for (size_t i = 0; i < nParametersTotal; i++) {
-        size_t b_index = b_size0 + i;
+        double Ax0 = 0.;
+        for (size_t k = 0; k < nDiag; k++) {
+            Ax0 += matrixValue[k] * x0[columnIndexGlobal[k][i]];
+        }
+
         // b = - F(x0) = - A.x0.
-        double b_RHS_value = - matrix.LineMultVector(b_index, x0);
+        double b_RHS_value = - Ax0;
+
+        size_t b_index = b_size0 + i;
         b_RHS[b_index] = b_RHS_value;
+
         cost += b_RHS_value * b_RHS_value;
     }
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Smoothness constraints cost = " << cost / (smoothingWeight * smoothingWeight));

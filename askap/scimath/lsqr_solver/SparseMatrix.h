@@ -97,11 +97,6 @@ public:
     void MultVector(const Vector &x, Vector &b) const;
 
     /*
-     * Computes the product between a sparse matrix row and vector x.
-     */
-    double LineMultVector(size_t lineNumber, const Vector &x) const;
-
-    /*
      * Computes the product between the transpose of sparse matrix and vector x.
      */
     void TransMultVector(const Vector &x, Vector &b) const;
@@ -111,12 +106,12 @@ public:
      * Note: Assumes the full matrix is split between MPI ranks by columns.
      * nDiag - number of diagonals of the sparse operator (e.g. two diagonals for forward difference, three for Laplacian).
      * nParametersLocal - number of parameters at the current MPI rank.
-     * diagIndexGlobal - column index (of the nonzero value) for each diagonal.
+     * columnIndexGlobal - column index (of the nonzero value) for each diagonal.
      * matrixValue - matrix value for each diagonal (constant for all rows).
      */
     void addParallelSparseOperator(size_t nDiag,
                                    size_t nParametersLocal,
-                                   const std::vector<std::vector<int> >& diagIndexGlobal,
+                                   const std::vector<std::vector<int> >& columnIndexGlobal,
                                    const std::vector<double>& matrixValue);
 
     /*
