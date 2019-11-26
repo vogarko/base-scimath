@@ -259,7 +259,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
         gsl_error_handler_t *oldhandler=gsl_set_error_handler_off();
         ASKAPLOG_DEBUG_STR(logger, "Running SV decomp");
         const int status = gsl_linalg_SV_decomp (A, V, S, work);
-        // ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status);
+        ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status);
         gsl_set_error_handler(oldhandler);
 
         // A hack for now. For some reason, for some matrices gsl_linalg_SV_decomp may return NaN as singular value, perhaps some
@@ -560,17 +560,13 @@ bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
     // LSQR solver.
         solveSubsetOfNormalEquationsLSQR(params, quality, names);
     } else {
-    // SVD solver.
-        if (names.size() < 100) { // No need to extract independent blocks if number of unknowns is small.
-            solveSubsetOfNormalEquations(params, quality, names);
-        } else {
-            while (names.size() > 0) {
-                ASKAPLOG_INFO_STR(logger, "Solving independent subset of parameters");
-                const std::vector<std::string> subsetNames = getIndependentSubset(names,1e-6);
-                solveSubsetOfNormalEquations(params, quality, subsetNames);
-            }
+        while (names.size() > 0) {
+            ASKAPLOG_INFO_STR(logger, "Solving independent subset of parameters");
+            const std::vector<std::string> subsetNames = getIndependentSubset(names,1e-6);
+            solveSubsetOfNormalEquations(params, quality, subsetNames);
         }
     }
+    
     return true;
 };
 
