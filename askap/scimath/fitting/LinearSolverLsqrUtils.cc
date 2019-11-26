@@ -410,7 +410,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               size_t nParameters,
                               size_t nChannels,
                               double smoothingWeight,
-                              int gradientType)
+                              int smoothingType)
 {
     ASKAPCHECK(nChannels > 1, "Wrong number of channels for smoothness constraints!");
 
@@ -428,7 +428,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     size_t nParametersTotal = nParameters;
 #endif
 
-    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding smoothness constraints, with weight = " << smoothingWeight << ", gradientType = " << gradientType);
+    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding smoothness constraints, with weight = " << smoothingWeight << ", smoothingType = " << smoothingType);
 
     //-----------------------------------------------------------------------------
     // Assume the same number of channels at every CPU.
@@ -441,12 +441,12 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
 
     //-----------------------------------------------------------------------------
     size_t nDiag;
-    if (gradientType == 0 || gradientType == 1) {
+    if (smoothingType == 0 || smoothingType == 1) {
         nDiag = 2;
-    } else if (gradientType == 2) {
+    } else if (smoothingType == 2) {
         nDiag = 3;
     } else {
-        throw std::invalid_argument("Unknown gradient type!");
+        throw std::invalid_argument("Unknown smoothing type!");
     }
 
     std::vector<std::vector<int> > columnIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
@@ -455,12 +455,12 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         std::vector<int> leftIndexGlobal(nParametersTotal);
         std::vector<int> rightIndexGlobal(nParametersTotal);
 
-        if (gradientType == 0 || gradientType == 1) {
-            if (gradientType == 0) {
+        if (smoothingType == 0 || smoothingType == 1) {
+            if (smoothingType == 0) {
             // Forawrd difference scheme.
                 calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
             }
-            else if (gradientType == 1) {
+            else if (smoothingType == 1) {
             // Central difference scheme.
                 calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
             }
@@ -471,7 +471,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
             matrixValue[0] = - smoothingWeight;
             matrixValue[1] = + smoothingWeight;
         }
-        else if (gradientType == 2) {
+        else if (smoothingType == 2) {
         // Laplacian.
             // Utilize that the left and right indexes in Laplacian are the same as in the Central Difference (CD) scheme.
             calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);

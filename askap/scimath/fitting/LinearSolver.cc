@@ -474,7 +474,8 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 #endif
         //--------------------------------------------------------------
         // Adding smoothing constraints into the system of equations.
-        lsqrutils::addSmoothnessConstraints(matrix, b_RHS, indices, x0, nParameters, nChannels, smoothingWeight);
+        int smoothingType = solverutils::getParameter("smoothingType", parameters(), 0);
+        lsqrutils::addSmoothnessConstraints(matrix, b_RHS, indices, x0, nParameters, nChannels, smoothingWeight, smoothingType);
     }
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "Matrix nelements = " << matrix.GetNumberElements());
 
