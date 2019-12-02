@@ -149,7 +149,6 @@ add_library(askap_scimath
 ./askap/scimath/fitting/Solver.cc
 ./askap/scimath/fitting/GenericNormalEquations.cc
 ./askap/scimath/utils/ComplexGaussianNoise.cc
-./askap/scimath/utils/ImageUtils.cc
 ./askap/scimath/utils/PolConverter.cc
 ./askap/scimath/utils/CasaBlobUtils.cc
 ./askap/scimath/utils/EigenDecompose.cc
@@ -207,7 +206,6 @@ install (FILES
 ./askap/scimath/utils/CasaBlobUtils.h
 ./askap/scimath/utils/DelayEstimator.h
 ./askap/scimath/utils/ChangeMonitor.h
-./askap/scimath/utils/ImageUtils.h
 ./askap/scimath/utils/DeepCopyUtils.h
 ./askap/scimath/utils/PaddingUtils.h
 ./askap/scimath/utils/ComplexGaussianNoise.h
@@ -216,11 +214,13 @@ install (FILES
 ./askap/scimath/utils/EigenDecompose.h
 ./askap/scimath/utils/PhaseUnwrapper.h
 ./askap/scimath/utils/PolConverter.h
+./askap/scimath/utils/ImageUtils.h
 ./askap/scimath/utils/PaddingUtils.tcc
 ./askap/scimath/utils/PhaseUnwrapper.tcc
 ./askap/scimath/utils/MultiDimArrayPlaneIter.tcc
 ./askap/scimath/utils/CasaBlobUtils.tcc
 ./askap/scimath/utils/FixedSizeCache.tcc
+./askap/scimath/utils/ImageUtils.tcc
 
 DESTINATION include/askap/scimath/utils
 )
