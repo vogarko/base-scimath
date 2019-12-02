@@ -266,25 +266,25 @@ struct PolConverter {
   /// @brief set the parallactic angles to use for conversion of linears to Stokes
   /// @param[in] pa1 parallactic angle on the first antenna
   /// @param[in] pa2 parallactic angle on the second antenna
+  inline void setParAngle(double pa1, double pa2)
+  { fillPARotationMatrix(pa1,pa2); }
+
   /// @param[in] swap polarisations if true
-  inline void setParAngle(double pa1, double pa2, bool swap = false)
-  { fillPARotationMatrix(pa1,pa2,swap); }
+  inline void setSwapPols(bool swap = false)
+  { itsSwapPols = swap; }
+
 
 protected:
   /// @brief build transformation matrix
   /// @details This is the core of the algorithm, this method builds the transformation matrix
   /// given the two frames .
-  /// @param[in] polFrameIn input polarisation frame defined as a vector of Stokes enums
-  /// @param[in] polFrameOut output polarisation frame defined as a vector of Stokes enums
-  void fillMatrix(const casacore::Vector<casacore::Stokes::StokesTypes> &polFrameIn,
-                  const casacore::Vector<casacore::Stokes::StokesTypes> &polFrameOut);
+  void fillMatrix() const;
 
   /// @brief fill matrix describing parallactic angle rotation
   /// @details
   /// @param[in] pa1 parallactic angle on the first antenna
   /// @param[in] pa2 parallactic angle on the second antenna
-  /// @param[in] swap polarisations if true
-  void fillPARotationMatrix(double pa1, double pa2, bool swap);
+  void fillPARotationMatrix(double pa1, double pa2);
 
 private:
   /// @brief no operation flag
@@ -294,7 +294,7 @@ private:
 
   /// @brief transformation matrix
   /// @details to convert input polarisation frame to the target one
-  casacore::Matrix<casacore::Complex> itsTransform;
+  mutable casacore::Matrix<casacore::Complex> itsTransform;
 
   /// @brief matrix describing parallactic angle rotation
   casacore::Matrix<casacore::Float> itsPARotation;
@@ -321,6 +321,12 @@ private:
 
   /// @brief Cache last values of pa1 and pa2
   double itsLastpa1, itsLastpa2;
+
+  /// @brief Swap polarisations
+  bool itsSwapPols;
+
+  /// @brief Are we initialised?
+  mutable bool itsInitialised;
 };
 
 } // namespace scimath

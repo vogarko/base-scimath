@@ -220,6 +220,188 @@ double getSmoothingWeight(const std::map<std::string, std::string>& parameters,
     return smoothingWeight;
 }
 
+bool testMPIRankOrderWithChannels(int workerRank, size_t nChannelsLocal,
+                                  const std::vector<std::pair<std::string, int> >& indices)
+{
+    for (std::vector<std::pair<std::string, int> >::const_iterator indit = indices.begin();
+         indit != indices.end(); ++indit) {
+        // Extracting channel number from gain name.
+        std::string gainName = indit->first;
+        std::pair<casa::uInt, std::string> paramInfo = extractChannelInfo(gainName);
+        casa::uInt chan = paramInfo.first;
+
+        // Testing that the channel number is aligned with MPI partitioning:
+        // E.g.: for 40 channels and 4 workers, rank 0 has channels 0-9, rank 1: 10-19, rank 2: 20-29, and rank 3: 30-39.
+        if (chan < workerRank * nChannelsLocal
+            || chan >= (workerRank + 1) * nChannelsLocal) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Calculates the index shift for the next channel located on the next MPI rank.
+// Assumes channels are ordered with MPI ranks.
+size_t getNextChannelIndexShift(size_t nParametersLocal, size_t nChannelsLocal)
+{
+    return nParametersLocal - (nChannelsLocal - 1) * 2;
+}
+
+// Calculates matrix indexes for the Forward Difference (FD) gradient operator.
+void calculateIndexesFWD(size_t nParametersTotal,
+                         size_t nParametersLocal,
+                         size_t nChannelsLocal,
+                         std::vector<int>& leftIndexGlobal,
+                         std::vector<int>& rightIndexGlobal)
+{
+    ASKAPCHECK(nParametersTotal == leftIndexGlobal.size()
+               && nParametersTotal == rightIndexGlobal.size(), "Wrong vector size in calculateIndexesFWD!");
+
+    size_t nextChannelIndexShift = getNextChannelIndexShift(nParametersLocal, nChannelsLocal);
+
+    size_t localChannelNumber = 0;
+    for (size_t i = 0; i < nParametersTotal; i += 2) {
+
+        bool lastLocalChannel = (localChannelNumber == nChannelsLocal - 1);
+
+        if (lastLocalChannel) {
+            size_t shiftedIndex = i + nextChannelIndexShift;
+
+            if (shiftedIndex < nParametersTotal) {
+            // Reached last local channel - shift the 'next' index.
+                // Real part.
+                leftIndexGlobal[i] = i;
+                rightIndexGlobal[i] = shiftedIndex;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+            } else {
+            // Reached last global channel - do not add constraints - it is already coupled with previous one.
+                // Real part.
+                leftIndexGlobal[i] = -1;
+                rightIndexGlobal[i] = -1;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = -1;
+                rightIndexGlobal[i + 1] = -1;
+            }
+
+        } else {
+            // Real part.
+            leftIndexGlobal[i] = i;
+            rightIndexGlobal[i] = i + 2;
+            // Imaginary part.
+            leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+            rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+        }
+
+        if (lastLocalChannel) {
+            // Reset local channel counter.
+            localChannelNumber = 0;
+        } else {
+            localChannelNumber++;
+        }
+    }
+}
+
+// Calculates matrix indexes for the Central Difference (CD) gradient operator.
+void calculateIndexesCD(size_t nParametersTotal,
+                         size_t nParametersLocal,
+                         size_t nChannelsLocal,
+                         std::vector<int>& leftIndexGlobal,
+                         std::vector<int>& rightIndexGlobal)
+{
+    ASKAPCHECK(nParametersTotal == leftIndexGlobal.size()
+               && nParametersTotal == rightIndexGlobal.size(), "Wrong vector size in calculateIndexesCD!");
+
+    size_t nextChannelIndexShift = getNextChannelIndexShift(nParametersLocal, nChannelsLocal);
+
+    size_t localChannelNumber = 0;
+    for (size_t i = 0; i < nParametersTotal; i += 2) {
+
+        bool firstLocalChannel = (localChannelNumber == 0);
+        bool lastLocalChannel = (localChannelNumber == nChannelsLocal - 1);
+
+        int shiftedLeftIndex = i - nextChannelIndexShift;
+        size_t shiftedRightIndex = i + nextChannelIndexShift;
+
+        if (firstLocalChannel && lastLocalChannel) {
+        // One local channel.
+            if ((shiftedLeftIndex >= 0) && (shiftedRightIndex < nParametersTotal)) {
+                // Real part.
+                leftIndexGlobal[i] = shiftedLeftIndex;
+                rightIndexGlobal[i] = shiftedRightIndex;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+
+            } else {
+            // First/last global channel - do not add constraints - it is already coupled with next/previous one.
+                // Real part.
+                leftIndexGlobal[i] = -1;
+                rightIndexGlobal[i] = -1;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = -1;
+                rightIndexGlobal[i + 1] = -1;
+            }
+
+        } else if (firstLocalChannel) {
+
+            if (shiftedLeftIndex >= 0) {
+            // First local channel - shift the 'left' index.
+                // Real part.
+                leftIndexGlobal[i] = shiftedLeftIndex;
+                rightIndexGlobal[i] = i + 2;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+
+            } else {
+            // First/last global channel - do not add constraints - it is already coupled with next/previous one.
+                // Real part.
+                leftIndexGlobal[i] = -1;
+                rightIndexGlobal[i] = -1;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = -1;
+                rightIndexGlobal[i + 1] = -1;
+            }
+        } else if (lastLocalChannel) {
+
+            if (shiftedRightIndex < nParametersTotal) {
+            // Last local channel - shift the 'right' index.
+                // Real part.
+                leftIndexGlobal[i] = i - 2;
+                rightIndexGlobal[i] = shiftedRightIndex;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+            } else {
+            // Reached last global channel - do not add constraints - it is already coupled with previous one.
+                // Real part.
+                leftIndexGlobal[i] = -1;
+                rightIndexGlobal[i] = -1;
+                // Imaginary part.
+                leftIndexGlobal[i + 1] = -1;
+                rightIndexGlobal[i + 1] = -1;
+            }
+
+        } else {
+            // Real part.
+            leftIndexGlobal[i] = i - 2;
+            rightIndexGlobal[i] = i + 2;
+            // Imaginary part.
+            leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+            rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+        }
+
+        if (lastLocalChannel) {
+            // Reset local channel counter.
+            localChannelNumber = 0;
+        } else {
+            localChannelNumber++;
+        }
+    }
+}
+
 /// @brief Adding smoothness constraints to the system of equations.
 void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               lsqr::Vector& b_RHS,
@@ -228,7 +410,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               size_t nParameters,
                               size_t nChannels,
                               double smoothingWeight,
-                              int gradientType)
+                              int smoothingType)
 {
     ASKAPCHECK(nChannels > 1, "Wrong number of channels for smoothness constraints!");
 
@@ -241,217 +423,110 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     MPI_Comm_size(workersComm, &nbproc);
 
     size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, workersComm);
-    size_t nParametersSmaller = lsqr::ParallelTools::get_nsmaller(nParameters, myrank, nbproc, workersComm);
 #else
     int myrank = 0;
     size_t nParametersTotal = nParameters;
-    size_t nParametersSmaller = 0;
 #endif
 
-    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding smoothness constraints, with weight = " << smoothingWeight);
-
-    matrix.Extend(nParametersTotal);
-    b_RHS.resize(b_RHS.size() + nParametersTotal);
+    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding smoothness constraints, with weight = " << smoothingWeight << ", smoothingType = " << smoothingType);
 
     //-----------------------------------------------------------------------------
     // Assume the same number of channels at every CPU.
     size_t nChannelsLocal = nChannels / (nParametersTotal / nParameters);
-    size_t nextChannelIndexShift = nParameters - (nChannelsLocal - 1) * 2;
+
+    // NOTE: Assume channels are ordered with the MPI rank order, i.e., the higher the rank the higher the channel number.
+    ASKAPCHECK(testMPIRankOrderWithChannels(myrank, nChannelsLocal, indices), "Channels are not ordered with MPI ranks!");
 
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nChannelsLocal = " << nChannelsLocal);
 
-    std::vector<int> leftIndexGlobal(nParametersTotal);
-    std::vector<int> rightIndexGlobal(nParametersTotal);
-
-    // NOTE: Assume channels are ordered with the MPI rank order, i.e., the higher the rank the higher the channel number.
-    // E.g.: for 40 channels and 4 workers, rank 0 has channels 0-9, rank 1: 10-19, rank 2: 20-29, and rank 3: 30-39.
-
-    if (gradientType == 0) {
-    // Forawrd difference scheme.
-
-        size_t localChannelNumber = 0;
-        for (size_t i = 0; i < nParametersTotal; i += 2) {
-
-            bool lastLocalChannel = (localChannelNumber == nChannelsLocal - 1);
-
-            if (lastLocalChannel) {
-                size_t shiftedIndex = i + nextChannelIndexShift;
-
-                if (shiftedIndex < nParametersTotal) {
-                // Reached last local channel - shift the 'next' index.
-                    // Real part.
-                    leftIndexGlobal[i] = i;
-                    rightIndexGlobal[i] = shiftedIndex;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                    rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-                } else {
-                // Reached last global channel - do not add constraints - it is already coupled with previous one.
-                    // Real part.
-                    leftIndexGlobal[i] = -1;
-                    rightIndexGlobal[i] = -1;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = -1;
-                    rightIndexGlobal[i + 1] = -1;
-                }
-
-            } else {
-                // Real part.
-                leftIndexGlobal[i] = i;
-                rightIndexGlobal[i] = i + 2;
-                // Imaginary part.
-                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-            }
-
-            if (lastLocalChannel) {
-                // Reset local channel counter.
-                localChannelNumber = 0;
-            } else {
-                localChannelNumber++;
-            }
-        }
+    //-----------------------------------------------------------------------------
+    size_t nDiag;
+    if (smoothingType == 0 || smoothingType == 1) {
+        nDiag = 2;
+    } else if (smoothingType == 2) {
+        nDiag = 3;
     } else {
-    // Central difference scheme.
+        throw std::invalid_argument("Unknown smoothing type!");
+    }
 
-        size_t localChannelNumber = 0;
-        for (size_t i = 0; i < nParametersTotal; i += 2) {
+    std::vector<std::vector<int> > columnIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
+    std::vector<double> matrixValue(nDiag);
+    {
+        std::vector<int> leftIndexGlobal(nParametersTotal);
+        std::vector<int> rightIndexGlobal(nParametersTotal);
 
-            bool firstLocalChannel = (localChannelNumber == 0);
-            bool lastLocalChannel = (localChannelNumber == nChannelsLocal - 1);
-
-            int shiftedLeftIndex = i - nextChannelIndexShift;
-            size_t shiftedRightIndex = i + nextChannelIndexShift;
-
-            if (firstLocalChannel && lastLocalChannel) {
-            // One local channel.
-                if ((shiftedLeftIndex >= 0) && (shiftedRightIndex < nParametersTotal)) {
-                    // Real part.
-                    leftIndexGlobal[i] = shiftedLeftIndex;
-                    rightIndexGlobal[i] = shiftedRightIndex;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                    rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-
-                } else {
-                // First/last global channel - do not add constraints - it is already coupled with next/previous one.
-                    // Real part.
-                    leftIndexGlobal[i] = -1;
-                    rightIndexGlobal[i] = -1;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = -1;
-                    rightIndexGlobal[i + 1] = -1;
-                }
-
-            } else if (firstLocalChannel) {
-
-                if (shiftedLeftIndex >= 0) {
-                // First local channel - shift the 'left' index.
-                    // Real part.
-                    leftIndexGlobal[i] = shiftedLeftIndex;
-                    rightIndexGlobal[i] = i + 2;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                    rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-
-                } else {
-                // First/last global channel - do not add constraints - it is already coupled with next/previous one.
-                    // Real part.
-                    leftIndexGlobal[i] = -1;
-                    rightIndexGlobal[i] = -1;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = -1;
-                    rightIndexGlobal[i + 1] = -1;
-                }
-            } else if (lastLocalChannel) {
-
-                if (shiftedRightIndex < nParametersTotal) {
-                // Last local channel - shift the 'right' index.
-                    // Real part.
-                    leftIndexGlobal[i] = i - 2;
-                    rightIndexGlobal[i] = shiftedRightIndex;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                    rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
-                } else {
-                // Reached last global channel - do not add constraints - it is already coupled with previous one.
-                    // Real part.
-                    leftIndexGlobal[i] = -1;
-                    rightIndexGlobal[i] = -1;
-                    // Imaginary part.
-                    leftIndexGlobal[i + 1] = -1;
-                    rightIndexGlobal[i + 1] = -1;
-                }
-
-            } else {
-                // Real part.
-                leftIndexGlobal[i] = i - 2;
-                rightIndexGlobal[i] = i + 2;
-                // Imaginary part.
-                leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
-                rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+        if (smoothingType == 0 || smoothingType == 1) {
+            if (smoothingType == 0) {
+            // Forawrd difference scheme.
+                calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+            }
+            else if (smoothingType == 1) {
+            // Central difference scheme.
+                calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
             }
 
-            if (lastLocalChannel) {
-                // Reset local channel counter.
-                localChannelNumber = 0;
-            } else {
-                localChannelNumber++;
+            columnIndexGlobal[0] = leftIndexGlobal;
+            columnIndexGlobal[1] = rightIndexGlobal;
+
+            matrixValue[0] = - smoothingWeight;
+            matrixValue[1] = + smoothingWeight;
+        }
+        else if (smoothingType == 2) {
+        // Laplacian.
+            // Utilize that the left and right indexes in Laplacian are the same as in the Central Difference (CD) scheme.
+            calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+
+            std::vector<int> middleIndexGlobal(nParametersTotal);
+            for (size_t i = 0; i < nParametersTotal; i++) {
+                if (leftIndexGlobal[i] >= 0) {
+                    assert(rightIndexGlobal[i] >= 0);
+                    middleIndexGlobal[i] = i;
+                } else {
+                    assert(leftIndexGlobal[i] == -1);
+                    assert(rightIndexGlobal[i] == -1);
+                    middleIndexGlobal[i] = -1;
+                }
             }
+
+            columnIndexGlobal[0] = leftIndexGlobal;
+            columnIndexGlobal[1] = middleIndexGlobal;
+            columnIndexGlobal[2] = rightIndexGlobal;
+
+            // 1D Laplacian kernel = [1 -2 1].
+            matrixValue[0] = smoothingWeight;
+            matrixValue[1] = - 2. * smoothingWeight;
+            matrixValue[2] = smoothingWeight;
         }
     }
 
     //-----------------------------------------------------------------------------
-    // Adding Jacobian of the gradient to the matrix.
+    // Adding Jacobian of the gradient/Laplacian to the matrix.
     //-----------------------------------------------------------------------------
+    matrix.addParallelSparseOperator(nDiag, nParameters, columnIndexGlobal, matrixValue);
+
+    //-----------------------------------------------------------------------------
+    // Adding the Right-Hand Side.
+    //-----------------------------------------------------------------------------
+    size_t b_size0 = b_RHS.size();
+    b_RHS.resize(b_RHS.size() + nParametersTotal);
+    assert(matrix.GetCurrentNumberRows() == b_RHS.size());
+
     double cost = 0.;
-
-    double matrix_val[2];
-    matrix_val[0] = - smoothingWeight;
-    matrix_val[1] = + smoothingWeight;
-
     for (size_t i = 0; i < nParametersTotal; i++) {
-
-        //----------------------------------------------------
-        // Adding matrix values.
-        //----------------------------------------------------
-        matrix.NewRow();
-
-        // Global matrix column indexes.
-        size_t globIndex[2];
-        globIndex[0] = leftIndexGlobal[i];  // Left index: "minus" term in finite difference (e.g. -x[i] for x' =  x[i+1] - x[i])
-        globIndex[1] = rightIndexGlobal[i]; // Right index: "plus" term in finite difference (e.g. x[i+1] for x' =  x[i+1] - x[i]).
-
-        for (size_t k = 0; k < 2; k++) {
-            if (globIndex[k] >= 0
-                && globIndex[k] >= nParametersSmaller
-                && globIndex[k] < nParametersSmaller + nParameters) {
-
-                // Local matrix column index (at the current CPU).
-                size_t localColumnIndex = globIndex[k] - nParametersSmaller;
-                matrix.Add(matrix_val[k], localColumnIndex);
-            }
+        double Ax0 = 0.;
+        for (size_t k = 0; k < nDiag; k++) {
+            Ax0 += matrixValue[k] * x0[columnIndexGlobal[k][i]];
         }
 
-        //----------------------------------------------------
-        // Adding the Right-Hand Side.
-        //----------------------------------------------------
-        double b_RHS_value = 0.;
-        if (leftIndexGlobal[i] >= 0 && rightIndexGlobal[i] >= 0) {
-            b_RHS_value = - smoothingWeight * (x0[rightIndexGlobal[i]] - x0[leftIndexGlobal[i]]);
-        } else {
-            ASKAPCHECK(leftIndexGlobal[i] == -1 && rightIndexGlobal[i] == -1,
-                    "Wrong finite difference indexes: " << i << ", " << leftIndexGlobal[i] << ", " << rightIndexGlobal[i]);
-        }
-        size_t b_index = matrix.GetCurrentNumberRows() - 1;
+        // b = - F(x0) = - A.x0.
+        double b_RHS_value = - Ax0;
+
+        size_t b_index = b_size0 + i;
         b_RHS[b_index] = b_RHS_value;
 
         cost += b_RHS_value * b_RHS_value;
     }
-
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Smoothness constraints cost = " << cost / (smoothingWeight * smoothingWeight));
-
-    matrix.Finalize(nParameters);
 }
 
 }}}

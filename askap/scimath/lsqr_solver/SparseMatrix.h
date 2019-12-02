@@ -102,6 +102,19 @@ public:
     void TransMultVector(const Vector &x, Vector &b) const;
 
     /*
+     * Adds sparse operator to the parallel matrix (e.g. gradient, or Laplacian).
+     * Note: Assumes the full matrix is split between MPI ranks by columns.
+     * nDiag - number of diagonals of the sparse operator (e.g. two diagonals for forward difference, three for Laplacian).
+     * nParametersLocal - number of parameters at the current MPI rank.
+     * columnIndexGlobal - column index (of the nonzero value) for each diagonal.
+     * matrixValue - matrix value for each diagonal (constant for all rows).
+     */
+    void addParallelSparseOperator(size_t nDiag,
+                                   size_t nParametersLocal,
+                                   const std::vector<std::vector<int> >& columnIndexGlobal,
+                                   const std::vector<double>& matrixValue);
+
+    /*
      * Extends (finalized) matrix for adding more elements.
      * Makes matrix non-finalized.
      */
