@@ -2,50 +2,54 @@
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
 
+#ifndef SPARSEMATRIXTEST_H_INCLUDED
+#define SPARSEMATRIXTEST_H_INCLUDED
+
 #include <askap/scimath/lsqr_solver/SparseMatrix.h>
 #include <stdexcept>
+#include <cmath>
 
 #include <cppunit/extensions/HelperMacros.h>
 
-namespace askap
-{
-  namespace lsqr
-  {
+namespace askap { namespace lsqr {
+
     class SparseMatrixTest : public CppUnit::TestFixture
     {
-      CPPUNIT_TEST_SUITE(SparseMatrixTest);
+        CPPUNIT_TEST_SUITE(SparseMatrixTest);
 
-      CPPUNIT_TEST(testConstructors);
-      CPPUNIT_TEST(testAdd);
-      CPPUNIT_TEST_EXCEPTION(testInvalidAddBeforeFirstRow, std::runtime_error);
-      CPPUNIT_TEST(testGetNumberRows);
-      CPPUNIT_TEST(testFinalizeZeroColumns);
-      CPPUNIT_TEST(testFinalizeNonZeroColumns);
-      CPPUNIT_TEST_EXCEPTION(testInvalidFinalize, std::runtime_error);
-      CPPUNIT_TEST_EXCEPTION(testInvalidFinalize2, std::runtime_error);
-      CPPUNIT_TEST_EXCEPTION(testInvalidNewRow, std::runtime_error);
-      CPPUNIT_TEST(testGetValueAllNonZero);
-      CPPUNIT_TEST(testGetValueZeroDiag);
-      CPPUNIT_TEST(testMultVectorAllNonZero);
-      CPPUNIT_TEST(testMultVectorZeroDiag);
-      CPPUNIT_TEST(testMultVectorDiag);
-      CPPUNIT_TEST(testMultVector1x3);
-      CPPUNIT_TEST(testMultVector3x1);
-      CPPUNIT_TEST(testMultVectorOneNonZero);
-      CPPUNIT_TEST(testTransMultVectorAllNonZero3x3);
-      CPPUNIT_TEST(testTransMultVectorAllNonZero2x3);
-      CPPUNIT_TEST(testTransMultVectorAllNonZero3x2);
-      CPPUNIT_TEST(testReset);
-      CPPUNIT_TEST(testExtendNonEmpty);
-      CPPUNIT_TEST(testExtendEmpty);
-      CPPUNIT_TEST(testGetNumberNonemptyRowsNoEmpty);
-      CPPUNIT_TEST(testGetNumberNonemptyRowsAllEmpty);
-      CPPUNIT_TEST(testGetNumberNonemptyRowsSomeEmpty);
-      CPPUNIT_TEST(testGetNumberNonemptyRowsSomeEmpty2);
+        CPPUNIT_TEST(testConstructors);
+        CPPUNIT_TEST(testAdd);
+        CPPUNIT_TEST_EXCEPTION(testInvalidAddBeforeFirstRow, std::runtime_error);
+        CPPUNIT_TEST(testGetNumberRows);
+        CPPUNIT_TEST(testFinalizeZeroColumns);
+        CPPUNIT_TEST(testFinalizeNonZeroColumns);
+        CPPUNIT_TEST_EXCEPTION(testInvalidFinalize, std::runtime_error);
+        CPPUNIT_TEST_EXCEPTION(testInvalidFinalize2, std::runtime_error);
+        CPPUNIT_TEST_EXCEPTION(testInvalidNewRow, std::runtime_error);
+        CPPUNIT_TEST(testGetValueAllNonZero);
+        CPPUNIT_TEST(testGetValueZeroDiag);
+        CPPUNIT_TEST(testMultVectorAllNonZero);
+        CPPUNIT_TEST(testMultVectorZeroDiag);
+        CPPUNIT_TEST(testMultVectorDiag);
+        CPPUNIT_TEST(testMultVector1x3);
+        CPPUNIT_TEST(testMultVector3x1);
+        CPPUNIT_TEST(testMultVectorOneNonZero);
+        CPPUNIT_TEST(testTransMultVectorAllNonZero3x3);
+        CPPUNIT_TEST(testTransMultVectorAllNonZero2x3);
+        CPPUNIT_TEST(testTransMultVectorAllNonZero3x2);
+        CPPUNIT_TEST(testReset);
+        CPPUNIT_TEST(testExtendNonEmpty);
+        CPPUNIT_TEST(testExtendEmpty);
+        CPPUNIT_TEST(testGetNumberNonemptyRowsNoEmpty);
+        CPPUNIT_TEST(testGetNumberNonemptyRowsAllEmpty);
+        CPPUNIT_TEST(testGetNumberNonemptyRowsSomeEmpty);
+        CPPUNIT_TEST(testGetNumberNonemptyRowsSomeEmpty2);
+        CPPUNIT_TEST(testGetColumnNorms);
+        CPPUNIT_TEST(testGetColumnNorms2);
 
-      CPPUNIT_TEST_SUITE_END();
+        CPPUNIT_TEST_SUITE_END();
 
-      public:
+    public:
 
         void testConstructors()
         {
@@ -767,6 +771,68 @@ namespace askap
 
             CPPUNIT_ASSERT_EQUAL(size_t(2), matrix.GetNumberNonemptyRows());
         }
+
+        // Test of GetColumnNorms.
+        // No empty rows.
+        void testGetColumnNorms()
+        {
+            SparseMatrix matrix(3);
+
+            matrix.NewRow();
+
+            matrix.Add(1.0, 0);
+            matrix.Add(2.0, 1);
+            matrix.Add(3.0, 2);
+
+            matrix.NewRow();
+
+            matrix.Add(4.0, 0);
+            matrix.Add(5.0, 1);
+            matrix.Add(6.0, 2);
+
+            matrix.NewRow();
+
+            matrix.Add(7.0, 0);
+            matrix.Add(8.0, 1);
+            matrix.Add(9.0, 2);
+
+            matrix.Finalize(3);
+
+            std::vector<double> columnNorms(3);
+            matrix.GetColumnNorms(columnNorms);
+
+            CPPUNIT_ASSERT_EQUAL(sqrt(1. * 1. + 4. * 4. + 7. * 7.), columnNorms[0]);
+            CPPUNIT_ASSERT_EQUAL(sqrt(2. * 2. + 5. * 5. + 8. * 8.), columnNorms[1]);
+            CPPUNIT_ASSERT_EQUAL(sqrt(3. * 3. + 6. * 6. + 9. * 9.), columnNorms[2]);
+        }
+
+        // Test of GetColumnNorms.
+        // Some empty rows.
+        void testGetColumnNorms2()
+        {
+            SparseMatrix matrix(3);
+
+            matrix.NewRow();
+
+            matrix.Add(1.0, 0);
+            matrix.Add(3.0, 2);
+
+            matrix.NewRow();
+
+            matrix.NewRow();
+
+            matrix.Add(4.0, 2);
+
+            matrix.Finalize(3);
+
+            std::vector<double> columnNorms(3);
+            matrix.GetColumnNorms(columnNorms);
+
+            CPPUNIT_ASSERT_EQUAL(1., columnNorms[0]);
+            CPPUNIT_ASSERT_EQUAL(0., columnNorms[1]);
+            CPPUNIT_ASSERT_EQUAL(5., columnNorms[2]);
+        }
     };
-  }
-}
+}}
+
+#endif // SPARSEMATRIXTEST_H_INCLUDED
