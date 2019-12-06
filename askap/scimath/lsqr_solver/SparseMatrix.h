@@ -167,7 +167,7 @@ private:
     /*
      * Validates the boundaries of column indexes.
      */
-    bool ValidateIndexBoundaries(size_t ncolumns);
+    bool ValidateIndexBoundaries(size_t ncolumns) const;
 };
 
 }} // namespace askap.lsqr

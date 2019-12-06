@@ -333,7 +333,7 @@ bool SparseMatrix::Finalize(size_t ncolumns)
     return true;
 }
 
-bool SparseMatrix::ValidateIndexBoundaries(size_t ncolumns)
+bool SparseMatrix::ValidateIndexBoundaries(size_t ncolumns) const
 {
     // Use the same loop as in A'x multiplication.
     for (size_t i = 0; i < nl; i++) {
