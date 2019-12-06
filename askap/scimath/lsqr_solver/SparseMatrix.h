@@ -71,6 +71,16 @@ public:
     void GetColumnNorms(Vector& columnNorms) const;
 
     /*
+     * Scales matrix columns.
+     */
+    void ScaleColumns(Vector& columnWeight);
+
+    /*
+     * Normalizes matrix columns.
+     */
+    void NormalizeColumns(Vector& columnNorms);
+
+    /*
      * Returns a flag whether the matrix has been finalized.
      */
     bool Finalized() const;

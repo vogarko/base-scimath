@@ -138,6 +138,40 @@ void SparseMatrix::GetColumnNorms(Vector& columnNorms) const
     }
 }
 
+void SparseMatrix::ScaleColumns(Vector& columnWeight)
+{
+    // Sanity check.
+    if (!finalized) {
+        throw std::runtime_error("Matrix has not been finalized yet in SparseMatrix::ScaleColumns!");
+    }
+
+    for (size_t i = 0; i < nl; i++) {
+        for (size_t k = ijl[i]; k < ijl[i + 1]; k++) {
+            sa[k] *= columnWeight.at(ija[k]);
+        }
+    }
+}
+
+void SparseMatrix::NormalizeColumns(Vector& columnNorms)
+{
+    // Sanity check.
+    if (!finalized) {
+        throw std::runtime_error("Matrix has not been finalized yet in SparseMatrix::NormalizeColumns!");
+    }
+
+    GetColumnNorms(columnNorms);
+
+    size_t nParameters = columnNorms.size();
+    std::vector<double> columnWeight(nParameters);
+
+    for (size_t i = 0; i < columnWeight.size(); i++) {
+        assert(columnNorms[i] != 0.);
+        columnWeight[i] = 1. / columnNorms[i];
+    }
+
+    ScaleColumns(columnWeight);
+}
+
 bool SparseMatrix::Finalized() const
 {
     return finalized;

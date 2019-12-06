@@ -46,6 +46,8 @@ namespace askap { namespace lsqr {
         CPPUNIT_TEST(testGetNumberNonemptyRowsSomeEmpty2);
         CPPUNIT_TEST(testGetColumnNorms);
         CPPUNIT_TEST(testGetColumnNorms2);
+        CPPUNIT_TEST(testNormalizeColumns);
+        CPPUNIT_TEST(testNormalizeColumns2);
 
         CPPUNIT_TEST_SUITE_END();
 
@@ -831,6 +833,77 @@ namespace askap { namespace lsqr {
             CPPUNIT_ASSERT_EQUAL(1., columnNorms[0]);
             CPPUNIT_ASSERT_EQUAL(0., columnNorms[1]);
             CPPUNIT_ASSERT_EQUAL(5., columnNorms[2]);
+        }
+
+        // Test of NormalizeColumns.
+        // No empty rows.
+        void testNormalizeColumns()
+        {
+            SparseMatrix matrix(3);
+
+            matrix.NewRow();
+
+            matrix.Add(1.0, 0);
+            matrix.Add(2.0, 1);
+            matrix.Add(3.0, 2);
+
+            matrix.NewRow();
+
+            matrix.Add(4.0, 0);
+            matrix.Add(5.0, 1);
+            matrix.Add(6.0, 2);
+
+            matrix.NewRow();
+
+            matrix.Add(7.0, 0);
+            matrix.Add(8.0, 1);
+            matrix.Add(9.0, 2);
+
+            matrix.Finalize(3);
+
+            std::vector<double> columnNorms(3);
+            matrix.NormalizeColumns(columnNorms);
+
+            // Verify column norms became unity after normalisation.
+            matrix.GetColumnNorms(columnNorms);
+
+            double epsilon = 1.e-15;
+            for (size_t i = 0; i < 3; i++) {
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(1., columnNorms[i], epsilon);
+            }
+        }
+
+        // Test of NormalizeColumns.
+        // Some empty rows.
+        void testNormalizeColumns2()
+        {
+            SparseMatrix matrix(3);
+
+            matrix.NewRow();
+
+            matrix.Add(1.0, 0);
+            matrix.Add(3.0, 2);
+
+            matrix.NewRow();
+
+            matrix.Add(11.0, 1);
+
+            matrix.NewRow();
+
+            matrix.Add(4.0, 2);
+
+            matrix.Finalize(3);
+
+            std::vector<double> columnNorms(3);
+            matrix.NormalizeColumns(columnNorms);
+
+            // Verify column norms became unity after normalisation.
+            matrix.GetColumnNorms(columnNorms);
+
+            double epsilon = 1.e-15;
+            for (size_t i = 0; i < 3; i++) {
+                CPPUNIT_ASSERT_DOUBLES_EQUAL(1., columnNorms[i], epsilon);
+            }
         }
     };
 }}
