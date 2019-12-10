@@ -3,14 +3,14 @@ cmake_minimum_required (VERSION 3.1.0)
 project(base-scimath VERSION 0.0.1 LANGUAGES C CXX)
 
 
-if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/askap-cmake)
+if (EXISTS ${CMAKE_SOURCE_DIR}/askap-cmake)
     execute_process(COMMAND git pull 
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/askap-cmake)
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/askap-cmake)
 else ()	
     execute_process(COMMAND git clone https://bitbucket.csiro.au/scm/askapsdp/askap-cmake.git
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif ()
-set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/askap-cmake")
+set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/askap-cmake")
 
 option (CXX11 "Compile as C++11 if possible" YES)
 option (ENABLE_SHARED "Build shared libraries" YES)
