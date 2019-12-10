@@ -255,6 +255,7 @@ if (MPI_FOUND)
 	)
 endif (MPI_FOUND)
 
+add_library(askap::scimath ALIAS askap_scimath)
 target_include_directories(askap_scimath PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/askap/scimath>
