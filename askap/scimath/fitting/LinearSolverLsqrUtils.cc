@@ -529,4 +529,13 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Smoothness constraints cost = " << cost / (smoothingWeight * smoothingWeight));
 }
 
+double calculateCost(const std::vector<double> &b_RHS)
+{
+    double cost = 0.;
+    for (size_t i = 0; i < b_RHS.size(); ++i) {
+        cost += b_RHS[i] * b_RHS[i];
+    }
+    return cost;
+}
+
 }}}
