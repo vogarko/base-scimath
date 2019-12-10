@@ -93,7 +93,6 @@ endif()
 
 
 # include directories
-include_directories( ${CMAKE_SOURCE_DIR} )
 include_directories (${Boost_INCLUDE_DIRS})
 add_definitions(-DHAVE_BOOST)
 include_directories(${log4cxx_INCLUDE_DIRS})
@@ -261,6 +260,13 @@ if (MPI_FOUND)
 		${MPI_LIBRARIES}
 	)
 endif (MPI_FOUND)
+
+target_include_directories(askap_scimath PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/askap/scimath>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:include/askap/scimath>
+)
 
 install (
 TARGETS askap_scimath
