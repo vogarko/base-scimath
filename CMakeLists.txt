@@ -97,15 +97,9 @@ include_directories (${Boost_INCLUDE_DIRS})
 add_definitions(-DHAVE_BOOST)
 include_directories(${log4cxx_INCLUDE_DIRS})
 add_definitions(-DHAVE_LOG4CXX)
-include_directories(${LofarCommon_INCLUDE_DIRS})
 include_directories(${CASACORE_INCLUDE_DIRS})
 add_definitions(-DHAVE_AIPSPP)
 add_definitions(-Dcasa=casacore)
-include_directories(${ASKAP_INCLUDE_DIRS})
-include_directories(${ASKAPPARALLEL_INCLUDE_DIRS})
-include_directories(${IMAGEMATH_INCLUDE_DIRS})
-message(STATUS ${IMAGEMATH_INCLUDE_DIRS})
-include_directories(${LofarBlob_INCLUDE_DIRS})
 include_directories(${FFTW_INCLUDES})
 
 
@@ -244,14 +238,14 @@ DESTINATION include/askap/scimath/lqsr_solver
 
 target_link_libraries(
 	askap_scimath
+	askap::askap
+	askap::parallel
+	askap::imagemath
+	lofar::Common
+	lofar::Blob
 	${CASACORE_LIBRARIES}
-	${ASKAP_LIBRARY}
-	${ASKAPPARALLEL_LIBRARY}
-	${IMAGEMATH_LIBRARY}
 	${log4cxx_LIBRARY}
 	${Boost_LIBRARIES}
-	${LofarCommon_LIBRARY}
-	${LofarBlob_LIBRARY}
 	${FFTW_LIBRARIES}
 	${GSL_LIBRARIES}
 )
