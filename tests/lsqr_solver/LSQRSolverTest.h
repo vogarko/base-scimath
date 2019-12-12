@@ -29,8 +29,8 @@ namespace askap
         /*
         * Define the following underdetermined system:
         *
-        * x1 + x2 = 1,
-        * 2x1 + x2 - q = 0.
+        *   x1 + x2 = 1,
+        *   2x1 + x2 - q = 0.
         *
         * Which has the minimum norm underdetermined solution x1 = 0, x2 = 1, q = 1.
         * (See Carl Wunsch, The ocean circulation inverse problem, Eq.(3.4.120).)

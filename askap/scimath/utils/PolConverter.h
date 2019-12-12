@@ -263,14 +263,22 @@ struct PolConverter {
   /// @return map with the polarisation product as the key and the complex coefficient as the value
   std::map<casacore::Stokes::StokesTypes, casacore::Complex> getSparseTransform(const casacore::Stokes::StokesTypes pol) const;
 
+  /// @brief set the parallactic angles to use for conversion of linears to Stokes
+  /// @param[in] pa1 parallactic angle on the first antenna
+  /// @param[in] pa2 parallactic angle on the second antenna
+  inline void setParAngle(double pa1, double pa2)
+  { fillPARotationMatrix(pa1,pa2); }
+
+  /// @param[in] swap polarisations if true
+  inline void setSwapPols(bool swap = false)
+  { itsSwapPols = swap; }
+
+
 protected:
   /// @brief build transformation matrix
   /// @details This is the core of the algorithm, this method builds the transformation matrix
   /// given the two frames .
-  /// @param[in] polFrameIn input polarisation frame defined as a vector of Stokes enums
-  /// @param[in] polFrameOut output polarisation frame defined as a vector of Stokes enums
-  void fillMatrix(const casacore::Vector<casacore::Stokes::StokesTypes> &polFrameIn,
-                  const casacore::Vector<casacore::Stokes::StokesTypes> &polFrameOut);
+  void fillMatrix() const;
 
   /// @brief fill matrix describing parallactic angle rotation
   /// @details
@@ -286,10 +294,10 @@ private:
 
   /// @brief transformation matrix
   /// @details to convert input polarisation frame to the target one
-  casacore::Matrix<casacore::Complex> itsTransform;
+  mutable casacore::Matrix<casacore::Complex> itsTransform;
 
   /// @brief matrix describing parallactic angle rotation
-  casacore::Matrix<casacore::Double> itsPARotation;
+  casacore::Matrix<casacore::Float> itsPARotation;
 
   // the following methods may be removed in the future
 
@@ -307,6 +315,18 @@ private:
   /// equivalent to setting all unknown polarisation products to 0 is appropriate for degridding.
   /// This is achieved if this parameter is set to false.
   bool itsCheckUnspecifiedProducts;
+
+  /// @brief True if input/output frame is linear
+  bool itsInputLinear, itsOutputLinear;
+
+  /// @brief Cache last values of pa1 and pa2
+  double itsLastpa1, itsLastpa2;
+
+  /// @brief Swap polarisations
+  bool itsSwapPols;
+
+  /// @brief Are we initialised?
+  mutable bool itsInitialised;
 };
 
 } // namespace scimath

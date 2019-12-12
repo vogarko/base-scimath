@@ -48,34 +48,42 @@ public:
     /*
      * Returns the number of (non-zero) elements added into the sparse matrix.
      */
-    size_t GetNumberElements() const
-    {
-        return nel;
-    }
+    size_t GetNumberElements() const;
 
     /*
      * Returns the current number of rows in the matrix.
      */
-    size_t GetCurrentNumberRows() const
-    {
-        return nl_current;
-    }
+    size_t GetCurrentNumberRows() const;
 
     /*
      * Returns the total number of rows in the matrix.
      */
-    size_t GetTotalNumberRows() const
-    {
-        return nl;
-    }
+    size_t GetTotalNumberRows() const;
+
+    /*
+     * Returns the number of nonempty rows.
+     */
+    size_t GetNumberNonemptyRows() const;
+
+    /*
+     * Returns matrix column norms.
+     */
+    void GetColumnNorms(Vector& columnNorms) const;
+
+    /*
+     * Scales matrix columns.
+     */
+    void ScaleColumns(Vector& columnWeight);
+
+    /*
+     * Normalizes matrix columns.
+     */
+    void NormalizeColumns(Vector& columnNorms);
 
     /*
      * Returns a flag whether the matrix has been finalized.
      */
-    bool Finalized() const
-    {
-        return finalized;
-    }
+    bool Finalized() const;
 
     /*
      * Returns the (i, j)-element's value of the matrix,
@@ -102,15 +110,23 @@ public:
     void TransMultVector(const Vector &x, Vector &b) const;
 
     /*
+     * Adds sparse operator to the parallel matrix (e.g. gradient, or Laplacian).
+     * Note: Assumes the full matrix is split between MPI ranks by columns.
+     * nDiag - number of diagonals of the sparse operator (e.g. two diagonals for forward difference, three for Laplacian).
+     * nParametersLocal - number of parameters at the current MPI rank.
+     * columnIndexGlobal - column index (of the nonzero value) for each diagonal.
+     * matrixValue - matrix value for each diagonal (constant for all rows).
+     */
+    void addParallelSparseOperator(size_t nDiag,
+                                   size_t nParametersLocal,
+                                   const std::vector<std::vector<int> >& columnIndexGlobal,
+                                   const std::vector<double>& matrixValue);
+
+    /*
      * Extends (finalized) matrix for adding more elements.
      * Makes matrix non-finalized.
      */
     void Extend(size_t extra_nl);
-
-    /*
-     * Returns the number of nonempty rows.
-     */
-    size_t GetNumberNonemptyRows() const;
 
     /*
      * Should be called when all elements of the matrix have been added.
@@ -151,7 +167,7 @@ private:
     /*
      * Validates the boundaries of column indexes.
      */
-    bool ValidateIndexBoundaries(size_t ncolumns);
+    bool ValidateIndexBoundaries(size_t ncolumns) const;
 };
 
 }} // namespace askap.lsqr

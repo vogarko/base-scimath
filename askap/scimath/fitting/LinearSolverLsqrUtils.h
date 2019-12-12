@@ -81,7 +81,7 @@ namespace askap { namespace scimath { namespace lsqrutils {
     /// @param[in] nParameters Local number of parameters (at the current worker).
     /// @param[in] nChannels The total number of channels.
     /// @param[in] smoothingWeight The smoothing weight.
-    /// @param[in] gradientType The type of gradient approximation (0 - forward difference, 1- central difference).
+    /// @param[in] smoothingType The type of gradient approximation (0 - forward difference, 1- central difference, 2 - Laplacian).
     void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                                   lsqr::Vector& b_RHS,
                                   const std::vector<std::pair<std::string, int> >& indices,
@@ -89,6 +89,10 @@ namespace askap { namespace scimath { namespace lsqrutils {
                                   size_t nParameters,
                                   size_t nChannels,
                                   double smoothingWeight,
-                                  int gradientType = 0);
+                                  int smoothingType);
+
+    /// @brief Calculates the least squares cost.
+    /// @param[in] b_RHS The right-hand side of the least squares system.
+    double calculateCost(const std::vector<double> &b_RHS);
 }}}
 #endif

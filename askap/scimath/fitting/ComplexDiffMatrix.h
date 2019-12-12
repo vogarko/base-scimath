@@ -179,6 +179,12 @@ struct ComplexDiffMatrix {
    friend inline ComplexDiffMatrix blockMultiply(const ComplexDiffMatrix &in1,
                 const ComplexDiffMatrix &in2);
    
+   /// @brief extract a block into the given buffer
+   /// @details This method extracts a range of columns.
+   /// @param[in] startCol first column to extract
+   /// @param[out] result the buffer where the block will be written to
+   inline void extractBlock(size_t startCol, ComplexDiffMatrix& result) const;
+
    /// @brief extract a block 
    /// @details This method extracts a range of columns.
    /// @param[in] startCol first column to extract

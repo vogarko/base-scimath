@@ -225,8 +225,7 @@ DESTINATION include/askap/scimath/fft
 
 )
 install (FILES
-	
-./askap/scimath/lsqr_solver/GlobalTypedefs.h
+
 ./askap/scimath/lsqr_solver/LSQRSolver.h
 ./askap/scimath/lsqr_solver/MathUtils.h
 ./askap/scimath/lsqr_solver/ModelDamping.h
