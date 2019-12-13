@@ -379,6 +379,63 @@ casacore::uInt GenericNormalEquations::parameterDimension(const MapOfMatrices &n
 /// A simple definition for easier readability
 typedef std::vector<casacore::DComplex> dcomplex_vector;
 
+/**
+ * For a given parameter index, row and column on a ComplexDiffMatrix, calculate
+ * the index under which the derivatives extracted in collect_derivatives are
+ * stored.
+ *
+ * @param cdm The ComplexDiffMatrix from where the derivatives were extracted from
+ * @param parameter A parameter index within those stored in @p cdm
+ * @param row A row number within @p cdm
+ * @param column A column number within @p cdm
+ * @return The index corresponding to the combination of @p paramter, @p row and
+ * @p column
+ * @see collect_derivatives
+ */
+static inline
+std::size_t derivative_index(const ComplexDiffMatrix &cdm, size_t parameter,
+    std::size_t row, std::size_t column)
+{
+    return column + cdm.nColumn() * row + cdm.nColumn() * cdm.nRow() * parameter;
+};
+
+/**
+ * Collects the real and imaginary derivatives found in the individual cells
+ * of the ComplexDiffMatrix @p cdm into two vectors, using the parameters stored
+ * @p cdm to lookup derivatives values in the cells. The returned vectors are
+ * indexed first by parameter, then by row, and then by column.
+ * Although this method creates a copy of all these values (and thus requires a
+ * bit more of memory), it allows them to be indexed numerically for fast
+ * lookups, in contrast with the string-based indexing used by ComplexDiff
+ * objects, and thus reducing the runtime cost of
+ * GenericNormalEquations::add(const ComplexDiffMatrix &, const PolXProducts &)
+ *
+ * @param cdm The ComplexDiffMatrix from where derivatives are extracted
+ * @return A pair of two vectors containing the real and imaginary derivatives
+ * extracted from the matrix's cell values, respectively.
+ * @see derivative_index
+ */
+static
+std::pair<dcomplex_vector, dcomplex_vector>
+collect_derivatives(const ComplexDiffMatrix &cdm)
+{
+  auto nParams = std::distance(cdm.paramBegin(), cdm.paramEnd());
+  dcomplex_vector re_derivatives(nParams * cdm.nRow() * cdm.nColumn());
+  dcomplex_vector im_derivatives(nParams * cdm.nRow() * cdm.nColumn());
+  std::size_t p = 0;
+  for (auto param = cdm.paramBegin(); param != cdm.paramEnd(); ++param, p++) {
+	for (std::size_t row = 0; row != cdm.nRow(); row++) {
+	  for (std::size_t col = 0; col != cdm.nColumn(); col++) {
+		auto &complex_diff = cdm(row, col);
+		auto index = derivative_index(cdm, p, row, col);
+		re_derivatives[index] = complex_diff.derivRe(*param);
+		im_derivatives[index] = complex_diff.derivIm(*param);
+	  }
+	}
+  }
+  return std::make_pair(re_derivatives, im_derivatives);
+}
+
 /// @brief add special type of design equations formed as a matrix product
 /// @details This method adds design equations formed by a product of
 /// a certain CompleDiffMatrix and a vector. It is equivalent to adding a design
@@ -412,11 +469,16 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
       }
   }
 
+  dcomplex_vector re_derivatives;
+  dcomplex_vector im_derivatives;
+  std::tie(re_derivatives, im_derivatives) = collect_derivatives(cdm);
+
   const std::complex<double> czero(0, 0);
 
   // iterate over all parameters (rows of the normal matrix)
-  for (ComplexDiffMatrix::parameter_iterator iterRow = cdm.paramBegin(); 
-       iterRow != cdm.paramEnd(); ++iterRow) {
+  size_t param_i = 0;
+  for (ComplexDiffMatrix::parameter_iterator iterRow = cdm.paramBegin();
+       iterRow != cdm.paramEnd(); ++iterRow, ++param_i) {
 
        // first, form the projected data vector for this row
 
@@ -433,9 +495,9 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
             // vector (projected). We can optimise this for speed later, if proved to be a problem.
             for (casacore::uInt p1 = 0; p1<nDataPoints; ++p1) {
                       
-                 const ComplexDiff &cd1 = cdm(p,p1);
-                 const casacore::DComplex rowParDerivRe1 = cd1.derivRe(*iterRow);
-                 const casacore::DComplex rowParDerivIm1 = cd1.derivIm(*iterRow);
+                 auto index = derivative_index(cdm, param_i, p, p1);
+                 const casacore::DComplex rowParDerivRe1 = re_derivatives[index];
+                 const casacore::DComplex rowParDerivIm1 = im_derivatives[index];
 
                  if (rowParDerivRe1 == czero && rowParDerivIm1 == czero) {
                      continue;
@@ -483,8 +545,9 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
 
        // iterate over all parameters (columns of the normal matrix) filling
        // the buffer for this particular row
+       size_t param_j = 0;
        for (ComplexDiffMatrix::parameter_iterator iterCol = cdm.paramBegin(); 
-            iterCol != cdm.paramEnd(); ++iterCol) {
+            iterCol != cdm.paramEnd(); ++iterCol, ++param_j) {
 
             // buffer for the element of normal matrix
             // treat all parameters as complex here to simplify the logic
@@ -498,9 +561,9 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                  // for A and A^T parts in the product forming the element of the normal
                  // matrix. We can optimise this for speed later, if proved to be a problem.
                  for (casacore::uInt p1 = 0; p1<nDataPoints; ++p1) {
-                      const ComplexDiff &cd1 = cdm(p,p1);
-                      const casacore::DComplex rowParDerivRe1 = cd1.derivRe(*iterRow);
-                      const casacore::DComplex rowParDerivIm1 = cd1.derivIm(*iterRow);
+                      auto index = derivative_index(cdm, param_i, p, p1);
+                      const casacore::DComplex rowParDerivRe1 = re_derivatives[index];
+                      const casacore::DComplex rowParDerivIm1 = im_derivatives[index];
 
                       if (rowParDerivRe1 == czero && rowParDerivIm1 == czero) {
                           continue;
@@ -512,9 +575,9 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                                continue;
                            }
 
-                           const ComplexDiff &cd2 = cdm(p,p2);
-                           const casacore::DComplex colParDerivRe2 = cd2.derivRe(*iterCol);
-                           const casacore::DComplex colParDerivIm2 = cd2.derivIm(*iterCol);
+                           auto index = derivative_index(cdm, param_j, p, p2);
+                           const casacore::DComplex colParDerivRe2 = re_derivatives[index];
+                           const casacore::DComplex colParDerivIm2 = im_derivatives[index];
 
                            if (colParDerivRe2 == czero && colParDerivIm2 == czero) {
                                continue;
