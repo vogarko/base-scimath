@@ -439,13 +439,20 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                  }
 
                  const casacore::DComplex measProduct = pxp.getModelMeasProduct(p1,p);
-                 dataVector[0] += real(conj(rowParDerivRe1) * measProduct);
-                 dataVector[1] += real(conj(rowParDerivIm1) * measProduct);
+
+                 if (measProduct != czero) {
+                    dataVector[0] += real(conj(rowParDerivRe1) * measProduct);
+                    dataVector[1] += real(conj(rowParDerivIm1) * measProduct);
+                 }
                                             
                  for (casacore::uInt p2 = 0; p2<nDataPoints; ++p2) {
+                      const casacore::DComplex modelProduct = modelProductMatrix[p1][p2];
+                      if (modelProduct == czero) {
+                          continue;
+                      }
+
                       const ComplexDiff &cd2 = cdm(p,p2);
                       const casacore::DComplex val2 = cd2.value();
-                      const casacore::DComplex modelProduct = modelProductMatrix[p1][p2];
                       const casacore::DComplex val2_modelProduct = val2 * modelProduct;
 
                       dataVector[0] -= real(conj(rowParDerivRe1) * val2_modelProduct);
@@ -497,10 +504,19 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                       }
 
                       for (casacore::uInt p2 = 0; p2<nDataPoints; ++p2) {
+                           const casacore::DComplex modelProduct = modelProductMatrix[p1][p2];
+                           if (modelProduct == czero) {
+                               continue;
+                           }
+
                            const ComplexDiff &cd2 = cdm(p,p2);
                            const casacore::DComplex colParDerivRe2 = cd2.derivRe(*iterCol);
                            const casacore::DComplex colParDerivIm2 = cd2.derivIm(*iterCol);
-                           const casacore::DComplex modelProduct = modelProductMatrix[p1][p2];
+
+                           if (colParDerivRe2 == czero && colParDerivIm2 == czero) {
+                               continue;
+                           }
+
                            const casacore::DComplex colParDerivRe2_modelProduct = colParDerivRe2 * modelProduct;
                            const casacore::DComplex colParDerivIm2_modelProduct = colParDerivIm2 * modelProduct;
 
