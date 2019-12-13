@@ -409,6 +409,8 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
       }
   }
 
+  const std::complex<double> czero(0, 0);
+
   // iterate over all parameters (rows of the normal matrix)
   for (ComplexDiffMatrix::parameter_iterator iterRow = cdm.paramBegin(); 
        iterRow != cdm.paramEnd(); ++iterRow) {
@@ -431,6 +433,11 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                  const ComplexDiff &cd1 = cdm(p,p1);
                  const casacore::DComplex rowParDerivRe1 = cd1.derivRe(*iterRow);
                  const casacore::DComplex rowParDerivIm1 = cd1.derivIm(*iterRow);
+
+                 if (rowParDerivRe1 == czero && rowParDerivIm1 == czero) {
+                     continue;
+                 }
+
                  const casacore::DComplex measProduct = pxp.getModelMeasProduct(p1,p);
                  dataVector[0] += real(conj(rowParDerivRe1) * measProduct);
                  dataVector[1] += real(conj(rowParDerivIm1) * measProduct);
@@ -484,6 +491,10 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                       const ComplexDiff &cd1 = cdm(p,p1);
                       const casacore::DComplex rowParDerivRe1 = cd1.derivRe(*iterRow);
                       const casacore::DComplex rowParDerivIm1 = cd1.derivIm(*iterRow);
+
+                      if (rowParDerivRe1 == czero && rowParDerivIm1 == czero) {
+                          continue;
+                      }
 
                       for (casacore::uInt p2 = 0; p2<nDataPoints; ++p2) {
                            const ComplexDiff &cd2 = cdm(p,p2);
