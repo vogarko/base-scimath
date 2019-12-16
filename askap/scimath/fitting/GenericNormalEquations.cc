@@ -459,13 +459,11 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
   ASKAPDEBUGASSERT(cdm.nRow() == cdm.nColumn());
   const casacore::uInt nDataPoints = pxp.nPol();
 
-  std::vector<std::vector<casacore::DComplex> > modelProductMatrix;
-  modelProductMatrix.resize(nDataPoints, std::vector<casacore::DComplex>(nDataPoints));
-
   // Pre-calculate the array frequently used in the embedded loops.
+  dcomplex_vector modelProductMatrix(nDataPoints * nDataPoints);
   for (casacore::uInt p1 = 0; p1 < nDataPoints; ++p1) {
       for (casacore::uInt p2 = 0; p2 < nDataPoints; ++p2) {
-          modelProductMatrix[p1][p2] = pxp.getModelProduct(p1, p2);
+          modelProductMatrix[p2 + nDataPoints * p1] = pxp.getModelProduct(p1, p2);
       }
   }
 
@@ -511,7 +509,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                  }
                                             
                  for (casacore::uInt p2 = 0; p2<nDataPoints; ++p2) {
-                      const casacore::DComplex modelProduct = modelProductMatrix[p1][p2];
+                      const casacore::DComplex modelProduct = modelProductMatrix[p2 + nDataPoints * p1];
                       if (modelProduct == czero) {
                           continue;
                       }
@@ -570,7 +568,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                       }
 
                       for (casacore::uInt p2 = 0; p2<nDataPoints; ++p2) {
-                           const casacore::DComplex modelProduct = modelProductMatrix[p1][p2];
+                           const casacore::DComplex modelProduct = modelProductMatrix[p2 + nDataPoints * p1];
                            if (modelProduct == czero) {
                                continue;
                            }
