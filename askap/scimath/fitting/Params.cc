@@ -318,13 +318,15 @@ namespace askap
 
 		const casacore::Array<double>& Params::value(const std::string& name) const
 		{
-			ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
-			return itsArrays.find(name)->second;
+			auto result = itsArrays.find(name);
+			ASKAPCHECK(result != itsArrays.end(), "Parameter " + name + " does not already exist");
+			return result->second;
 		}
 
 		casacore::Array<double>& Params::value(const std::string& name)
 		{
-			ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
+			auto result = itsArrays.find(name);
+			ASKAPCHECK(result != itsArrays.end(), "Parameter " + name + " does not already exist");
 			notifyAboutChange(name);
 			return itsArrays.find(name)->second;
 		}
@@ -348,7 +350,6 @@ namespace askap
         /// @return value of the parameter
         casacore::Complex Params::complexValue(const std::string &name) const
 		{
-		    ASKAPCHECK(has(name), "Parameter " + name + " does not already exist");
 			const casacore::Array<double> &arrVal = value(name);
 			ASKAPCHECK(arrVal.nelements() != 0 && arrVal.nelements()<3 &&
 			            arrVal.ndim() ==1, "Parameter " + name + 
