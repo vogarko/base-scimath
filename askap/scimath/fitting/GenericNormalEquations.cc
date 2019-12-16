@@ -376,6 +376,9 @@ casacore::uInt GenericNormalEquations::parameterDimension(const MapOfMatrices &n
   return dim;
 }  
 
+/// A simple definition for easier readability
+typedef std::vector<casacore::DComplex> dcomplex_vector;
+
 /// @brief add special type of design equations formed as a matrix product
 /// @details This method adds design equations formed by a product of
 /// a certain CompleDiffMatrix and a vector. It is equivalent to adding a design
