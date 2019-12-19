@@ -51,6 +51,7 @@
 // std includes
 #include <map>
 #include <string>
+#include <unordered_map>
 
 namespace askap {
 
@@ -161,12 +162,12 @@ struct GenericNormalEquations : public INormalEquations {
 
   /// @brief Returns iterator to the beginning of normal matrix row, defined by input parameter.
   /// @param[in] par the name of the parameter describing the matrix row
-  std::map<string, casa::Matrix<double> >::const_iterator getNormalMatrixRowBegin(const std::string &par) const;
+  std::unordered_map<string, casa::Matrix<double> >::const_iterator getNormalMatrixRowBegin(const std::string &par) const;
 
   /// @brief Returns iterator to the end of normal matrix row, defined by input parameter.
   /// @details It is used together with getNormalMatrixRowBegin() to iterate through the (sparse) matrix elements.
   /// @param[in] par the name of the parameter describing the matrix row
-  std::map<string, casa::Matrix<double> >::const_iterator getNormalMatrixRowEnd(const std::string &par) const;
+  std::unordered_map<string, casa::Matrix<double> >::const_iterator getNormalMatrixRowEnd(const std::string &par) const;
 
   /// @brief Returns the number of (scalar) elements in the normal matrix.
   /// @details This should be close to the number of non zero elements,
@@ -221,9 +222,9 @@ struct GenericNormalEquations : public INormalEquations {
 
 protected:
   /// @brief map of matrices (data element of each row map)
-  typedef std::map<std::string, casacore::Matrix<double> > MapOfMatrices;
+  typedef std::unordered_map<std::string, casacore::Matrix<double> > MapOfMatrices;
   /// @brief map of vectors (data vectors for all parameters)
-  typedef std::map<std::string, casacore::Vector<double> > MapOfVectors;
+  typedef std::unordered_map<std::string, casacore::Vector<double> > MapOfVectors;
 
   /// @brief Add one parameter from another normal equations class
   /// @details This helper method is used in merging of two normal equations.

@@ -783,11 +783,9 @@ void GenericNormalEquations::add(const string& name,
 const casacore::Matrix<double>& GenericNormalEquations::normalMatrix(const std::string &par1, 
                           const std::string &par2) const
 {
-  std::map<std::string,std::map<std::string, casacore::Matrix<double> > >::const_iterator cIt1 = 
-                                   itsNormalMatrix.find(par1);
+  auto cIt1 = itsNormalMatrix.find(par1);
   ASKAPCHECK(cIt1 != itsNormalMatrix.end(), "Missing first parameter "<<par1<<" is requested from the normal matrix");
-  std::map<std::string, casacore::Matrix<double> >::const_iterator cIt2 = 
-                                   cIt1->second.find(par2);
+  auto cIt2 = cIt1->second.find(par2);
   //ASKAPCHECK(cIt2 != cIt1->second.end(), "Missing second parameter "<<par2<<" is requested from the normal matrix");
   if (cIt2 == cIt1->second.end()) {
   // Added this to allow for sparse matrix.
@@ -796,17 +794,17 @@ const casacore::Matrix<double>& GenericNormalEquations::normalMatrix(const std::
   return cIt2->second;
 }
 
-std::map<std::string, casacore::Matrix<double> >::const_iterator GenericNormalEquations::getNormalMatrixRowBegin(const std::string &par) const
+std::unordered_map<std::string, casacore::Matrix<double> >::const_iterator GenericNormalEquations::getNormalMatrixRowBegin(const std::string &par) const
 {
-    std::map<std::string, std::map<std::string, casacore::Matrix<double> > >::const_iterator cIt = itsNormalMatrix.find(par);
+    auto cIt = itsNormalMatrix.find(par);
     ASKAPCHECK(cIt != itsNormalMatrix.end(), "Missing parameter " << par << " is requested from the normal matrix");
 
     return cIt->second.begin();
 }
 
-std::map<std::string, casacore::Matrix<double> >::const_iterator GenericNormalEquations::getNormalMatrixRowEnd(const std::string &par) const
+std::unordered_map<std::string, casacore::Matrix<double> >::const_iterator GenericNormalEquations::getNormalMatrixRowEnd(const std::string &par) const
 {
-    std::map<std::string, std::map<std::string, casacore::Matrix<double> > >::const_iterator cIt = itsNormalMatrix.find(par);
+    auto cIt = itsNormalMatrix.find(par);
     ASKAPCHECK(cIt != itsNormalMatrix.end(), "Missing parameter " << par << " is requested from the normal matrix");
 
     return cIt->second.end();
@@ -822,8 +820,7 @@ std::map<std::string, casacore::Matrix<double> >::const_iterator GenericNormalEq
 /// @param[in] par the name of the parameter of interest
 const casacore::Vector<double>& GenericNormalEquations::dataVector(const std::string &par) const
 {
-  std::map<std::string, casacore::Vector<double> >::const_iterator cIt = 
-                                           itsDataVector.find(par);
+  auto cIt = itsDataVector.find(par);
   ASKAPCHECK(cIt != itsDataVector.end(),"Parameter "<<par<<" is not found in the normal equations");
   return cIt->second;                                  
 }                          
@@ -832,10 +829,13 @@ const casacore::Vector<double>& GenericNormalEquations::dataVector(const std::st
 /// @param[in] os the output stream
 void GenericNormalEquations::writeToBlob(LOFAR::BlobOStream& os) const
 { 
+  std::map<std::string, casacore::Vector<double> > dataVectorTemp;
+  dataVectorTemp.insert(itsDataVector.begin(), itsDataVector.end());
+
   // increment version number on the next line and in the next method
   // if any new data members are added  
   os.putStart("GenericNormalEquations",2);
-  os<<itsNormalMatrix<<itsDataVector<<itsMetadata;
+  os << itsNormalMatrix << dataVectorTemp << itsMetadata;
   os.putEnd();
 }
 
@@ -848,8 +848,13 @@ void GenericNormalEquations::readFromBlob(LOFAR::BlobIStream& is)
   ASKAPCHECK(version == 2, 
               "Attempting to read from a blob stream an object of the wrong "
               "version: expect version 2, found version "<<version);
-  is>>itsNormalMatrix>>itsDataVector>>itsMetadata;
+
+  std::map<std::string, casacore::Vector<double> > dataVectorTemp;
+
+  is >> itsNormalMatrix >> dataVectorTemp >> itsMetadata;
   is.getEnd();
+
+  itsDataVector.insert(dataVectorTemp.begin(), dataVectorTemp.end());
 }
 
 /// @brief obtain all parameters dealt with by these normal equations
@@ -864,7 +869,7 @@ std::vector<std::string> GenericNormalEquations::unknowns() const
 {
   std::vector<std::string> result;
   result.reserve(itsNormalMatrix.size());
-  for (std::map<std::string, MapOfMatrices>::const_iterator ci=itsNormalMatrix.begin();
+  for (auto ci=itsNormalMatrix.begin();
        ci!=itsNormalMatrix.end(); ++ci) {
        result.push_back(ci->first);
 // extra consistency checks in the debug mode

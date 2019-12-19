@@ -128,15 +128,15 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
     for (std::vector<std::pair<std::string, int> >::const_iterator indit1 = indices.begin();
             indit1 != indices.end(); ++indit1) {
 
-        const std::map<std::string, casa::Matrix<double> >::const_iterator colItBeg = gne.getNormalMatrixRowBegin(indit1->first);
-        const std::map<std::string, casa::Matrix<double> >::const_iterator colItEnd = gne.getNormalMatrixRowEnd(indit1->first);
+        const auto colItBeg = gne.getNormalMatrixRowBegin(indit1->first);
+        const auto colItEnd = gne.getNormalMatrixRowEnd(indit1->first);
 
         if (colItBeg != colItEnd) {
             const size_t nrow = colItBeg->second.nrow();
             for (size_t row = 0; row < nrow; ++row) {
                 matrix.NewRow();
                 // Loop over column elements.
-                for (std::map<std::string, casa::Matrix<double> >::const_iterator colIt = colItBeg;
+                for (auto colIt = colItBeg;
                         colIt != colItEnd; ++colIt) {
 
                     const std::map<std::string, size_t>::const_iterator indicesMapIt = indicesMap.find(colIt->first);
