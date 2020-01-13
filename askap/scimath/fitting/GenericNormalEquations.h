@@ -267,6 +267,12 @@ protected:
   void addParameterSparsely(const std::string &par, const MapOfMatrices &inNM,
                             const casa::Vector<double>& inDV);
 
+  /// @brief Add/update one parameter to/in sparse matrix, using given matrix.
+  /// @details This version does not update the data vector, but the matrix only.
+  /// @param[in] par name of the parameter to work with
+  /// @param[in] inNM input normal matrix
+  void addParameterSparsely(const std::string &par, const MapOfMatrices &inNM);
+
   /// @brief extract dimension of a parameter from the given row
   /// @details This helper method analyses the matrices stored in the supplied
   /// map (effectively a row of a sparse matrix) and extracts the dimension of
