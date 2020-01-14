@@ -395,13 +395,12 @@ casacore::uInt GenericNormalEquations::parameterDimension(const MapOfMatrices &n
 /// a square matrix of npol x npol size.
 /// @param[in] pxp cross-products (model by measured and model by model, where 
 /// measured is the vector cdm is multiplied to).
-void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp)
+void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset)
 {
     if (pxp.nPol() == 0) {
         return; // nothing to process
     }
     ASKAPDEBUGASSERT(pxp.nPol() == cdm.nRow());
-    ASKAPDEBUGASSERT(cdm.nRow() == cdm.nColumn());
     const casacore::uInt nDataPoints = pxp.nPol();
 
     // Pre-calculate the array frequently used in the embedded loops.
@@ -428,7 +427,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
 
             const casacore::DComplex measProduct = pxp.getModelMeasProduct(p1, p);
 
-            const ComplexDiff& cd1 = cdm(p, p1);
+            const ComplexDiff& cd1 = cdm(p, p1 + columnOffset);
 
             auto itRe1 = cd1.derivReBegin();
             auto itIm1 = cd1.derivImBegin();
@@ -466,7 +465,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                         continue;
                     }
 
-                    const ComplexDiff &cd2 = cdm(p, p2);
+                    const ComplexDiff &cd2 = cdm(p, p2 + columnOffset);
                     const casacore::DComplex val2 = cd2.value();
                     const casacore::DComplex val2_modelProduct = val2 * modelProduct;
 
@@ -498,7 +497,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
         // matrix. We can optimise this for speed later, if proved to be a problem.
         for (casacore::uInt p1 = 0; p1 < nDataPoints; ++p1) {
 
-            const ComplexDiff& cd1 = cdm(p, p1);
+            const ComplexDiff& cd1 = cdm(p, p1 + columnOffset);
 
             auto itRe1 = cd1.derivReBegin();
             auto itIm1 = cd1.derivImBegin();
@@ -530,7 +529,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                         continue;
                     }
 
-                    const ComplexDiff& cd2 = cdm(p, p2);
+                    const ComplexDiff& cd2 = cdm(p, p2 + columnOffset);
 
                     auto itRe2 = cd2.derivReBegin();
                     auto itIm2 = cd2.derivImBegin();

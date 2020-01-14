@@ -136,7 +136,7 @@ struct GenericNormalEquations : public INormalEquations {
   /// a square matrix of npol x npol size.
   /// @param[in] pxp cross-products (model by measured and model by model, where 
   /// measured is the vector cdm is multiplied to).
-  void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp);
+  void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset = 0);
     
   /// @brief add normal matrix for a given parameter
   /// @details This means that the cross terms between parameters 
