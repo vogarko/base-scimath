@@ -762,7 +762,7 @@ const casacore::Matrix<double>& GenericNormalEquations::normalMatrix(const std::
   return cIt2->second;
 }
 
-std::unordered_map<std::string, casacore::Matrix<double> >::const_iterator GenericNormalEquations::getNormalMatrixRowBegin(const std::string &par) const
+std::map<std::string, casacore::Matrix<double> >::const_iterator GenericNormalEquations::getNormalMatrixRowBegin(const std::string &par) const
 {
     auto cIt = itsNormalMatrix.find(par);
     ASKAPCHECK(cIt != itsNormalMatrix.end(), "Missing parameter " << par << " is requested from the normal matrix");
@@ -770,7 +770,7 @@ std::unordered_map<std::string, casacore::Matrix<double> >::const_iterator Gener
     return cIt->second.begin();
 }
 
-std::unordered_map<std::string, casacore::Matrix<double> >::const_iterator GenericNormalEquations::getNormalMatrixRowEnd(const std::string &par) const
+std::map<std::string, casacore::Matrix<double> >::const_iterator GenericNormalEquations::getNormalMatrixRowEnd(const std::string &par) const
 {
     auto cIt = itsNormalMatrix.find(par);
     ASKAPCHECK(cIt != itsNormalMatrix.end(), "Missing parameter " << par << " is requested from the normal matrix");
