@@ -88,9 +88,12 @@ GenericNormalEquations::GenericNormalEquations(const DesignMatrix& dm)
 /// of casa containers)
 /// @param[in] src other class
 GenericNormalEquations::GenericNormalEquations(const GenericNormalEquations &src) :
-        INormalEquations(src), itsMetadata(src.itsMetadata)
+        INormalEquations(src),
+        itsParameterNameToIndex(src.itsParameterNameToIndex),
+        itsParameterIndexToName(src.itsParameterIndexToName),
+        itsMetadata(src.itsMetadata)
 {
-  deepCopyOfSTDMap(src.itsDataVector, itsDataVector);  
+  deepCopyOfSTDMap(src.itsDataVector, itsDataVector);
   for (std::map<std::string, MapOfMatrices>::const_iterator ci = src.itsNormalMatrix.begin();
        ci!=src.itsNormalMatrix.end(); ++ci) {
        deepCopyOfSTDMap(ci->second, itsNormalMatrix[ci->first]);
@@ -106,18 +109,19 @@ GenericNormalEquations& GenericNormalEquations::operator=(const GenericNormalEqu
 {
   if (&src != this) {
       itsDataVector.clear();
-      deepCopyOfSTDMap(src.itsDataVector, itsDataVector);  
+      deepCopyOfSTDMap(src.itsDataVector, itsDataVector);
       itsNormalMatrix.clear();
       for (std::map<std::string, MapOfMatrices>::const_iterator ci = src.itsNormalMatrix.begin();
-           ci!=src.itsNormalMatrix.end(); ++ci) {           
+           ci!=src.itsNormalMatrix.end(); ++ci) {
            deepCopyOfSTDMap(ci->second, itsNormalMatrix[ci->first]);
-      } 
-      itsMetadata = src.itsMetadata;     
+      }
+      itsParameterNameToIndex = src.itsParameterNameToIndex;
+      itsParameterIndexToName = src.itsParameterIndexToName;
+      itsMetadata = src.itsMetadata;
   }
   return *this;
 }
 
-      
 /// @brief reset the normal equation object
 /// @details After a call to this method the object has the same pristine
 /// state as immediately after creation with the default constructor
@@ -125,9 +129,11 @@ void GenericNormalEquations::reset()
 {
   itsDataVector.clear();
   itsNormalMatrix.clear();
+  itsParameterNameToIndex.clear();
+  itsParameterIndexToName.clear();
   itsMetadata.reset();
 }
-          
+
 /// @brief Clone this into a shared pointer
 /// @details "Virtual constructor" - creates a copy of this object. Derived
 /// classes must override this method to instantiate the object of a proper 
@@ -165,6 +171,9 @@ void GenericNormalEquations::merge(const INormalEquations& src)
       }
       itsMetadata.merge(gne.metadata());
 
+      // TODO: We also need to merge itsParameterNameToIndex & itsParameterIndexToName.
+      //       Let's keep it in mind, and add this once we really need it.
+
       ASKAPLOG_INFO_STR(logger, "Merged normal equations in "<< timer.real() << " seconds");
    }
    catch (const AskapError &) {
@@ -191,7 +200,6 @@ void GenericNormalEquations::merge(const INormalEquations& src)
 void GenericNormalEquations::mergeParameter(const std::string &par, 
                               const GenericNormalEquations& src)
 {
-   
    // srcItRow is an iterator over rows in source matrix;
    // by analogy, destItCol is an iterator over columns in the destination matrix
    const std::map<std::string, MapOfMatrices>::const_iterator srcItRow = 
@@ -280,7 +288,7 @@ void GenericNormalEquations::addParameter(const std::string &par,
   addDataVector(par, inDV);
 }
 
-void GenericNormalEquations::addParameterSparsely(const std::string &par, const MapOfMatrices &inNM)
+void GenericNormalEquations::addParameterSparselyToMatrix(const std::string &par, const MapOfMatrices &inNM)
 {
     // First, process normal matrix.
     // nmRowIt is an iterator over rows (the outer map) of the normal matrix stored in this class
@@ -320,7 +328,7 @@ void GenericNormalEquations::addParameterSparsely(const std::string &par, const 
 void GenericNormalEquations::addParameterSparsely(const std::string &par,
            const MapOfMatrices &inNM, const casacore::Vector<double>& inDV)
 {
-    addParameterSparsely(par, inNM);
+    addParameterSparselyToMatrix(par, inNM);
 
     // Processing the data vector.
     addDataVector(par, inDV);
@@ -564,8 +572,8 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                     }
                 }
 
-                // Now add this partial row to the normal equations.
-                addParameterSparsely(rowName, normalMatrix);
+                // Now add this partial row to the normal matrix.
+                addParameterSparselyToMatrix(rowName, normalMatrix);
             }
         }
     }

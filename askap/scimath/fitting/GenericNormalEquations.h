@@ -267,12 +267,6 @@ protected:
   void addParameterSparsely(const std::string &par, const MapOfMatrices &inNM,
                             const casa::Vector<double>& inDV);
 
-  /// @brief Add/update one parameter to/in sparse matrix, using given matrix.
-  /// @details This version does not update the data vector, but the matrix only.
-  /// @param[in] par name of the parameter to work with
-  /// @param[in] inNM input normal matrix
-  void addParameterSparsely(const std::string &par, const MapOfMatrices &inNM);
-
   /// @brief extract dimension of a parameter from the given row
   /// @details This helper method analyses the matrices stored in the supplied
   /// map (effectively a row of a sparse matrix) and extracts the dimension of
@@ -307,7 +301,7 @@ protected:
   /// @param[in] dv an element of the data vector
   /// @return element of the right-hand side of the normal equations
   static casa::Vector<double> dvElement(const casa::Matrix<double> &dm,
-              const casa::Vector<double> &dv); 
+              const casa::Vector<double> &dv);
 
   /// @brief Extract derivatives from design matrix
   /// @details This method extracts an appropriate derivative matrix
@@ -322,6 +316,12 @@ protected:
              const std::string &par, casacore::uInt dataPoint);
   
 private:
+  /// @brief Add/update one parameter to/in sparse matrix, using given matrix.
+  /// @details Note that this function does not update the data vector, but the matrix only.
+  /// @param[in] par name of the parameter to work with
+  /// @param[in] inNM input normal matrix
+  void addParameterSparselyToMatrix(const std::string &par, const MapOfMatrices &inNM);
+
   // Adding the data vector for a parameter.
   void addDataVector(const std::string &par, const casa::Vector<double>& inDV);
 
@@ -340,6 +340,11 @@ private:
   /// @details This parameter may eventually go a level up in the class
   /// hierarchy
   MapOfVectors itsDataVector;
+
+  /// @brief The containers for storing the forward and inverse mappings between parameter names and indexes.
+  /// @details These indexes are needed for storing the normal matrix with integer-based indexing.
+  std::map<std::string, size_t> itsParameterNameToIndex;
+  std::vector<std::string> itsParameterIndexToName;
   
   /// @brief metadata
   /// @details It is handy to have key=value type metadata transported along with the
@@ -349,7 +354,7 @@ private:
   /// calibration is the main driver. Therefore, this data field and handling methods are
   /// implemented only for GenericNormalEquations. We could move this up in the hierarchy
   /// and even expose access methods via the main interface.
-  Params itsMetadata; 
+  Params itsMetadata;
 };
 
 } // namespace scimath
