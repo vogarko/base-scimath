@@ -91,7 +91,7 @@ GenericNormalEquations::GenericNormalEquations(const DesignMatrix& dm)
 GenericNormalEquations::GenericNormalEquations(const GenericNormalEquations &src) :
         INormalEquations(src),
         itsParameterNameToIndex(src.itsParameterNameToIndex),
-        itsParameterIndexToName(src.itsParameterIndexToName),
+        itsParameterIndexToBaseName(src.itsParameterIndexToBaseName),
         itsMetadata(src.itsMetadata)
 {
   deepCopyOfSTDMap(src.itsDataVector, itsDataVector);
@@ -117,7 +117,7 @@ GenericNormalEquations& GenericNormalEquations::operator=(const GenericNormalEqu
            deepCopyOfSTDMap(ci->second, itsNormalMatrix[ci->first]);
       }
       itsParameterNameToIndex = src.itsParameterNameToIndex;
-      itsParameterIndexToName = src.itsParameterIndexToName;
+      itsParameterIndexToBaseName = src.itsParameterIndexToBaseName;
       itsMetadata = src.itsMetadata;
   }
   return *this;
@@ -131,7 +131,7 @@ void GenericNormalEquations::reset()
   itsDataVector.clear();
   itsNormalMatrix.clear();
   itsParameterNameToIndex.clear();
-  itsParameterIndexToName.clear();
+  itsParameterIndexToBaseName.clear();
   itsMetadata.reset();
 }
 
@@ -561,6 +561,12 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
 
                 // Now add this partial row to the normal matrix.
                 addParameterSparselyToMatrix(rowName, normalMatrix);
+
+                //-----------------------------------------------------
+                // TODO: Added temporarily for tests.
+                size_t parIndex = getParameterIndexByName(rowName);
+                std::string parBaseNameMapped = getParameterBaseNameByIndex(parIndex);
+                ASKAPCHECK(parBaseNameMapped == CalParamNameHelper::extractBaseParamName(rowName), "Wrong parameter mapping for: " << rowName);
             }
         }
     }
@@ -849,19 +855,16 @@ bool GenericNormalEquations::addParameterNameToIndexMap(const std::string &parNa
         // Parameter already exists.
         return false;
     } else {
-        size_t parIndex = itsParameterIndexToName.size();
+        size_t parIndex = itsParameterIndexToBaseName.size();
+
         itsParameterNameToIndex[parName] = parIndex;
 
-        if (CalParamNameHelper::bpParam(parName)) {
-            // Remove channel number from the parameter name.
-            const std::pair<casa::uInt, std::string> chanInfo = CalParamNameHelper::extractChannelInfo(parName);
-            std::string baseParName = chanInfo.second;
-
+        std::string baseParName = CalParamNameHelper::extractBaseParamName(parName);
+        if (baseParName != parName) {
             itsParameterNameToIndex[baseParName] = parIndex;
-            itsParameterIndexToName.push_back(baseParName);
-        } else {
-            itsParameterIndexToName.push_back(parName);
         }
+        itsParameterIndexToBaseName.push_back(baseParName);
+
         return true;
     }
 }
@@ -877,19 +880,13 @@ ssize_t GenericNormalEquations::getParameterIndexByName(const std::string &parNa
     }
 }
 
-std::string GenericNormalEquations::getParameterNameByIndex(size_t parIndex) const
+std::string GenericNormalEquations::getParameterBaseNameByIndex(size_t parIndex) const
 {
-    if (parIndex < itsParameterIndexToName.size()) {
-        return itsParameterIndexToName[parIndex];
+    if (parIndex < itsParameterIndexToBaseName.size()) {
+        return itsParameterIndexToBaseName[parIndex];
     } else {
-        ASKAPCHECK(false, "The parameter's index is out of range: " << parIndex);
+        ASKAPCHECK(false, "The parameter index is out of range: " << parIndex);
     }
-}
-
-size_t GenericNormalEquations::getParameterMapSize() const
-{
-    ASKAPDEBUGASSERT(itsParameterIndexToName.size() == itsParameterNameToIndex.size());
-    return itsParameterIndexToName.size();
 }
 
 }}

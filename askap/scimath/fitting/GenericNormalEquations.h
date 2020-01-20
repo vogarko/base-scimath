@@ -232,14 +232,10 @@ struct GenericNormalEquations : public INormalEquations {
   /// @return The parameter index, if parameter name exists, and -1 otherwise.
   ssize_t getParameterIndexByName(const std::string &parName) const;
 
-  /// @brief Returns the unique parameter name by its integer index.
+  /// @brief Returns the parameter base name by its integer index.
   /// @param[in] parIndex Index of the parameter to return the name for.
-  /// @return The parameter name.
-  std::string getParameterNameByIndex(size_t parIndex) const;
-
-  /// @brief Returns the size of parameters map.
-  /// @return The number of parameters stored in the map.
-  size_t getParameterMapSize() const;
+  /// @return The parameter base name (without channel info).
+  std::string getParameterBaseNameByIndex(size_t parIndex) const;
 
 protected:
   /// @brief map of matrices (data element of each row map)
@@ -365,7 +361,7 @@ private:
   /// @brief The containers for storing the forward and inverse mappings between parameter names and indexes.
   /// @details These indexes are needed for storing the normal matrix with integer-based indexing.
   std::map<std::string, size_t> itsParameterNameToIndex;
-  std::vector<std::string> itsParameterIndexToName;
+  std::vector<std::string> itsParameterIndexToBaseName;
   
   /// @brief metadata
   /// @details It is handy to have key=value type metadata transported along with the
