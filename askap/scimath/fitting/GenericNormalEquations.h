@@ -136,6 +136,7 @@ struct GenericNormalEquations : public INormalEquations {
   /// a square matrix of npol x npol size.
   /// @param[in] pxp cross-products (model by measured and model by model, where 
   /// measured is the vector cdm is multiplied to).
+  /// @param[in] columnOffset column offset
   void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset = 0);
     
   /// @brief add normal matrix for a given parameter
@@ -219,6 +220,26 @@ struct GenericNormalEquations : public INormalEquations {
   /// @details This is a const version of the metadata() method
   /// @return const reference to metadata
   inline const Params& metadata() const { return itsMetadata; }
+
+  /// @brief Adds the parameter name to the mapping between parameter names and ineteger indexes.
+  /// @param[in] parName Name of the parameter to add.
+  /// @param[in] baseParName Name of the parameter without channel info.
+  /// @return True if the name is added, and false if it already exists.
+  bool addParameterNameToIndexMap(const std::string &parName);
+
+  /// @brief Returns the unique parameter's integer index by its name.
+  /// @param[in] parName Name of the parameter to return the index for.
+  /// @return The parameter index, if parameter name exists, and -1 otherwise.
+  ssize_t getParameterIndexByName(const std::string &parName) const;
+
+  /// @brief Returns the unique parameter name by its integer index.
+  /// @param[in] parIndex Index of the parameter to return the name for.
+  /// @return The parameter name.
+  std::string getParameterNameByIndex(size_t parIndex) const;
+
+  /// @brief Returns the size of parameters map.
+  /// @return The number of parameters stored in the map.
+  size_t getParameterMapSize() const;
 
 protected:
   /// @brief map of matrices (data element of each row map)

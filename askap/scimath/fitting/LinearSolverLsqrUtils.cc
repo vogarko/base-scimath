@@ -29,6 +29,7 @@
 #include <askap/scimath/fitting/LinearSolverLsqrUtils.h>
 #include <askap/scimath/fitting/LinearSolverUtils.h>
 #include <askap/scimath/fitting/GenericNormalEquations.h>
+#include <askap/scimath/fitting/CalParamNameHelper.h>
 #include <askap/scimath/lsqr_solver/ParallelTools.h>
 
 #include <askap/AskapError.h>
@@ -43,24 +44,10 @@ ASKAP_LOGGER(logger, ".lsqrutils");
 
 namespace askap { namespace scimath { namespace lsqrutils {
 
-// NOTE: Copied from "calibaccess/CalParamNameHelper.h", as currently accessors depends of scimath.
-/// @brief extract coded channel and parameter name
-/// @details This is a reverse operation to codeInChannel. Note, no checks are done that the name passed
-/// has coded channel present.
-/// @param[in] name full name of the parameter
-/// @return a pair with extracted channel and the base parameter name
-static std::pair<casa::uInt, std::string> extractChannelInfo(const std::string &name)
-{
-    size_t pos = name.rfind(".");
-    ASKAPCHECK(pos != std::string::npos, "Expect dot in the parameter name passed to extractChannelInfo, name=" << name);
-    ASKAPCHECK(pos + 1 != name.size(), "Parameter name=" << name << " ends with a dot");
-    return std::pair<casa::uInt, std::string>(utility::fromString<casa::uInt>(name.substr(pos + 1)), name.substr(0, pos));
-}
-
 bool compareGainNames(const std::string& gainA, const std::string& gainB) {
     try {
-        std::pair<casa::uInt, std::string> paramInfoA = extractChannelInfo(gainA);
-        std::pair<casa::uInt, std::string> paramInfoB = extractChannelInfo(gainB);
+        std::pair<casa::uInt, std::string> paramInfoA = CalParamNameHelper::extractChannelInfo(gainA);
+        std::pair<casa::uInt, std::string> paramInfoB = CalParamNameHelper::extractChannelInfo(gainB);
 
         // Parameter name excluding channel number.
         std::string parNameA = paramInfoA.second;
@@ -227,7 +214,7 @@ bool testMPIRankOrderWithChannels(int workerRank, size_t nChannelsLocal,
          indit != indices.end(); ++indit) {
         // Extracting channel number from gain name.
         std::string gainName = indit->first;
-        std::pair<casa::uInt, std::string> paramInfo = extractChannelInfo(gainName);
+        std::pair<casa::uInt, std::string> paramInfo = CalParamNameHelper::extractChannelInfo(gainName);
         casa::uInt chan = paramInfo.first;
 
         // Testing that the channel number is aligned with MPI partitioning:

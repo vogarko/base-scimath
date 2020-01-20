@@ -38,6 +38,7 @@
 // own includes
 #include <askap/scimath/fitting/GenericNormalEquations.h>
 #include <askap/scimath/fitting/DesignMatrix.h>
+#include <askap/scimath/fitting/CalParamNameHelper.h>
 #include <askap/askap/AskapError.h>
 #include <askap/scimath/utils/DeepCopyUtils.h>
 
@@ -389,20 +390,6 @@ casacore::uInt GenericNormalEquations::parameterDimension(const MapOfMatrices &n
   return dim;
 }
 
-/// @brief add special type of design equations formed as a matrix product
-/// @details This method adds design equations formed by a product of
-/// a certain CompleDiffMatrix and a vector. It is equivalent to adding a design
-/// matrix formed from the result of this product. However, bypassing design 
-/// matrix allows to delay calculation of contributions to the normal matrix and
-/// use buffer cross terms (between model and measured visibilities, which are
-/// expected to be a part of the vector cdm is multiplied to) separately. This
-/// is used for pre-averaging (or pre-summing to be exact) calibration. The 
-/// cross-products of visibilities are tracked using the PolXProduct object
-/// @param[in] cdm matrix with derivatives and values (to be multiplied to a 
-/// vector represented by cross-products given in the second parameter). Should be
-/// a square matrix of npol x npol size.
-/// @param[in] pxp cross-products (model by measured and model by model, where 
-/// measured is the vector cdm is multiplied to).
 void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset)
 {
     if (pxp.nPol() == 0) {
@@ -855,5 +842,55 @@ std::vector<std::string> GenericNormalEquations::unknowns() const
   }
   return result;
 } // unknowns method
+
+bool GenericNormalEquations::addParameterNameToIndexMap(const std::string &parName)
+{
+    if (itsParameterNameToIndex.find(parName) != itsParameterNameToIndex.end()) {
+        // Parameter already exists.
+        return false;
+    } else {
+        size_t parIndex = itsParameterIndexToName.size();
+        itsParameterNameToIndex[parName] = parIndex;
+
+        if (CalParamNameHelper::bpParam(parName)) {
+            // Remove channel number from the parameter name.
+            const std::pair<casa::uInt, std::string> chanInfo = CalParamNameHelper::extractChannelInfo(parName);
+            std::string baseParName = chanInfo.second;
+
+            itsParameterNameToIndex[baseParName] = parIndex;
+            itsParameterIndexToName.push_back(baseParName);
+        } else {
+            itsParameterIndexToName.push_back(parName);
+        }
+        return true;
+    }
+}
+
+ssize_t GenericNormalEquations::getParameterIndexByName(const std::string &parName) const
+{
+    std::map<std::string, size_t>::const_iterator it = itsParameterNameToIndex.find(parName);
+    if (it != itsParameterNameToIndex.end()) {
+        return it->second;
+    } else {
+        // Parameter does not exist.
+        return -1;
+    }
+}
+
+std::string GenericNormalEquations::getParameterNameByIndex(size_t parIndex) const
+{
+    if (parIndex < itsParameterIndexToName.size()) {
+        return itsParameterIndexToName[parIndex];
+    } else {
+        ASKAPCHECK(false, "The parameter's index is out of range: " << parIndex);
+    }
+}
+
+size_t GenericNormalEquations::getParameterMapSize() const
+{
+    ASKAPDEBUGASSERT(itsParameterIndexToName.size() == itsParameterNameToIndex.size());
+    return itsParameterIndexToName.size();
+}
+
 }}
 
