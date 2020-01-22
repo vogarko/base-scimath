@@ -222,20 +222,30 @@ struct GenericNormalEquations : public INormalEquations {
   inline const Params& metadata() const { return itsMetadata; }
 
   /// @brief Adds the parameter name to the mapping between parameter names and ineteger indexes.
-  /// @param[in] parName Name of the parameter to add.
-  /// @param[in] baseParName Name of the parameter without channel info.
-  /// @return True if the name is added, and false if it already exists.
-  bool addParameterNameToIndexMap(const std::string &parName);
+  /// @param[in] name Name of the parameter to add.
+  void addParameterNameToIndexMap(const std::string &name);
 
   /// @brief Returns the unique parameter's integer index by its name.
-  /// @param[in] parName Name of the parameter to return the index for.
+  /// @param[in] name Name of the parameter to return the index for.
   /// @return The parameter index, if parameter name exists, and -1 otherwise.
-  ssize_t getParameterIndexByName(const std::string &parName) const;
+  /// Throws an exception if the name is not found.
+  size_t getParameterIndexByName(const std::string &name) const;
 
   /// @brief Returns the parameter base name by its integer index.
-  /// @param[in] parIndex Index of the parameter to return the name for.
+  /// @param[in] index Index of the parameter to return the name for.
   /// @return The parameter base name (without channel info).
-  std::string getParameterBaseNameByIndex(size_t parIndex) const;
+  std::string getParameterBaseNameByIndex(size_t index) const;
+
+  /// @brief Returns the number of parameters at one channel.
+  size_t getNumberBaseParameters() const;
+
+  /// @brief Initialize the indexed normal matrix.
+  /// @param[in] nChannelsLocal Number of channels at current worker.
+  /// @param[in] nBaseParameters Number of parameters at one channel.
+  void initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters);
+
+  /// @brief Returns whether the indexed normal matrix is initialized.
+  bool indexedNormalMatrixInitialized() const;
 
 protected:
   /// @brief map of matrices (data element of each row map)
@@ -352,7 +362,41 @@ private:
   /// @details Normal matrices stored as a map or maps of Matrixes - 
   /// it's really just a big matrix.
   std::map<string, MapOfMatrices> itsNormalMatrix;
-  
+
+    /// @brief Normal matrix with linearized 3D integer index (col, row, channel).
+    struct IndexedNormalMatrix
+    {
+        IndexedNormalMatrix()
+        {
+            isInitialized = false;
+        }
+
+        // Allocate memory for matrix elements, and set default value to zero.
+        void initialize(size_t nChannelsLocal_, size_t nBaseParameters_)
+        {
+            assert(!isInitialized);
+
+            nChannelsLocal = nChannelsLocal_;
+            nBaseParameters = nBaseParameters_;
+
+            size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
+            elements.resize(nElements, casacore::Matrix<double>(2, 2, 0.));
+
+            isInitialized = true;
+        }
+
+        // Flag for whether the matrix is initialized.
+        bool isInitialized;
+        // The number of channles at the current worker.
+        size_t nChannelsLocal;
+        // The number of parameters at one channel number.
+        size_t nBaseParameters;
+
+        // The matrix elements.
+        std::vector<casacore::Matrix<casacore::Double>> elements;
+    };
+  IndexedNormalMatrix itsIndexedNormalMatrix;
+
   /// @brief the data vectors
   /// @details This parameter may eventually go a level up in the class
   /// hierarchy

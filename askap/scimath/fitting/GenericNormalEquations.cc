@@ -558,15 +558,8 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                         }
                     }
                 }
-
                 // Now add this partial row to the normal matrix.
                 addParameterSparselyToMatrix(rowName, normalMatrix);
-
-                //-----------------------------------------------------
-                // TODO: Added temporarily for tests.
-                size_t parIndex = getParameterIndexByName(rowName);
-                std::string parBaseNameMapped = getParameterBaseNameByIndex(parIndex);
-                ASKAPCHECK(parBaseNameMapped == CalParamNameHelper::extractBaseParamName(rowName), "Wrong parameter mapping for: " << rowName);
             }
         }
     }
@@ -849,44 +842,59 @@ std::vector<std::string> GenericNormalEquations::unknowns() const
   return result;
 } // unknowns method
 
-bool GenericNormalEquations::addParameterNameToIndexMap(const std::string &parName)
+void GenericNormalEquations::addParameterNameToIndexMap(const std::string &name)
 {
-    if (itsParameterNameToIndex.find(parName) != itsParameterNameToIndex.end()) {
-        // Parameter already exists.
-        return false;
-    } else {
-        size_t parIndex = itsParameterIndexToBaseName.size();
+    if (itsParameterNameToIndex.find(name) == itsParameterNameToIndex.end()) {
+        size_t index;
+        std::string baseName = CalParamNameHelper::extractBaseParamName(name);
+        auto it = itsParameterNameToIndex.find(baseName);
 
-        itsParameterNameToIndex[parName] = parIndex;
+        if (it == itsParameterNameToIndex.end()) {
+        // A new base name.
+            itsParameterIndexToBaseName.push_back(baseName);
+            index = itsParameterIndexToBaseName.size() - 1;
 
-        std::string baseParName = CalParamNameHelper::extractBaseParamName(parName);
-        if (baseParName != parName) {
-            itsParameterNameToIndex[baseParName] = parIndex;
+            itsParameterNameToIndex[baseName] = index;
+        } else {
+            index = it->second;
         }
-        itsParameterIndexToBaseName.push_back(baseParName);
-
-        return true;
+        itsParameterNameToIndex[name] = index;
     }
 }
 
-ssize_t GenericNormalEquations::getParameterIndexByName(const std::string &parName) const
+size_t GenericNormalEquations::getParameterIndexByName(const std::string &name) const
 {
-    std::map<std::string, size_t>::const_iterator it = itsParameterNameToIndex.find(parName);
+    std::map<std::string, size_t>::const_iterator it = itsParameterNameToIndex.find(name);
     if (it != itsParameterNameToIndex.end()) {
         return it->second;
     } else {
         // Parameter does not exist.
-        return -1;
+        throw AskapError("Attempt to get parameter index for the parameter that was not indexed: " + name);
     }
 }
 
-std::string GenericNormalEquations::getParameterBaseNameByIndex(size_t parIndex) const
+std::string GenericNormalEquations::getParameterBaseNameByIndex(size_t index) const
 {
-    if (parIndex < itsParameterIndexToBaseName.size()) {
-        return itsParameterIndexToBaseName[parIndex];
+    if (index < itsParameterIndexToBaseName.size()) {
+        return itsParameterIndexToBaseName[index];
     } else {
-        ASKAPCHECK(false, "The parameter index is out of range: " << parIndex);
+        ASKAPCHECK(false, "The parameter index is out of range: " << index);
     }
+}
+
+size_t GenericNormalEquations::getNumberBaseParameters() const
+{
+    return itsParameterIndexToBaseName.size();
+}
+
+void GenericNormalEquations::initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters)
+{
+    itsIndexedNormalMatrix.initialize(nChannelsLocal, nBaseParameters);
+}
+
+bool GenericNormalEquations::indexedNormalMatrixInitialized() const
+{
+    return itsIndexedNormalMatrix.isInitialized;
 }
 
 }}
