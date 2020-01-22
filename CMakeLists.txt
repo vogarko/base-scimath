@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.1.0)
 
-project(base-scimath VERSION 0.0.1 LANGUAGES C CXX)
+project(askap-scimath VERSION 0.0.1 LANGUAGES C CXX)
 
 
 if (EXISTS ${CMAKE_SOURCE_DIR}/askap-cmake)
@@ -40,72 +40,19 @@ option (BUILD_SHARED_LIBS "" YES)
     endif (ENABLE_RPATH)
 endif(ENABLE_SHARED)
 
-# Yanda packages
-include(install_yanda_depends)
-
-set (EXTERNAL_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
-find_package(LofarCommon)
-if (NOT LofarCommon_FOUND)
-	install_yanda_depends(lofar-common)
-	find_package(LofarCommon REQUIRED)
-endif ()
-
-find_package(LofarBlob)
-if (NOT LofarBlob_FOUND)
-	install_yanda_depends(lofar-blob)
-	find_package(LofarBlob REQUIRED)
-endif ()
-
-
-find_package(Askap)
-if (NOT ASKAP_FOUND)
-	install_yanda_depends(base-askap)
-	find_package(Askap REQUIRED)
-endif ()
-
-find_package(Imagemath)
-if (NOT IMAGEMATH_FOUND)
-	install_yanda_depends(base-imagemath)
-	find_package(Imagemath REQUIRED)
-endif ()
-
-
-find_package(AskapParallel)
-if (NOT ASKAPPARALLEL_FOUND)
-	install_yanda_depends(base-askapparallel)
-	find_package(AskapParallel REQUIRED)
-endif ()
-
-
 # find packages
+find_package(lofar-common REQUIRED)
+find_package(lofar-blob REQUIRED)
+find_package(askap-askap REQUIRED)
+find_package(askap-imagemath REQUIRED)
+find_package(askap-parallel REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system program_options thread chrono )
 find_package(log4cxx REQUIRED)
 find_package(Casacore REQUIRED COMPONENTS  ms images mirlib coordinates fits lattices measures scimath scimath_f tables casa)
 find_package(FFTW REQUIRED)
 find_package(GSL REQUIRED)
 find_package(CPPUnit)
-find_package(MPI REQUIRED)
-
-if (MPI_FOUND)
-    add_definitions(-DHAVE_MPI)
-    include_directories(${MPI_INCLUDE_PATH})
-endif()
-
-
-# include directories
-include_directories (${Boost_INCLUDE_DIRS})
-add_definitions(-DHAVE_BOOST)
-include_directories(${log4cxx_INCLUDE_DIRS})
-add_definitions(-DHAVE_LOG4CXX)
-include_directories(${CASACORE_INCLUDE_DIRS})
-add_definitions(-DHAVE_AIPSPP)
-add_definitions(-Dcasa=casacore)
-include_directories(${FFTW_INCLUDES})
-
-
-if (NOT GSL_VERSION VERSION_LESS 2.0)
-	add_definitions(-DHAVE_GSL2)
-endif()
+find_package(MPI)
 
 if (CASACORE3 OR CXX11)
 	set(CMAKE_CXX_STANDARD 11)
@@ -116,7 +63,7 @@ if (CPPUNIT_FOUND)
 	include_directories(${CPPUNIT_INCLUDE_DIRS})
 endif (CPPUNIT_FOUND)
 
-add_library(askap_scimath
+add_library(scimath
 
 ./askap/scimath/fitting/ParamsTable.cc
 ./askap/scimath/fitting/ComplexDiffMatrix.cc
@@ -239,8 +186,7 @@ install (FILES
 DESTINATION include/askap/scimath/lqsr_solver
 )
 
-target_link_libraries(
-	askap_scimath
+target_link_libraries(scimath PUBLIC
 	askap::askap
 	askap::parallel
 	askap::imagemath
@@ -252,22 +198,53 @@ target_link_libraries(
 	${FFTW_LIBRARIES}
 	${GSL_LIBRARIES}
 )
-if (MPI_FOUND)
-	target_link_libraries(askap_scimath
-		${MPI_LIBRARIES}
-	)
-endif (MPI_FOUND)
 
-add_library(askap::scimath ALIAS askap_scimath)
-target_include_directories(askap_scimath PUBLIC
+add_library(askap::scimath ALIAS scimath)
+
+set_target_properties(scimath PROPERTIES
+  OUTPUT_NAME askap_scimath
+)
+
+target_include_directories(scimath PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/askap/scimath>
   $<INSTALL_INTERFACE:include>
   $<INSTALL_INTERFACE:include/askap/scimath>
+  ${Boost_INCLUDE_DIRS}
+  ${log4cxx_INCLUDE_DIRS}
+  ${CASACORE_INCLUDE_DIRS}
+  ${FFTW_INCLUDES}
 )
 
+target_compile_definitions(scimath PUBLIC
+	casa=casacore
+	HAVE_AIPSPP
+	HAVE_BOOST
+	HAVE_LOG4CXX
+)
+
+if (NOT GSL_VERSION VERSION_LESS 2.0)
+	target_compile_definitions(scimath PUBLIC
+		HAVE_GSL2
+	)
+endif()
+
+if (MPI_FOUND)
+	target_compile_definitions(scimath PUBLIC
+		HAVE_MPI
+	)
+	target_link_libraries(scimath PUBLIC
+		${MPI_LIBRARIES}
+	)
+	target_include_directories(scimath PUBLIC
+		${MPI_INCLUDE_PATH}
+	)
+endif()
+
+
 install (
-TARGETS askap_scimath
+TARGETS scimath
+EXPORT askap-scimath-targets
 RUNTIME DESTINATION bin
 LIBRARY DESTINATION lib
 ARCHIVE DESTINATION lib
@@ -275,20 +252,14 @@ LIBRARY PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUT
 )
 
 if (CPPUNIT_FOUND)
-  
   include(CTest)
   enable_testing()
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/fft)
   add_subdirectory(tests/fft)
-
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/fitting)
   add_subdirectory(tests/fitting)
-  
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/utils)
   add_subdirectory(tests/utils)
-
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/lsqr_solver)
   add_subdirectory(tests/lsqr_solver)
-
 endif()
 
+
+include(yanda_export)
+yanda_export(askap)
