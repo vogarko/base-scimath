@@ -366,6 +366,7 @@ private:
     /// @brief Normal matrix with linearized 3D integer index (col, row, channel).
     struct IndexedNormalMatrix
     {
+    public:
         IndexedNormalMatrix()
         {
             isInitialized = false;
@@ -374,25 +375,58 @@ private:
         // Allocate memory for matrix elements, and set default value to zero.
         void initialize(size_t nChannelsLocal_, size_t nBaseParameters_)
         {
-            assert(!isInitialized);
+            if (!initialized()) {
 
-            nChannelsLocal = nChannelsLocal_;
-            nBaseParameters = nBaseParameters_;
+                nChannelsLocal = nChannelsLocal_;
+                nBaseParameters = nBaseParameters_;
 
-            size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
-            elements.resize(nElements, casacore::Matrix<double>(2, 2, 0.));
+                size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
+                elements.resize(nElements, casacore::Matrix<double>(2, 2, 0.));
 
-            isInitialized = true;
+                isInitialized = true;
+            } else {
+                throw AskapError("Attempt initialize an already initialized normal matrix!");
+            }
         }
 
+        const casacore::Matrix<double>& getValue(size_t col, size_t row, size_t chan) const
+        {
+            if (initialized()) {
+                size_t index = get1Dindex(col, row, chan);
+                return elements[index];
+            } else {
+                throw AskapError("Attempt to get an element of non-initialized normal matrix!");
+            }
+        }
+
+        void setValue(size_t col, size_t row, size_t chan, const casacore::Matrix<double>& value)
+        {
+            if (initialized()) {
+                size_t index = get1Dindex(col, row, chan);
+                elements[index] = value;
+            } else {
+                throw AskapError("Attempt to set an element of non-initialized normal matrix!");
+            }
+        }
+
+        size_t get1Dindex(size_t col, size_t row, size_t chan) const
+        {
+            return col + nBaseParameters * row + nBaseParameters * nBaseParameters * chan;
+        }
+
+        inline bool initialized() const
+        {
+            return isInitialized;
+        }
+
+    private:
         // Flag for whether the matrix is initialized.
         bool isInitialized;
-        // The number of channles at the current worker.
+        // Number of channles at the current worker.
         size_t nChannelsLocal;
-        // The number of parameters at one channel number.
+        // Number of parameters at one channel number.
         size_t nBaseParameters;
-
-        // The matrix elements.
+        // Matrix elements.
         std::vector<casacore::Matrix<casacore::Double>> elements;
     };
   IndexedNormalMatrix itsIndexedNormalMatrix;

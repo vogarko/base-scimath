@@ -894,7 +894,7 @@ void GenericNormalEquations::initIndexedNormalMatrix(size_t nChannelsLocal, size
 
 bool GenericNormalEquations::indexedNormalMatrixInitialized() const
 {
-    return itsIndexedNormalMatrix.isInitialized;
+    return itsIndexedNormalMatrix.initialized();
 }
 
 }}
