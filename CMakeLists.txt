@@ -251,8 +251,11 @@ ARCHIVE DESTINATION lib
 LIBRARY PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
 
-if (CPPUNIT_FOUND)
-  include(CTest)
+include(CTest)
+if (BUILD_TESTING)
+  if (NOT CPPUNIT_FOUND)
+    message(FATAL_ERROR "CPPUnit is needed for building and running unit tests")
+  endif()
   enable_testing()
   add_subdirectory(tests/fft)
   add_subdirectory(tests/fitting)
