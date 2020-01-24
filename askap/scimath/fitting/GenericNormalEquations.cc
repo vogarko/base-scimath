@@ -90,8 +90,10 @@ GenericNormalEquations::GenericNormalEquations(const DesignMatrix& dm)
 /// @param[in] src other class
 GenericNormalEquations::GenericNormalEquations(const GenericNormalEquations &src) :
         INormalEquations(src),
+        itsIndexedNormalMatrix(src.itsIndexedNormalMatrix),
         itsParameterNameToIndex(src.itsParameterNameToIndex),
         itsParameterIndexToBaseName(src.itsParameterIndexToBaseName),
+        itsParameterChannels(src.itsParameterChannels),
         itsMetadata(src.itsMetadata)
 {
   deepCopyOfSTDMap(src.itsDataVector, itsDataVector);
@@ -116,8 +118,10 @@ GenericNormalEquations& GenericNormalEquations::operator=(const GenericNormalEqu
            ci!=src.itsNormalMatrix.end(); ++ci) {
            deepCopyOfSTDMap(ci->second, itsNormalMatrix[ci->first]);
       }
+      itsIndexedNormalMatrix = src.itsIndexedNormalMatrix;
       itsParameterNameToIndex = src.itsParameterNameToIndex;
       itsParameterIndexToBaseName = src.itsParameterIndexToBaseName;
+      itsParameterChannels = src.itsParameterChannels;
       itsMetadata = src.itsMetadata;
   }
   return *this;
@@ -130,8 +134,10 @@ void GenericNormalEquations::reset()
 {
   itsDataVector.clear();
   itsNormalMatrix.clear();
+  itsIndexedNormalMatrix.reset();
   itsParameterNameToIndex.clear();
   itsParameterIndexToBaseName.clear();
+  itsParameterChannels.clear();
   itsMetadata.reset();
 }
 
@@ -323,6 +329,8 @@ void GenericNormalEquations::addParameterSparselyToMatrix(const std::string &par
                 nmColIt->first<<" , "<<nmRowIt->first<<"). "<<
                 nmColIt->second.shape()<<" != "<<inNMIt->second.shape());
         nmColIt->second += inNMIt->second; // add up a matrix
+
+        //std::cout << "OLOLO1: " << par << " :: " << inNMIt->second << " :: " << nmColIt->second << std::endl;
     }
 }
 
@@ -390,7 +398,7 @@ casacore::uInt GenericNormalEquations::parameterDimension(const MapOfMatrices &n
   return dim;
 }
 
-void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset)
+void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset, size_t chan)
 {
     if (pxp.nPol() == 0) {
         return; // nothing to process
@@ -515,7 +523,12 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                 MapOfMatrices normalMatrix;
 
                 // Parameter name corresponding to the row of the normal matrix.
-                std::string rowName = itRe1->first;
+                const std::string &rowName = itRe1->first;
+
+                size_t rowIndex;
+                if (itsIndexedNormalMatrix.initialized()) {
+                    rowIndex = getParameterIndexByName(rowName);
+                }
 
                 for (casacore::uInt p2 = 0; p2 < nDataPoints; ++p2) {
 
@@ -549,16 +562,21 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                         nmElementBuf(1, 0) = real(conj(rowParDerivIm1) * colParDerivRe2_modelProduct);
                         nmElementBuf(1, 1) = real(conj(rowParDerivIm1) * colParDerivIm2_modelProduct);
 
-                        std::string colName = itRe2->first;
+                        const std::string &colName = itRe2->first;
 
                         if (normalMatrix.find(colName) == normalMatrix.end()) {
                             normalMatrix[colName] = nmElementBuf;
                         } else {
                             normalMatrix[colName] += nmElementBuf;
                         }
+
+                        if (itsIndexedNormalMatrix.initialized()) {
+                        // Using new normal matrix format.
+                            size_t colIndex = getParameterIndexByName(colName);
+                            itsIndexedNormalMatrix.addValue(colIndex, rowIndex, chan, nmElementBuf);
+                        }
                     }
                 }
-                // Now add this partial row to the normal matrix.
                 addParameterSparselyToMatrix(rowName, normalMatrix);
             }
         }
@@ -845,10 +863,16 @@ std::vector<std::string> GenericNormalEquations::unknowns() const
 void GenericNormalEquations::addParameterNameToIndexMap(const std::string &name)
 {
     if (itsParameterNameToIndex.find(name) == itsParameterNameToIndex.end()) {
-        size_t index;
-        std::string baseName = CalParamNameHelper::extractBaseParamName(name);
-        auto it = itsParameterNameToIndex.find(baseName);
 
+        auto chanInfo = CalParamNameHelper::extractChannelInfo(name);
+        size_t chan = chanInfo.first;
+        std::string baseName = chanInfo.second;
+
+        // Storing the channel number (local to current worker).
+        itsParameterChannels.insert(chan);
+
+        size_t index;
+        auto it = itsParameterNameToIndex.find(baseName);
         if (it == itsParameterNameToIndex.end()) {
         // A new base name.
             itsParameterIndexToBaseName.push_back(baseName);
@@ -873,7 +897,7 @@ size_t GenericNormalEquations::getParameterIndexByName(const std::string &name) 
     }
 }
 
-std::string GenericNormalEquations::getParameterBaseNameByIndex(size_t index) const
+std::string GenericNormalEquations::getBaseParameterNameByIndex(size_t index) const
 {
     if (index < itsParameterIndexToBaseName.size()) {
         return itsParameterIndexToBaseName[index];
@@ -887,6 +911,11 @@ size_t GenericNormalEquations::getNumberBaseParameters() const
     return itsParameterIndexToBaseName.size();
 }
 
+const std::set<size_t>& GenericNormalEquations::getParameterChannels() const
+{
+    return itsParameterChannels;
+}
+
 void GenericNormalEquations::initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters)
 {
     itsIndexedNormalMatrix.initialize(nChannelsLocal, nBaseParameters);
@@ -895,6 +924,11 @@ void GenericNormalEquations::initIndexedNormalMatrix(size_t nChannelsLocal, size
 bool GenericNormalEquations::indexedNormalMatrixInitialized() const
 {
     return itsIndexedNormalMatrix.initialized();
+}
+
+const casacore::Matrix<double>& GenericNormalEquations::indexedNormalMatrix(size_t col, size_t row, size_t chan) const
+{
+    return itsIndexedNormalMatrix.getValue(col, row, chan);
 }
 
 }}
