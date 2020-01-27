@@ -51,6 +51,7 @@
 // std includes
 #include <map>
 #include <string>
+#include <unordered_map>
 
 namespace askap {
 
@@ -135,7 +136,9 @@ struct GenericNormalEquations : public INormalEquations {
   /// a square matrix of npol x npol size.
   /// @param[in] pxp cross-products (model by measured and model by model, where 
   /// measured is the vector cdm is multiplied to).
-  void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp);
+  /// @param[in] columnOffset column offset
+  /// @param[in] chan channel number (on the current worker)
+  void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset = 0, size_t chan = 0);
     
   /// @brief add normal matrix for a given parameter
   /// @details This means that the cross terms between parameters 
@@ -219,11 +222,44 @@ struct GenericNormalEquations : public INormalEquations {
   /// @return const reference to metadata
   inline const Params& metadata() const { return itsMetadata; }
 
+  /// @brief Adds the parameter name to the mapping between parameter names and ineteger indexes.
+  /// @param[in] name Name of the parameter to add.
+  void addParameterNameToIndexMap(const std::string &name);
+
+  /// @brief Returns the unique parameter's integer index by its name.
+  /// @param[in] name Name of the parameter to return the index for.
+  /// @return The parameter index, if parameter name exists, and -1 otherwise.
+  /// Throws an exception if the name is not found.
+  size_t getParameterIndexByName(const std::string &name) const;
+
+  /// @brief Returns the base parameter name by its integer index.
+  /// @param[in] index Index of the parameter to return the name for.
+  /// @return The base parameter name (without channel info).
+  std::string getBaseParameterNameByIndex(size_t index) const;
+
+  /// @brief Returns the number of parameters at one channel.
+  size_t getNumberBaseParameters() const;
+
+  /// @brief Returns the actual channel numbers used on the current channel.
+  /// @details These are the channels stored directly in the parameter names.
+  const std::set<size_t>& getParameterChannels() const;
+
+  /// @brief Initialize the indexed normal matrix.
+  /// @param[in] nChannelsLocal Number of channels at current worker.
+  /// @param[in] nBaseParameters Number of parameters at one channel.
+  void initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters);
+
+  /// @brief Returns whether the indexed normal matrix is initialized.
+  bool indexedNormalMatrixInitialized() const;
+
+  /// @brief Returns an element of the indexed normal matrix.
+  virtual const casacore::Matrix<double>& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
+
 protected:
   /// @brief map of matrices (data element of each row map)
   typedef std::map<std::string, casacore::Matrix<double> > MapOfMatrices;
   /// @brief map of vectors (data vectors for all parameters)
-  typedef std::map<std::string, casacore::Vector<double> > MapOfVectors;
+  typedef std::unordered_map<std::string, casacore::Vector<double> > MapOfVectors;
 
   /// @brief Add one parameter from another normal equations class
   /// @details This helper method is used in merging of two normal equations.
@@ -300,7 +336,7 @@ protected:
   /// @param[in] dv an element of the data vector
   /// @return element of the right-hand side of the normal equations
   static casa::Vector<double> dvElement(const casa::Matrix<double> &dm,
-              const casa::Vector<double> &dv); 
+              const casa::Vector<double> &dv);
 
   /// @brief Extract derivatives from design matrix
   /// @details This method extracts an appropriate derivative matrix
@@ -315,6 +351,12 @@ protected:
              const std::string &par, casacore::uInt dataPoint);
   
 private:
+  /// @brief Add/update one parameter to/in sparse matrix, using given matrix.
+  /// @details Note that this function does not update the data vector, but the matrix only.
+  /// @param[in] par name of the parameter to work with
+  /// @param[in] inNM input normal matrix
+  void addParameterSparselyToMatrix(const std::string &par, const MapOfMatrices &inNM);
+
   // Adding the data vector for a parameter.
   void addDataVector(const std::string &par, const casa::Vector<double>& inDV);
 
@@ -328,11 +370,99 @@ private:
   /// @details Normal matrices stored as a map or maps of Matrixes - 
   /// it's really just a big matrix.
   std::map<string, MapOfMatrices> itsNormalMatrix;
-  
+
+    /// @brief Normal matrix with linearized 3D integer index (col, row, channel).
+    struct IndexedNormalMatrix
+    {
+    public:
+        IndexedNormalMatrix()
+        {
+            isInitialized = false;
+            nChannelsLocal = 0;
+            nBaseParameters = 0;
+        }
+
+        // Allocate memory for matrix elements, and set default value to zero.
+        void initialize(size_t nChannelsLocal_, size_t nBaseParameters_)
+        {
+            if (!initialized()) {
+                nChannelsLocal = nChannelsLocal_;
+                nBaseParameters = nBaseParameters_;
+
+                size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
+                // Copying casacore::Matrix objects results on different objects, but pointing
+                // to the same storage. Hence after resizing we need to manually assign a new Matrix to each element.
+                elements.resize(nElements);
+                for (auto &element: elements) {
+                    element = casacore::Matrix<double>(2, 2, 0.);
+                }
+                isInitialized = true;
+            } else {
+                throw AskapError("Attempt initialize an already initialized normal matrix!");
+            }
+        }
+
+        // Resets the object to its initial state.
+        void reset() {
+            isInitialized = false;
+            nChannelsLocal = 0;
+            nBaseParameters = 0;
+            elements.clear();
+        }
+
+        const casacore::Matrix<double>& getValue(size_t col, size_t row, size_t chan) const
+        {
+            if (initialized()) {
+                size_t index = get1Dindex(col, row, chan);
+                return elements[index];
+            } else {
+                throw AskapError("Attempt to get an element of non-initialized normal matrix!");
+            }
+        }
+
+        void addValue(size_t col, size_t row, size_t chan, const casacore::Matrix<double>& value)
+        {
+            if (initialized()) {
+                size_t index = get1Dindex(col, row, chan);
+                elements[index] += value;
+            } else {
+                throw AskapError("Attempt to set an element of non-initialized normal matrix!");
+            }
+        }
+
+        inline size_t get1Dindex(size_t col, size_t row, size_t chan) const
+        {
+            return col + nBaseParameters * row + nBaseParameters * nBaseParameters * chan;
+        }
+
+        inline bool initialized() const
+        {
+            return isInitialized;
+        }
+
+    private:
+        // Flag for whether the matrix is initialized.
+        bool isInitialized;
+        // Number of channles at the current worker.
+        size_t nChannelsLocal;
+        // Number of parameters at one channel number.
+        size_t nBaseParameters;
+        // Matrix elements.
+        std::vector<casacore::Matrix<casacore::Double>> elements;
+    };
+  IndexedNormalMatrix itsIndexedNormalMatrix;
+
   /// @brief the data vectors
   /// @details This parameter may eventually go a level up in the class
   /// hierarchy
   MapOfVectors itsDataVector;
+
+  /// @brief The containers for storing the forward and inverse mappings between parameter names and indexes.
+  /// @details These indexes are needed for storing the normal matrix with integer-based indexing.
+  std::map<std::string, size_t> itsParameterNameToIndex;
+  std::vector<std::string> itsParameterIndexToBaseName;
+  /// @brief Parameter channels processed on the current worker.
+  std::set<size_t> itsParameterChannels;
   
   /// @brief metadata
   /// @details It is handy to have key=value type metadata transported along with the
@@ -342,7 +472,7 @@ private:
   /// calibration is the main driver. Therefore, this data field and handling methods are
   /// implemented only for GenericNormalEquations. We could move this up in the hierarchy
   /// and even expose access methods via the main interface.
-  Params itsMetadata; 
+  Params itsMetadata;
 };
 
 } // namespace scimath

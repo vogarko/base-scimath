@@ -48,34 +48,42 @@ public:
     /*
      * Returns the number of (non-zero) elements added into the sparse matrix.
      */
-    size_t GetNumberElements() const
-    {
-        return nel;
-    }
+    size_t GetNumberElements() const;
 
     /*
      * Returns the current number of rows in the matrix.
      */
-    size_t GetCurrentNumberRows() const
-    {
-        return nl_current;
-    }
+    size_t GetCurrentNumberRows() const;
 
     /*
      * Returns the total number of rows in the matrix.
      */
-    size_t GetTotalNumberRows() const
-    {
-        return nl;
-    }
+    size_t GetTotalNumberRows() const;
+
+    /*
+     * Returns the number of nonempty rows.
+     */
+    size_t GetNumberNonemptyRows() const;
+
+    /*
+     * Returns matrix column norms.
+     */
+    void GetColumnNorms(Vector& columnNorms) const;
+
+    /*
+     * Scales matrix columns.
+     */
+    void ScaleColumns(Vector& columnWeight);
+
+    /*
+     * Normalizes matrix columns.
+     */
+    void NormalizeColumns(Vector& columnNorms);
 
     /*
      * Returns a flag whether the matrix has been finalized.
      */
-    bool Finalized() const
-    {
-        return finalized;
-    }
+    bool Finalized() const;
 
     /*
      * Returns the (i, j)-element's value of the matrix,
@@ -121,11 +129,6 @@ public:
     void Extend(size_t extra_nl);
 
     /*
-     * Returns the number of nonempty rows.
-     */
-    size_t GetNumberNonemptyRows() const;
-
-    /*
      * Should be called when all elements of the matrix have been added.
      * It stores the index of last element, and validates the matrix indexes.
      */
@@ -164,7 +167,7 @@ private:
     /*
      * Validates the boundaries of column indexes.
      */
-    bool ValidateIndexBoundaries(size_t ncolumns);
+    bool ValidateIndexBoundaries(size_t ncolumns) const;
 };
 
 }} // namespace askap.lsqr

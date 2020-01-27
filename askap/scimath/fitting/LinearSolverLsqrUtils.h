@@ -90,5 +90,9 @@ namespace askap { namespace scimath { namespace lsqrutils {
                                   size_t nChannels,
                                   double smoothingWeight,
                                   int smoothingType);
+
+    /// @brief Calculates the least squares cost.
+    /// @param[in] b_RHS The right-hand side of the least squares system.
+    double calculateCost(const std::vector<double> &b_RHS);
 }}}
 #endif

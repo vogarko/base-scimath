@@ -29,6 +29,7 @@
 #include <askap/scimath/fitting/LinearSolverLsqrUtils.h>
 #include <askap/scimath/fitting/LinearSolverUtils.h>
 #include <askap/scimath/fitting/GenericNormalEquations.h>
+#include <askap/scimath/fitting/CalParamNameHelper.h>
 #include <askap/scimath/lsqr_solver/ParallelTools.h>
 
 #include <askap/AskapError.h>
@@ -43,24 +44,10 @@ ASKAP_LOGGER(logger, ".lsqrutils");
 
 namespace askap { namespace scimath { namespace lsqrutils {
 
-// NOTE: Copied from "calibaccess/CalParamNameHelper.h", as currently accessors depends of scimath.
-/// @brief extract coded channel and parameter name
-/// @details This is a reverse operation to codeInChannel. Note, no checks are done that the name passed
-/// has coded channel present.
-/// @param[in] name full name of the parameter
-/// @return a pair with extracted channel and the base parameter name
-static std::pair<casa::uInt, std::string> extractChannelInfo(const std::string &name)
-{
-    size_t pos = name.rfind(".");
-    ASKAPCHECK(pos != std::string::npos, "Expect dot in the parameter name passed to extractChannelInfo, name=" << name);
-    ASKAPCHECK(pos + 1 != name.size(), "Parameter name=" << name << " ends with a dot");
-    return std::pair<casa::uInt, std::string>(utility::fromString<casa::uInt>(name.substr(pos + 1)), name.substr(0, pos));
-}
-
 bool compareGainNames(const std::string& gainA, const std::string& gainB) {
     try {
-        std::pair<casa::uInt, std::string> paramInfoA = extractChannelInfo(gainA);
-        std::pair<casa::uInt, std::string> paramInfoB = extractChannelInfo(gainB);
+        std::pair<casa::uInt, std::string> paramInfoA = CalParamNameHelper::extractChannelInfo(gainA);
+        std::pair<casa::uInt, std::string> paramInfoB = CalParamNameHelper::extractChannelInfo(gainB);
 
         // Parameter name excluding channel number.
         std::string parNameA = paramInfoA.second;
@@ -128,15 +115,15 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
     for (std::vector<std::pair<std::string, int> >::const_iterator indit1 = indices.begin();
             indit1 != indices.end(); ++indit1) {
 
-        const std::map<std::string, casa::Matrix<double> >::const_iterator colItBeg = gne.getNormalMatrixRowBegin(indit1->first);
-        const std::map<std::string, casa::Matrix<double> >::const_iterator colItEnd = gne.getNormalMatrixRowEnd(indit1->first);
+        const auto colItBeg = gne.getNormalMatrixRowBegin(indit1->first);
+        const auto colItEnd = gne.getNormalMatrixRowEnd(indit1->first);
 
         if (colItBeg != colItEnd) {
             const size_t nrow = colItBeg->second.nrow();
             for (size_t row = 0; row < nrow; ++row) {
                 matrix.NewRow();
                 // Loop over column elements.
-                for (std::map<std::string, casa::Matrix<double> >::const_iterator colIt = colItBeg;
+                for (auto colIt = colItBeg;
                         colIt != colItEnd; ++colIt) {
 
                     const std::map<std::string, size_t>::const_iterator indicesMapIt = indicesMap.find(colIt->first);
@@ -227,7 +214,7 @@ bool testMPIRankOrderWithChannels(int workerRank, size_t nChannelsLocal,
          indit != indices.end(); ++indit) {
         // Extracting channel number from gain name.
         std::string gainName = indit->first;
-        std::pair<casa::uInt, std::string> paramInfo = extractChannelInfo(gainName);
+        std::pair<casa::uInt, std::string> paramInfo = CalParamNameHelper::extractChannelInfo(gainName);
         casa::uInt chan = paramInfo.first;
 
         // Testing that the channel number is aligned with MPI partitioning:
@@ -527,6 +514,15 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         cost += b_RHS_value * b_RHS_value;
     }
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Smoothness constraints cost = " << cost / (smoothingWeight * smoothingWeight));
+}
+
+double calculateCost(const std::vector<double> &b_RHS)
+{
+    double cost = 0.;
+    for (size_t i = 0; i < b_RHS.size(); ++i) {
+        cost += b_RHS[i] * b_RHS[i];
+    }
+    return cost;
 }
 
 }}}

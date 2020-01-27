@@ -432,9 +432,9 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Solving normal equations using the LSQR solver");
 
-    //----------------------------------------------------
+    //------------------------------------------------------------------
     // Define the right-hand side (the data misfit part).
-    //----------------------------------------------------
+    //------------------------------------------------------------------
     lsqr::Vector b_RHS(nParametersTotal, 0.);
 
     // Populate the right-hand side vector B.
@@ -446,6 +446,9 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         lsqr::ParallelTools::get_full_array_in_place(nParameters, b_RHS, true, myrank, nbproc, itsWorkersComm);
 #endif
     }
+
+    double misfit_cost = lsqrutils::calculateCost(b_RHS);
+    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Misfit cost = " << misfit_cost);
 
     //------------------------------------------------------------------
     // Adding smoothness constraints.
@@ -494,40 +497,55 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     lsqr::ModelDamping damping(nParameters);
     damping.Add(alpha, norm, matrix, b_RHS, NULL, NULL, NULL, myrank, nbproc);
 
-    //-----------------------------------------------
-    // Calculating the total cost.
-    //-----------------------------------------------
-    double total_cost = 0.;
-    for (size_t i = 0; i < b_RHS.size(); ++i) {
-        total_cost += b_RHS[i] * b_RHS[i];
+    //------------------------------------------------------------------
+    // Column normalisation.
+    bool normalizeColumns = solverutils::getParameter("normalizeColumns", parameters(), false);
+
+    std::vector<double> columnNorms;
+    if (normalizeColumns) {
+        if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Normalizing matrix columns");
+        columnNorms.resize(nParameters);
+        matrix.NormalizeColumns(columnNorms);
     }
+
+    //------------------------------------------------------------------
+    // Calculating the total cost.
+    double total_cost = lsqrutils::calculateCost(b_RHS);
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Total cost = " << total_cost);
 
-    //-----------------------------------------------
+    //------------------------------------------------------------------
     // Setting solver parameters.
-    //-----------------------------------------------
     int niter = solverutils::getParameter("niter", parameters(), 100);
     double rmin = solverutils::getParameter("rmin", parameters(), 1.e-13);
     bool suppress_output = !(solverutils::getParameter("verbose", parameters(), false));
 
-    //-----------------------------------------------
+    //------------------------------------------------------------------
     // Solving the matrix system.
-    //-----------------------------------------------
+    //------------------------------------------------------------------
     casa::Timer timer;
     timer.mark();
 
-    lsqr::Vector x(nParameters, 0.0);
+    lsqr::Vector x(nParameters, 0.);
     lsqr::LSQRSolver solver(matrix.GetCurrentNumberRows(), nParameters);
 
     solver.Solve(niter, rmin, matrix, b_RHS, x, suppress_output);
 
     ASKAPLOG_INFO_STR(logger, "Completed LSQR in " << timer.real() << " seconds on rank " << myrank);
 
-    //------------------------------------------------------------------------
+    //------------------------------------------------------------------
+    // Solution re-scaling.
+    if (normalizeColumns) {
+        for (size_t i = 0; i < x.size(); i++) {
+            assert(columnNorms[i] != 0.);
+            x[i] /= columnNorms[i];
+        }
+    }
+
+    //------------------------------------------------------------------
     // Update the parameters for the calculated changes.
     solverutils::update_solution(indices, params, x, solverutils::retrieve_from_lsqr_vector);
 
-    //------------------------------------------------------------------------
+    //------------------------------------------------------------------
     // Set approximate solution quality.
     quality.setDOF(nParameters);
     quality.setRank(rank_approx);

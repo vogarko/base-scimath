@@ -148,6 +148,8 @@ add_library(askap_scimath
 ./askap/scimath/fitting/ISerializable.cc
 ./askap/scimath/fitting/Solver.cc
 ./askap/scimath/fitting/GenericNormalEquations.cc
+./askap/scimath/fitting/CalParamNameHelper.cc
+./askap/scimath/fitting/JonesIndex.cc
 ./askap/scimath/utils/ComplexGaussianNoise.cc
 ./askap/scimath/utils/PolConverter.cc
 ./askap/scimath/utils/CasaBlobUtils.cc
@@ -193,6 +195,8 @@ install (FILES
 ./askap/scimath/fitting/Solveable.h
 ./askap/scimath/fitting/ParamsCasaTable.h
 ./askap/scimath/fitting/ImagingNormalEquations.h
+./askap/scimath/fitting/CalParamNameHelper.h
+./askap/scimath/fitting/JonesIndex.h
 ./askap/scimath/fitting/ComplexDiffMatrix.tcc
 
 DESTINATION include/askap/scimath/fitting

@@ -6,6 +6,7 @@
 
 #include <stdexcept>
 #include <cassert>
+#include <cmath>
 
 #include <askap/scimath/lsqr_solver/SparseMatrix.h>
 #include <askap/scimath/lsqr_solver/ParallelTools.h>
@@ -25,6 +26,7 @@ SparseMatrix::SparseMatrix(size_t nl) :
 #endif
 {
 }
+
 #ifdef HAVE_MPI
 SparseMatrix::SparseMatrix(size_t nl, const MPI_Comm &comm) :
     finalized(false),
@@ -47,25 +49,6 @@ SparseMatrix::~SparseMatrix()
         MPI_Comm_free(&itsComm);
     }
 #endif
-}
-
-bool SparseMatrix::Finalize(size_t ncolumns)
-{
-    // Sanity check.
-    if (nl_current != nl) {
-        throw std::runtime_error("Wrong total number of rows in SparseMatrix::Finalize!");
-    }
-
-    // Store index of the last element.
-    ijl[nl] = nel;
-
-    if (!ValidateIndexBoundaries(ncolumns)) {
-        throw std::runtime_error("Sparse matrix validation failed!");
-    }
-
-    finalized = true;
-
-    return true;
 }
 
 void SparseMatrix::Add(double value, size_t column)
@@ -102,6 +85,96 @@ void SparseMatrix::NewRow()
 
     nl_current += 1;
     ijl[nl_current - 1] = nel;
+}
+
+size_t SparseMatrix::GetNumberElements() const
+{
+    return nel;
+}
+
+size_t SparseMatrix::GetCurrentNumberRows() const
+{
+    return nl_current;
+}
+
+size_t SparseMatrix::GetTotalNumberRows() const
+{
+    return nl;
+}
+
+size_t SparseMatrix::GetNumberNonemptyRows() const
+{
+    // Sanity check.
+    if (!finalized) {
+        throw std::runtime_error("Matrix has not been finalized yet in SparseMatrix::GetNumberNonemptyRows!");
+    }
+
+    size_t number_empty_rows = 0;
+    for (size_t i = 0; i < nl; i++) {
+        if (ijl[i] == ijl[i + 1]) number_empty_rows++;
+    }
+    return (nl - number_empty_rows);
+}
+
+void SparseMatrix::GetColumnNorms(Vector& columnNorms) const
+{
+    // Sanity check.
+    if (!finalized) {
+        throw std::runtime_error("Matrix has not been finalized yet in SparseMatrix::GetColumnNorms!");
+    }
+
+    // Set all elements to zero.
+    std::fill(columnNorms.begin(), columnNorms.end(), 0.);
+
+    for (size_t i = 0; i < nl; i++) {
+        for (size_t k = ijl[i]; k < ijl[i + 1]; k++) {
+            size_t j = ija[k];
+            columnNorms.at(j) += sa[k] * sa[k];
+        }
+    }
+
+    for (size_t j = 0; j < columnNorms.size(); j++) {
+        columnNorms[j] = sqrt(columnNorms[j]);
+    }
+}
+
+void SparseMatrix::ScaleColumns(Vector& columnWeight)
+{
+    // Sanity check.
+    if (!finalized) {
+        throw std::runtime_error("Matrix has not been finalized yet in SparseMatrix::ScaleColumns!");
+    }
+
+    for (size_t i = 0; i < nl; i++) {
+        for (size_t k = ijl[i]; k < ijl[i + 1]; k++) {
+            sa[k] *= columnWeight.at(ija[k]);
+        }
+    }
+}
+
+void SparseMatrix::NormalizeColumns(Vector& columnNorms)
+{
+    // Sanity check.
+    if (!finalized) {
+        throw std::runtime_error("Matrix has not been finalized yet in SparseMatrix::NormalizeColumns!");
+    }
+
+    GetColumnNorms(columnNorms);
+
+    size_t nParameters = columnNorms.size();
+    std::vector<double> columnWeight(nParameters);
+
+    for (size_t i = 0; i < columnWeight.size(); i++) {
+        assert(columnNorms[i] != 0.);
+        columnWeight[i] = 1. / columnNorms[i];
+    }
+
+    ScaleColumns(columnWeight);
+}
+
+bool SparseMatrix::Finalized() const
+{
+    return finalized;
 }
 
 double SparseMatrix::GetValue(size_t i, size_t j) const
@@ -241,21 +314,26 @@ void SparseMatrix::Extend(size_t extra_nl)
     ijl.resize(nl + 1);
 }
 
-size_t SparseMatrix::GetNumberNonemptyRows() const
+bool SparseMatrix::Finalize(size_t ncolumns)
 {
     // Sanity check.
-    if (!finalized) {
-        throw std::runtime_error("Matrix has not been finalized yet in SparseMatrix::GetNumberNonemptyRows!");
+    if (nl_current != nl) {
+        throw std::runtime_error("Wrong total number of rows in SparseMatrix::Finalize!");
     }
 
-    size_t number_empty_rows = 0;
-    for (size_t i = 0; i < nl; i++) {
-        if (ijl[i] == ijl[i + 1]) number_empty_rows++;
+    // Store index of the last element.
+    ijl[nl] = nel;
+
+    if (!ValidateIndexBoundaries(ncolumns)) {
+        throw std::runtime_error("Sparse matrix validation failed!");
     }
-    return (nl - number_empty_rows);
+
+    finalized = true;
+
+    return true;
 }
 
-bool SparseMatrix::ValidateIndexBoundaries(size_t ncolumns)
+bool SparseMatrix::ValidateIndexBoundaries(size_t ncolumns) const
 {
     // Use the same loop as in A'x multiplication.
     for (size_t i = 0; i < nl; i++) {

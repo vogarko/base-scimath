@@ -109,6 +109,30 @@ struct ComplexDiff {
   /// @param[in] name parameter name
   /// @return value of the derivative by imaginary part of the given parameter
   casacore::Complex derivIm(const std::string &name) const;
+
+  /// @brief Obtain the "begin" iterator to the list of derivatives by real part.
+  inline std::map<std::string, casacore::Complex>::const_iterator derivReBegin() const
+  {
+      return itsDerivRe.begin();
+  };
+
+  /// @brief Obtain the "end" iterator to the list of derivatives by real part.
+  inline std::map<std::string, casacore::Complex>::const_iterator derivReEnd() const
+  {
+      return itsDerivRe.end();
+  };
+
+  /// @brief Obtain the "begin" iterator to the list of derivatives by imaginary part.
+  inline std::map<std::string, casacore::Complex>::const_iterator derivImBegin() const
+  {
+      return itsDerivIm.begin();
+  };
+
+  /// @brief Obtain the "end" iterator to the list of derivatives by imaginary part.
+  inline std::map<std::string, casacore::Complex>::const_iterator derivImEnd() const
+  {
+      return itsDerivIm.end();
+  };
   
   /// @brief add up another autodifferentiator
   /// @param[in] other autodifferentiator to add up

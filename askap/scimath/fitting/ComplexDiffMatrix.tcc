@@ -338,25 +338,35 @@ inline ComplexDiffMatrix::parameter_iterator ComplexDiffMatrix::paramEnd() const
   return utility::mapKeyEnd(itsParameters);
 }
 
-/// @brief extract a block 
+/// @brief extract a block into the given buffer
+/// @details This method extracts a range of columns.
+/// @param[in] startCol first column to extract
+/// @param[out] result the buffer where the block will be written to
+void ComplexDiffMatrix::extractBlock(size_t startCol, ComplexDiffMatrix& result) const
+{
+  size_t length = result.nColumn();
+  ASKAPDEBUGASSERT(startCol + length <= nColumn());
+  ASKAPDEBUGASSERT(result.nRow() == nRow())
+
+  for (size_t row = 0; row < nRow(); ++row) {
+       size_t index = row + nRow() * startCol;
+       for (size_t col = 0; col < length; ++col, index += nRow()) {
+            result(row, col) = itsElements[index];
+       }
+  }
+}
+
+/// @brief extract a block
 /// @details This method extracts a range of columns.
 /// @param[in] startCol first column to extract
 /// @param[in] length number of columns to extract
 /// @return the slice matrix with the same number of rows but a subset of columns
 ComplexDiffMatrix ComplexDiffMatrix::extractBlock(size_t startCol, size_t length) const
 {
-  ASKAPDEBUGASSERT(startCol + length <= nColumn());
   ComplexDiffMatrix result(nRow(), length);
-  
-  for (size_t row = 0; row < nRow(); ++row) {
-       size_t index = row + nRow() * startCol;
-       for (size_t col = 0; col<length; ++col,index+=nRow()) {
-            result(row,col) = itsElements[index]; 
-       }
-  }
+  extractBlock(startCol, result);
   return result;
 }
-
 
 } // namepace scimath
 
