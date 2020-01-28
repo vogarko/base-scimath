@@ -137,7 +137,8 @@ struct GenericNormalEquations : public INormalEquations {
   /// @param[in] pxp cross-products (model by measured and model by model, where 
   /// measured is the vector cdm is multiplied to).
   /// @param[in] columnOffset column offset
-  void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset = 0);
+  /// @param[in] chan channel number (on the current worker)
+  void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset = 0, size_t chan = 0);
     
   /// @brief add normal matrix for a given parameter
   /// @details This means that the cross terms between parameters 
@@ -231,13 +232,17 @@ struct GenericNormalEquations : public INormalEquations {
   /// Throws an exception if the name is not found.
   size_t getParameterIndexByName(const std::string &name) const;
 
-  /// @brief Returns the parameter base name by its integer index.
+  /// @brief Returns the base parameter name by its integer index.
   /// @param[in] index Index of the parameter to return the name for.
-  /// @return The parameter base name (without channel info).
-  std::string getParameterBaseNameByIndex(size_t index) const;
+  /// @return The base parameter name (without channel info).
+  std::string getBaseParameterNameByIndex(size_t index) const;
 
   /// @brief Returns the number of parameters at one channel.
   size_t getNumberBaseParameters() const;
+
+  /// @brief Returns the actual channel numbers used on the current channel.
+  /// @details These are the channels stored directly in the parameter names.
+  const std::set<size_t>& getParameterChannels() const;
 
   /// @brief Initialize the indexed normal matrix.
   /// @param[in] nChannelsLocal Number of channels at current worker.
@@ -246,6 +251,9 @@ struct GenericNormalEquations : public INormalEquations {
 
   /// @brief Returns whether the indexed normal matrix is initialized.
   bool indexedNormalMatrixInitialized() const;
+
+  /// @brief Returns an element of the indexed normal matrix.
+  virtual const casacore::Matrix<double>& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
 
 protected:
   /// @brief map of matrices (data element of each row map)
@@ -366,33 +374,80 @@ private:
     /// @brief Normal matrix with linearized 3D integer index (col, row, channel).
     struct IndexedNormalMatrix
     {
+    public:
         IndexedNormalMatrix()
         {
             isInitialized = false;
+            nChannelsLocal = 0;
+            nBaseParameters = 0;
         }
 
         // Allocate memory for matrix elements, and set default value to zero.
         void initialize(size_t nChannelsLocal_, size_t nBaseParameters_)
         {
-            assert(!isInitialized);
+            if (!initialized()) {
+                nChannelsLocal = nChannelsLocal_;
+                nBaseParameters = nBaseParameters_;
 
-            nChannelsLocal = nChannelsLocal_;
-            nBaseParameters = nBaseParameters_;
-
-            size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
-            elements.resize(nElements, casacore::Matrix<double>(2, 2, 0.));
-
-            isInitialized = true;
+                size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
+                // Copying casacore::Matrix objects results on different objects, but pointing
+                // to the same storage. Hence after resizing we need to manually assign a new Matrix to each element.
+                elements.resize(nElements);
+                for (auto &element: elements) {
+                    element = casacore::Matrix<double>(2, 2, 0.);
+                }
+                isInitialized = true;
+            } else {
+                throw AskapError("Attempt initialize an already initialized normal matrix!");
+            }
         }
 
+        // Resets the object to its initial state.
+        void reset() {
+            isInitialized = false;
+            nChannelsLocal = 0;
+            nBaseParameters = 0;
+            elements.clear();
+        }
+
+        const casacore::Matrix<double>& getValue(size_t col, size_t row, size_t chan) const
+        {
+            if (initialized()) {
+                size_t index = get1Dindex(col, row, chan);
+                return elements[index];
+            } else {
+                throw AskapError("Attempt to get an element of non-initialized normal matrix!");
+            }
+        }
+
+        void addValue(size_t col, size_t row, size_t chan, const casacore::Matrix<double>& value)
+        {
+            if (initialized()) {
+                size_t index = get1Dindex(col, row, chan);
+                elements[index] += value;
+            } else {
+                throw AskapError("Attempt to set an element of non-initialized normal matrix!");
+            }
+        }
+
+        inline size_t get1Dindex(size_t col, size_t row, size_t chan) const
+        {
+            return col + nBaseParameters * row + nBaseParameters * nBaseParameters * chan;
+        }
+
+        inline bool initialized() const
+        {
+            return isInitialized;
+        }
+
+    private:
         // Flag for whether the matrix is initialized.
         bool isInitialized;
-        // The number of channles at the current worker.
+        // Number of channles at the current worker.
         size_t nChannelsLocal;
-        // The number of parameters at one channel number.
+        // Number of parameters at one channel number.
         size_t nBaseParameters;
-
-        // The matrix elements.
+        // Matrix elements.
         std::vector<casacore::Matrix<casacore::Double>> elements;
     };
   IndexedNormalMatrix itsIndexedNormalMatrix;
@@ -406,6 +461,8 @@ private:
   /// @details These indexes are needed for storing the normal matrix with integer-based indexing.
   std::map<std::string, size_t> itsParameterNameToIndex;
   std::vector<std::string> itsParameterIndexToBaseName;
+  /// @brief Parameter channels processed on the current worker.
+  std::set<size_t> itsParameterChannels;
   
   /// @brief metadata
   /// @details It is handy to have key=value type metadata transported along with the
