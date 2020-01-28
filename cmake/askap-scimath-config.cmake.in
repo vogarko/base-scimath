@@ -1,7 +1,4 @@
 get_filename_component(ASKAP_SCIMATH_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-if (NOT TARGET askap::scimath)
-	include("${ASKAP_SCIMATH_CMAKE_DIR}/askap-scimath-targets.cmake")
-endif()
 
 include(CMakeFindDependencyMacro)
 find_dependency(lofar-common)
@@ -19,4 +16,8 @@ if ("@CPPUNIT_FOUND@")
 endif()
 if ("@MPI_FOUND@")
    find_dependency(MPI)
+endif()
+
+if (NOT TARGET askap::scimath)
+	include("${ASKAP_SCIMATH_CMAKE_DIR}/askap-scimath-targets.cmake")
 endif()
