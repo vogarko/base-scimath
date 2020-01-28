@@ -917,5 +917,25 @@ const casacore::Matrix<double>& GenericNormalEquations::indexedNormalMatrix(size
     return itsIndexedNormalMatrix.getValue(col, row, chan);
 }
 
+const casacore::Matrix<double>& GenericNormalEquations::indexedNormalMatrix(const std::string &colName, const std::string &rowName) const
+{
+    std::pair<casacore::uInt, std::string> colInfo = CalParamNameHelper::extractChannelInfo(colName);
+    std::pair<casacore::uInt, std::string> rowInfo = CalParamNameHelper::extractChannelInfo(rowName);
+
+    size_t chanOffset = itsIndexedNormalMatrix.getChanOffset();
+    size_t colChan = colInfo.first - chanOffset;
+    size_t rowChan = rowInfo.first - chanOffset;
+
+    if (colChan != rowChan) {
+        throw AskapError("Attempt to get an element of normal matrix with different column and row channels!");
+    } else {
+        size_t chan = rowChan;
+        size_t col = getParameterIndexByName(colName);
+        size_t row = getParameterIndexByName(rowName);
+
+        return indexedNormalMatrix(col, row, chan);
+    }
+}
+
 }}
 

@@ -256,7 +256,16 @@ struct GenericNormalEquations : public INormalEquations {
   /// @brief Returns an element of the indexed normal matrix.
   /// @details Note that chan is a local channel number at the current worker,
   /// i.e., not the actual channel number that is stored in the gain name.
+  /// @param[in] col Column number.
+  /// @param[in] row Row number.
+  /// @param[in] chan Local channel number (at the current worker).
   virtual const casacore::Matrix<double>& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
+
+  /// @brief Returns an element of the indexed normal matrix.
+  /// @details Note: This interface should only be used for testing due to its low performance.
+  /// @param[in] colName Column parameter name.
+  /// @param[in] rowName Row parameter name.
+  virtual const casacore::Matrix<double>& indexedNormalMatrix(const std::string &colName, const std::string &rowName) const;
 
 protected:
   /// @brief map of matrices (data element of each row map)
@@ -437,12 +446,20 @@ private:
 
         inline size_t get1Dindex(size_t col, size_t row, size_t chan) const
         {
+            ASKAPDEBUGASSERT(col < nBaseParameters);
+            ASKAPDEBUGASSERT(row < nBaseParameters);
+            ASKAPDEBUGASSERT(chan < nChannelsLocal);
             return col + nBaseParameters * row + nBaseParameters * nBaseParameters * chan;
         }
 
         inline bool initialized() const
         {
             return isInitialized;
+        }
+
+        inline size_t getChanOffset() const
+        {
+            return chanOffset;
         }
 
     private:
@@ -452,7 +469,7 @@ private:
         size_t nChannelsLocal;
         // Number of parameters at one channel number.
         size_t nBaseParameters;
-        // Channel offset.
+        // Channel offset (store it here for convinience).
         size_t chanOffset;
         // Matrix elements.
         std::vector<casacore::Matrix<casacore::Double>> elements;
