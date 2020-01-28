@@ -247,12 +247,15 @@ struct GenericNormalEquations : public INormalEquations {
   /// @brief Initialize the indexed normal matrix.
   /// @param[in] nChannelsLocal Number of channels at current worker.
   /// @param[in] nBaseParameters Number of parameters at one channel.
-  void initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters);
+  /// @param[in] chanOffset Channel offset at the current worker.
+  void initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters, size_t chanOffset);
 
   /// @brief Returns whether the indexed normal matrix is initialized.
   bool indexedNormalMatrixInitialized() const;
 
   /// @brief Returns an element of the indexed normal matrix.
+  /// @details Note that chan is a local channel number at the current worker,
+  /// i.e., not the actual channel number that is stored in the gain name.
   virtual const casacore::Matrix<double>& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
 
 protected:
@@ -375,19 +378,20 @@ private:
     struct IndexedNormalMatrix
     {
     public:
-        IndexedNormalMatrix()
-        {
-            isInitialized = false;
-            nChannelsLocal = 0;
-            nBaseParameters = 0;
-        }
+        IndexedNormalMatrix() :
+            isInitialized(false),
+            nChannelsLocal(0),
+            nBaseParameters(0),
+            chanOffset(0)
+        {}
 
         // Allocate memory for matrix elements, and set default value to zero.
-        void initialize(size_t nChannelsLocal_, size_t nBaseParameters_)
+        void initialize(size_t nChannelsLocal_, size_t nBaseParameters_, size_t chanOffset_)
         {
             if (!initialized()) {
                 nChannelsLocal = nChannelsLocal_;
                 nBaseParameters = nBaseParameters_;
+                chanOffset = chanOffset_;
 
                 size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
                 // Copying casacore::Matrix objects results on different objects, but pointing
@@ -407,6 +411,7 @@ private:
             isInitialized = false;
             nChannelsLocal = 0;
             nBaseParameters = 0;
+            chanOffset = 0;
             elements.clear();
         }
 
@@ -447,6 +452,8 @@ private:
         size_t nChannelsLocal;
         // Number of parameters at one channel number.
         size_t nBaseParameters;
+        // Channel offset.
+        size_t chanOffset;
         // Matrix elements.
         std::vector<casacore::Matrix<casacore::Double>> elements;
     };
@@ -461,9 +468,7 @@ private:
   /// @details These indexes are needed for storing the normal matrix with integer-based indexing.
   std::map<std::string, size_t> itsParameterNameToIndex;
   std::vector<std::string> itsParameterIndexToBaseName;
-  /// @brief Parameter channels processed on the current worker.
-  std::set<size_t> itsParameterChannels;
-  
+
   /// @brief metadata
   /// @details It is handy to have key=value type metadata transported along with the
   /// normal equations. The main applications are the metadata for calibration parameters
