@@ -387,12 +387,28 @@ private:
     struct IndexedNormalMatrix
     {
     public:
+        /// @brief default constructor
         IndexedNormalMatrix() :
             isInitialized(false),
             nChannelsLocal(0),
             nBaseParameters(0),
             chanOffset(0)
         {}
+
+        /// @brief assignment operator
+        IndexedNormalMatrix& operator=(const IndexedNormalMatrix &src)
+        {
+            if (&src != this) {
+                reset();
+                initialize(src.nChannelsLocal, src.nBaseParameters, src.chanOffset);
+
+                elements.resize(src.elements.size());
+                std::transform(src.elements.begin(), src.elements.end(), elements.begin(), [](const casacore::Matrix<double> &el) {
+                    return el.copy();
+                });
+            }
+            return *this;
+        }
 
         // Allocate memory for matrix elements, and set default value to zero.
         void initialize(size_t nChannelsLocal_, size_t nBaseParameters_, size_t chanOffset_)

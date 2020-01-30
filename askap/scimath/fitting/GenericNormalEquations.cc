@@ -162,21 +162,47 @@ void GenericNormalEquations::merge(const INormalEquations& src)
       timer.mark();
       ASKAPLOG_INFO_STR(logger, "Merging normal equations");
 
-      const GenericNormalEquations &gne = 
-                dynamic_cast<const GenericNormalEquations&>(src);
+      const GenericNormalEquations &gne = dynamic_cast<const GenericNormalEquations&>(src);
 
-      // loop over all parameters, add them one by one.
-      // We could have passed iterator directly to mergeParameter and it
-      // would work faster (no extra search accross the map). But current
-      // code is more readable.
-      for (MapOfVectors::const_iterator ci = gne.itsDataVector.begin(); 
-           ci != gne.itsDataVector.end(); ++ci) {
-           mergeParameter(ci->first, gne);
-      }
+      if (gne.indexedNormalMatrixInitialized()) {
+      // We are using the indexed normal matrix.
+          if (!indexedNormalMatrixInitialized()) {
+          // Merging an indexed normal matrix with an empty one, so just need to copy it.
+          // Note: not sure why this merge is performed (during calibration starting, from second major iteration),
+          // instead of building normal equations directly in this object.
+              itsIndexedNormalMatrix = gne.itsIndexedNormalMatrix;
+
+              if (itsParameterNameToIndex.size() > 0 || itsParameterIndexToBaseName.size() > 0) {
+                  throw AskapError("Attempt to merge the normal equation that has non empty parameter index maps!");
+              } else {
+                  // Also need to copy parameter index maps.
+                  itsParameterNameToIndex = gne.itsParameterNameToIndex;
+                  itsParameterIndexToBaseName = gne.itsParameterIndexToBaseName;
+              }
+
+              // TODO: Copy an indexed data vector here when it is implemented.
+          } else {
+              // TODO: Do we have this use case, i.e., merging non-empty normal equation with another non-empty one?
+              throw AskapError("Merging indexed normal matrix with another one which is already initialized!");
+          }
+
+      }// else {
+
+      // TODO: Make this branch conditional when the support of indexed normal matrix format is ready on the solver side!
+
+      // Old normal matrix format.
+
+          // loop over all parameters, add them one by one.
+          // We could have passed iterator directly to mergeParameter and it
+          // would work faster (no extra search accross the map). But current
+          // code is more readable.
+          for (MapOfVectors::const_iterator ci = gne.itsDataVector.begin();
+               ci != gne.itsDataVector.end(); ++ci) {
+               mergeParameter(ci->first, gne);
+          }
+      //}
+
       itsMetadata.merge(gne.metadata());
-
-      // TODO: We also need to merge itsParameterNameToIndex & itsParameterIndexToName.
-      //       Let's keep it in mind, and add this once we really need it.
 
       ASKAPLOG_INFO_STR(logger, "Merged normal equations in "<< timer.real() << " seconds");
    }
