@@ -93,7 +93,6 @@ GenericNormalEquations::GenericNormalEquations(const GenericNormalEquations &src
         itsIndexedNormalMatrix(src.itsIndexedNormalMatrix),
         itsParameterNameToIndex(src.itsParameterNameToIndex),
         itsParameterIndexToBaseName(src.itsParameterIndexToBaseName),
-        itsParameterChannels(src.itsParameterChannels),
         itsMetadata(src.itsMetadata)
 {
   deepCopyOfSTDMap(src.itsDataVector, itsDataVector);
@@ -121,7 +120,6 @@ GenericNormalEquations& GenericNormalEquations::operator=(const GenericNormalEqu
       itsIndexedNormalMatrix = src.itsIndexedNormalMatrix;
       itsParameterNameToIndex = src.itsParameterNameToIndex;
       itsParameterIndexToBaseName = src.itsParameterIndexToBaseName;
-      itsParameterChannels = src.itsParameterChannels;
       itsMetadata = src.itsMetadata;
   }
   return *this;
@@ -137,7 +135,6 @@ void GenericNormalEquations::reset()
   itsIndexedNormalMatrix.reset();
   itsParameterNameToIndex.clear();
   itsParameterIndexToBaseName.clear();
-  itsParameterChannels.clear();
   itsMetadata.reset();
 }
 
@@ -165,21 +162,47 @@ void GenericNormalEquations::merge(const INormalEquations& src)
       timer.mark();
       ASKAPLOG_INFO_STR(logger, "Merging normal equations");
 
-      const GenericNormalEquations &gne = 
-                dynamic_cast<const GenericNormalEquations&>(src);
+      const GenericNormalEquations &gne = dynamic_cast<const GenericNormalEquations&>(src);
 
-      // loop over all parameters, add them one by one.
-      // We could have passed iterator directly to mergeParameter and it
-      // would work faster (no extra search accross the map). But current
-      // code is more readable.
-      for (MapOfVectors::const_iterator ci = gne.itsDataVector.begin(); 
-           ci != gne.itsDataVector.end(); ++ci) {
-           mergeParameter(ci->first, gne);
-      }
+      if (gne.indexedNormalMatrixInitialized()) {
+      // We are using the indexed normal matrix.
+          if (!indexedNormalMatrixInitialized()) {
+          // Merging an indexed normal matrix with an empty one, so just need to copy it.
+          // Note: not sure why this merge is performed (during calibration starting, from second major iteration),
+          // instead of building normal equations directly in this object.
+              itsIndexedNormalMatrix = gne.itsIndexedNormalMatrix;
+
+              if (itsParameterNameToIndex.size() > 0 || itsParameterIndexToBaseName.size() > 0) {
+                  throw AskapError("Attempt to merge the normal equation that has non empty parameter index maps!");
+              } else {
+                  // Also need to copy parameter index maps.
+                  itsParameterNameToIndex = gne.itsParameterNameToIndex;
+                  itsParameterIndexToBaseName = gne.itsParameterIndexToBaseName;
+              }
+
+              // TODO: Copy an indexed data vector here when it is implemented.
+          } else {
+              // TODO: Do we have this use case, i.e., merging non-empty normal equation with another non-empty one?
+              throw AskapError("Merging indexed normal matrix with another one which is already initialized!");
+          }
+
+      }// else {
+
+      // TODO: Make this branch conditional when the support of indexed normal matrix format is ready on the solver side!
+
+      // Old normal matrix format.
+
+          // loop over all parameters, add them one by one.
+          // We could have passed iterator directly to mergeParameter and it
+          // would work faster (no extra search accross the map). But current
+          // code is more readable.
+          for (MapOfVectors::const_iterator ci = gne.itsDataVector.begin();
+               ci != gne.itsDataVector.end(); ++ci) {
+               mergeParameter(ci->first, gne);
+          }
+      //}
+
       itsMetadata.merge(gne.metadata());
-
-      // TODO: We also need to merge itsParameterNameToIndex & itsParameterIndexToName.
-      //       Let's keep it in mind, and add this once we really need it.
 
       ASKAPLOG_INFO_STR(logger, "Merged normal equations in "<< timer.real() << " seconds");
    }
@@ -863,13 +886,7 @@ std::vector<std::string> GenericNormalEquations::unknowns() const
 void GenericNormalEquations::addParameterNameToIndexMap(const std::string &name)
 {
     if (itsParameterNameToIndex.find(name) == itsParameterNameToIndex.end()) {
-
-        auto chanInfo = CalParamNameHelper::extractChannelInfo(name);
-        size_t chan = chanInfo.first;
-        std::string baseName = chanInfo.second;
-
-        // Storing the channel number (local to current worker).
-        itsParameterChannels.insert(chan);
+        std::string baseName = CalParamNameHelper::extractBaseParamName(name);
 
         size_t index;
         auto it = itsParameterNameToIndex.find(baseName);
@@ -911,14 +928,9 @@ size_t GenericNormalEquations::getNumberBaseParameters() const
     return itsParameterIndexToBaseName.size();
 }
 
-const std::set<size_t>& GenericNormalEquations::getParameterChannels() const
+void GenericNormalEquations::initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters, size_t chanOffset)
 {
-    return itsParameterChannels;
-}
-
-void GenericNormalEquations::initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters)
-{
-    itsIndexedNormalMatrix.initialize(nChannelsLocal, nBaseParameters);
+    itsIndexedNormalMatrix.initialize(nChannelsLocal, nBaseParameters, chanOffset);
 }
 
 bool GenericNormalEquations::indexedNormalMatrixInitialized() const
@@ -929,6 +941,26 @@ bool GenericNormalEquations::indexedNormalMatrixInitialized() const
 const casacore::Matrix<double>& GenericNormalEquations::indexedNormalMatrix(size_t col, size_t row, size_t chan) const
 {
     return itsIndexedNormalMatrix.getValue(col, row, chan);
+}
+
+const casacore::Matrix<double>& GenericNormalEquations::indexedNormalMatrix(const std::string &colName, const std::string &rowName) const
+{
+    std::pair<casacore::uInt, std::string> colInfo = CalParamNameHelper::extractChannelInfo(colName);
+    std::pair<casacore::uInt, std::string> rowInfo = CalParamNameHelper::extractChannelInfo(rowName);
+
+    size_t chanOffset = itsIndexedNormalMatrix.getChanOffset();
+    size_t colChan = colInfo.first - chanOffset;
+    size_t rowChan = rowInfo.first - chanOffset;
+
+    if (colChan != rowChan) {
+        throw AskapError("Attempt to get an element of normal matrix with different column and row channels!");
+    } else {
+        size_t chan = rowChan;
+        size_t col = getParameterIndexByName(colName);
+        size_t row = getParameterIndexByName(rowName);
+
+        return indexedNormalMatrix(col, row, chan);
+    }
 }
 
 }}
