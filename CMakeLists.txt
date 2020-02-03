@@ -11,6 +11,22 @@ else ()
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif ()
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/askap-cmake")
+include(version_utils)
+get_version_string()
+
+project(askap-scimath VERSION ${VERSION_SHORT} LANGUAGES C CXX)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/askap_scimath.h.in
+                ${CMAKE_CURRENT_SOURCE_DIR}/askap_scimath.h)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/askap_scimath.cc.in
+                ${CMAKE_CURRENT_SOURCE_DIR}/askp_scimath.cc)
+
+# Required Version of ASKAP dependencies is the MAJOR and MINOR version
+# of this package. This allows the PATCH versions to change on everything
+# but the version number cannot be less or more than the current version
+# 
+set(REQUIRED_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}")
+
 
 option (CXX11 "Compile as C++11 if possible" YES)
 option (ENABLE_SHARED "Build shared libraries" YES)
@@ -43,9 +59,9 @@ endif(ENABLE_SHARED)
 # find packages
 find_package(lofar-common REQUIRED)
 find_package(lofar-blob REQUIRED)
-find_package(askap-askap REQUIRED)
-find_package(askap-imagemath REQUIRED)
-find_package(askap-parallel REQUIRED)
+find_package(askap-askap ${REQUIRED_VERSION} REQUIRED)
+find_package(askap-imagemath ${REQUIRED_VERSION} REQUIRED)
+find_package(askap-parallel ${REQUIRED_VERSION} REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system program_options thread chrono )
 find_package(log4cxx REQUIRED)
 find_package(Casacore REQUIRED COMPONENTS  ms images mirlib coordinates fits lattices measures scimath scimath_f tables casa)
@@ -64,7 +80,7 @@ if (CPPUNIT_FOUND)
 endif (CPPUNIT_FOUND)
 
 add_library(scimath
-
+askap_scimath.cc
 ./askap/scimath/fitting/ParamsTable.cc
 ./askap/scimath/fitting/ComplexDiffMatrix.cc
 ./askap/scimath/fitting/Quality.cc
