@@ -54,8 +54,7 @@ namespace scimath {
 /// @param[in] imagename name of the output image file
 /// @param[in] arr input array
 /// @ingroup utils
-template < class T >
-void saveAsCasaImage(const std::string &imagename, const casacore::Array< T > &arr)
+void saveAsCasaImage(const std::string &imagename, const casacore::Array<casacore::Float> &arr)
 {
    ASKAPDEBUGTRACE("saveAsCasaImage");
    size_t nDim = arr.shape().nonDegenerate().nelements();
@@ -81,8 +80,8 @@ void saveAsCasaImage(const std::string &imagename, const casacore::Array< T > &a
             casacore::Vector<double>(1,0.));
         coords.addCoordinate(lc);
    }
-   casacore::PagedImage< T > result(casacore::TiledShape(arr.nonDegenerate().shape()), coords, imagename);
-   casacore::ArrayLattice< T > lattice(arr.nonDegenerate());
+   casacore::PagedImage<casacore::Float> result(casacore::TiledShape(arr.nonDegenerate().shape()), coords, imagename);
+   casacore::ArrayLattice<casacore::Float> lattice(arr.nonDegenerate());
    result.copyData(lattice);
 }
 

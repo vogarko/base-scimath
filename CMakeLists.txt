@@ -164,7 +164,7 @@ install (FILES
 ./askap/scimath/utils/MultiDimArrayPlaneIter.tcc
 ./askap/scimath/utils/CasaBlobUtils.tcc
 ./askap/scimath/utils/FixedSizeCache.tcc
-./askap/scimath/utils/ImageUtils.tcc
+./askap/scimath/utils/ImageUtils.cc
 
 DESTINATION include/askap/scimath/utils
 )
