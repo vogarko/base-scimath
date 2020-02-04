@@ -91,7 +91,7 @@ add_library(scimath
 ./askap/scimath/fitting/CalParamNameHelper.cc
 ./askap/scimath/fitting/JonesIndex.cc
 ./askap/scimath/utils/ComplexGaussianNoise.cc
-./askap/scimath/utils/ImageUtils.cc
+./askap/scimath/utils/ImageUtils.tcc
 ./askap/scimath/utils/PolConverter.cc
 ./askap/scimath/utils/CasaBlobUtils.cc
 ./askap/scimath/utils/EigenDecompose.cc
