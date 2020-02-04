@@ -352,8 +352,6 @@ void GenericNormalEquations::addParameterSparselyToMatrix(const std::string &par
                 nmColIt->first<<" , "<<nmRowIt->first<<"). "<<
                 nmColIt->second.shape()<<" != "<<inNMIt->second.shape());
         nmColIt->second += inNMIt->second; // add up a matrix
-
-        //std::cout << "OLOLO1: " << par << " :: " << inNMIt->second << " :: " << nmColIt->second << std::endl;
     }
 }
 

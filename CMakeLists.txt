@@ -90,6 +90,7 @@ add_library(scimath
 ./askap/scimath/fitting/GenericNormalEquations.cc
 ./askap/scimath/fitting/CalParamNameHelper.cc
 ./askap/scimath/fitting/JonesIndex.cc
+./askap/scimath/fitting/IndexedNormalMatrix.cc
 ./askap/scimath/utils/ComplexGaussianNoise.cc
 ./askap/scimath/utils/PolConverter.cc
 ./askap/scimath/utils/CasaBlobUtils.cc
@@ -138,6 +139,7 @@ install (FILES
 ./askap/scimath/fitting/ImagingNormalEquations.h
 ./askap/scimath/fitting/CalParamNameHelper.h
 ./askap/scimath/fitting/JonesIndex.h
+./askap/scimath/fitting/IndexedNormalMatrix.h
 ./askap/scimath/fitting/ComplexDiffMatrix.tcc
 
 DESTINATION include/askap/scimath/fitting

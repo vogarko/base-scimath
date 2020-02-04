@@ -47,6 +47,7 @@
 #include <askap/scimath/fitting/ComplexDiffMatrix.h>
 #include <askap/scimath/fitting/PolXProducts.h>
 #include <askap/scimath/fitting/Params.h>
+#include <askap/scimath/fitting/IndexedNormalMatrix.h>
 
 // std includes
 #include <map>
@@ -383,118 +384,11 @@ private:
   /// it's really just a big matrix.
   std::map<string, MapOfMatrices> itsNormalMatrix;
 
-    /// @brief Normal matrix with linearized 3D integer index (col, row, channel).
-    struct IndexedNormalMatrix
-    {
-    public:
-        /// @brief default constructor
-        IndexedNormalMatrix() :
-            isInitialized(false),
-            nChannelsLocal(0),
-            nBaseParameters(0),
-            chanOffset(0)
-        {}
-
-        /// @brief assignment operator
-        IndexedNormalMatrix& operator=(const IndexedNormalMatrix &src)
-        {
-            if (&src != this) {
-                reset();
-                initialize(src.nChannelsLocal, src.nBaseParameters, src.chanOffset);
-
-                elements.resize(src.elements.size());
-                std::transform(src.elements.begin(), src.elements.end(), elements.begin(), [](const casacore::Matrix<double> &el) {
-                    return el.copy();
-                });
-            }
-            return *this;
-        }
-
-        // Allocate memory for matrix elements, and set default value to zero.
-        void initialize(size_t nChannelsLocal_, size_t nBaseParameters_, size_t chanOffset_)
-        {
-            if (!initialized()) {
-                nChannelsLocal = nChannelsLocal_;
-                nBaseParameters = nBaseParameters_;
-                chanOffset = chanOffset_;
-
-                size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
-                // Copying casacore::Matrix objects results on different objects, but pointing
-                // to the same storage. Hence after resizing we need to manually assign a new Matrix to each element.
-                elements.resize(nElements);
-                for (auto &element: elements) {
-                    element = casacore::Matrix<double>(2, 2, 0.);
-                }
-                isInitialized = true;
-            } else {
-                throw AskapError("Attempt initialize an already initialized normal matrix!");
-            }
-        }
-
-        // Resets the object to its initial state.
-        void reset() {
-            isInitialized = false;
-            nChannelsLocal = 0;
-            nBaseParameters = 0;
-            chanOffset = 0;
-            elements.clear();
-        }
-
-        const casacore::Matrix<double>& getValue(size_t col, size_t row, size_t chan) const
-        {
-            if (initialized()) {
-                size_t index = get1Dindex(col, row, chan);
-                return elements[index];
-            } else {
-                throw AskapError("Attempt to get an element of non-initialized normal matrix!");
-            }
-        }
-
-        void addValue(size_t col, size_t row, size_t chan, const casacore::Matrix<double>& value)
-        {
-            if (initialized()) {
-                size_t index = get1Dindex(col, row, chan);
-                elements[index] += value;
-            } else {
-                throw AskapError("Attempt to set an element of non-initialized normal matrix!");
-            }
-        }
-
-        inline size_t get1Dindex(size_t col, size_t row, size_t chan) const
-        {
-            ASKAPDEBUGASSERT(col < nBaseParameters);
-            ASKAPDEBUGASSERT(row < nBaseParameters);
-            ASKAPDEBUGASSERT(chan < nChannelsLocal);
-            return col + nBaseParameters * row + nBaseParameters * nBaseParameters * chan;
-        }
-
-        inline bool initialized() const
-        {
-            return isInitialized;
-        }
-
-        inline size_t getChanOffset() const
-        {
-            return chanOffset;
-        }
-
-    private:
-        // Flag for whether the matrix is initialized.
-        bool isInitialized;
-        // Number of channles at the current worker.
-        size_t nChannelsLocal;
-        // Number of parameters at one channel number.
-        size_t nBaseParameters;
-        // Channel offset (store it here for convinience).
-        size_t chanOffset;
-        // Matrix elements.
-        std::vector<casacore::Matrix<casacore::Double>> elements;
-    };
+  /// @brief Normal matrix with linearized 3D integer index: (column, row, channel).
   IndexedNormalMatrix itsIndexedNormalMatrix;
 
   /// @brief the data vectors
-  /// @details This parameter may eventually go a level up in the class
-  /// hierarchy
+  /// @details This parameter may eventually go a level up in the class hierarchy.
   MapOfVectors itsDataVector;
 
   /// @brief The containers for storing the forward and inverse mappings between parameter names and indexes.
