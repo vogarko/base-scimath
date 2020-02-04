@@ -164,6 +164,7 @@ install (FILES
 ./askap/scimath/utils/CasaBlobUtils.h
 ./askap/scimath/utils/DelayEstimator.h
 ./askap/scimath/utils/ChangeMonitor.h
+./askap/scimath/utils/ImageUtils.h
 ./askap/scimath/utils/DeepCopyUtils.h
 ./askap/scimath/utils/PaddingUtils.h
 ./askap/scimath/utils/ComplexGaussianNoise.h
@@ -172,7 +173,6 @@ install (FILES
 ./askap/scimath/utils/EigenDecompose.h
 ./askap/scimath/utils/PhaseUnwrapper.h
 ./askap/scimath/utils/PolConverter.h
-./askap/scimath/utils/ImageUtils.h
 ./askap/scimath/utils/PaddingUtils.tcc
 ./askap/scimath/utils/PhaseUnwrapper.tcc
 ./askap/scimath/utils/MultiDimArrayPlaneIter.tcc
