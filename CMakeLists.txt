@@ -100,6 +100,7 @@ add_library(scimath
 ./askap/scimath/utils/MultiDimArrayPlaneIter.cc
 ./askap/scimath/utils/PaddingUtils.cc
 ./askap/scimath/utils/MultiDimPosIter.cc
+./askap/scimath/utils/ImageUtils.cc
 ./askap/scimath/fft/FFTWrapper.cc
 ./askap/scimath/lsqr_solver/LSQRSolver.cc
 ./askap/scimath/lsqr_solver/MathUtils.cc
@@ -164,7 +165,6 @@ install (FILES
 ./askap/scimath/utils/MultiDimArrayPlaneIter.tcc
 ./askap/scimath/utils/CasaBlobUtils.tcc
 ./askap/scimath/utils/FixedSizeCache.tcc
-./askap/scimath/utils/ImageUtils.cc
 
 DESTINATION include/askap/scimath/utils
 )
