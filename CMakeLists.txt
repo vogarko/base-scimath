@@ -1,7 +1,5 @@
 cmake_minimum_required (VERSION 3.1.0)
 
-project(askap-scimath VERSION 0.0.1 LANGUAGES C CXX)
-
 
 if (EXISTS ${CMAKE_SOURCE_DIR}/askap-cmake)
     execute_process(COMMAND git pull 
