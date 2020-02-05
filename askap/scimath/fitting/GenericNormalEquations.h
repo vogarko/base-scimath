@@ -260,13 +260,13 @@ struct GenericNormalEquations : public INormalEquations {
   /// @param[in] col Column number.
   /// @param[in] row Row number.
   /// @param[in] chan Local channel number (at the current worker).
-  virtual const casacore::Matrix<double>& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
+  virtual const IndexedMatrixElelment& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
 
   /// @brief Returns an element of the indexed normal matrix.
   /// @details Note: This interface should only be used for testing due to its low performance.
   /// @param[in] colName Column parameter name.
   /// @param[in] rowName Row parameter name.
-  virtual const casacore::Matrix<double>& indexedNormalMatrix(const std::string &colName, const std::string &rowName) const;
+  virtual casacore::Matrix<double> indexedNormalMatrix(const std::string &colName, const std::string &rowName) const;
 
 protected:
   /// @brief map of matrices (data element of each row map)

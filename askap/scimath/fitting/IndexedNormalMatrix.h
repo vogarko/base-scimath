@@ -36,9 +36,6 @@
 #ifndef INDEXED_NORMAL_MATRIX_H
 #define INDEXED_NORMAL_MATRIX_H
 
-// casa includes
-#include <casacore/casa/Arrays/Matrix.h>
-
 // own includes
 #include <askap/askap/AskapError.h>
 
@@ -47,6 +44,15 @@
 #include <string>
 
 namespace askap { namespace scimath {
+
+/// @brief Data holder for the indexed normal matrix element.
+struct IndexedMatrixElelment {
+    IndexedMatrixElelment(double a);
+    IndexedMatrixElelment& operator+=(const IndexedMatrixElelment& rhs);
+
+    // Complex value stored as 2x2 matrix.
+    double data[2][2];
+};
 
 struct IndexedNormalMatrix
 {
@@ -57,16 +63,19 @@ public:
     /// @brief assignment operator
     IndexedNormalMatrix& operator=(const IndexedNormalMatrix &src);
 
-    // Allocate memory for matrix elements, and set default value to zero.
+    /// @brief Allocate memory for matrix elements, and set default value to zero.
     void initialize(size_t nChannelsLocal_, size_t nBaseParameters_, size_t chanOffset_);
 
-    // Resets the object to its initial state.
+    /// @brief Resets the object to its initial state.
     void reset();
 
-    const casacore::Matrix<double>& getValue(size_t col, size_t row, size_t chan) const;
+    /// @brief Returns the matrix element by its 3D index.
+    const IndexedMatrixElelment& getValue(size_t col, size_t row, size_t chan) const;
 
-    void addValue(size_t col, size_t row, size_t chan, const casacore::Matrix<double>& value);
+    /// @brief Increments (+=) the matrix element by a given value
+    void addValue(size_t col, size_t row, size_t chan, const IndexedMatrixElelment& value);
 
+    /// @brief Converts the 3D index to 1D index.
     inline size_t get1Dindex(size_t col, size_t row, size_t chan) const
     {
         ASKAPDEBUGASSERT(col < nBaseParameters);
@@ -75,11 +84,14 @@ public:
         return col + nBaseParameters * row + nBaseParameters * nBaseParameters * chan;
     }
 
+    /// @brief Returns whether the matrix has been initialized.
     inline bool initialized() const
     {
         return isInitialized;
     }
 
+    /// @brief Returns the channel offset.
+    /// @details This is needed to retrieve the true channel numbers on the workers in the parallel case.
     inline size_t getChanOffset() const
     {
         return chanOffset;
@@ -95,7 +107,7 @@ private:
     // Channel offset (store it here for convenience).
     size_t chanOffset;
     // Matrix elements.
-    std::vector<casacore::Matrix<casacore::Double>> elements;
+    std::vector<IndexedMatrixElelment> elements;
 };
 
 }}

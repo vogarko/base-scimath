@@ -594,7 +594,14 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                         if (itsIndexedNormalMatrix.initialized()) {
                         // Using new normal matrix format.
                             size_t colIndex = getParameterIndexByName(colName);
-                            itsIndexedNormalMatrix.addValue(colIndex, rowIndex, chan, nmElementBuf);
+
+                            IndexedMatrixElelment el(0.);
+                            for (size_t i = 0; i < 2; i++) {
+                                for (size_t j = 0; j < 2; j++) {
+                                    el.data[i][j] = nmElementBuf(i, j);
+                                }
+                            }
+                            itsIndexedNormalMatrix.addValue(colIndex, rowIndex, chan, el);
                         }
                     }
                 }
@@ -936,12 +943,12 @@ bool GenericNormalEquations::indexedNormalMatrixInitialized() const
     return itsIndexedNormalMatrix.initialized();
 }
 
-const casacore::Matrix<double>& GenericNormalEquations::indexedNormalMatrix(size_t col, size_t row, size_t chan) const
+const IndexedMatrixElelment& GenericNormalEquations::indexedNormalMatrix(size_t col, size_t row, size_t chan) const
 {
     return itsIndexedNormalMatrix.getValue(col, row, chan);
 }
 
-const casacore::Matrix<double>& GenericNormalEquations::indexedNormalMatrix(const std::string &colName, const std::string &rowName) const
+casacore::Matrix<double> GenericNormalEquations::indexedNormalMatrix(const std::string &colName, const std::string &rowName) const
 {
     std::pair<casacore::uInt, std::string> colInfo = CalParamNameHelper::extractChannelInfo(colName);
     std::pair<casacore::uInt, std::string> rowInfo = CalParamNameHelper::extractChannelInfo(rowName);
@@ -957,7 +964,16 @@ const casacore::Matrix<double>& GenericNormalEquations::indexedNormalMatrix(cons
         size_t col = getParameterIndexByName(colName);
         size_t row = getParameterIndexByName(rowName);
 
-        return indexedNormalMatrix(col, row, chan);
+        const IndexedMatrixElelment& el = indexedNormalMatrix(col, row, chan);
+
+        // Building a casa matrix object.
+        casacore::Matrix<casacore::Double> casaEl(2, 2, 0.);
+        for (size_t i = 0; i < 2; i++) {
+            for (size_t j = 0; j < 2; j++) {
+                casaEl(i, j) = el.data[i][j];
+            }
+        }
+        return casaEl;
     }
 }
 

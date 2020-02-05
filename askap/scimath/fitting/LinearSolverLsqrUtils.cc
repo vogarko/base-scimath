@@ -132,6 +132,7 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
 
                         const size_t colIndex = indicesMapIt->second;
                         const casa::Matrix<double>& nm = colIt->second;
+                        //const casa::Matrix<double> nm = gne.indexedNormalMatrix(colIt->first, indit1->first);
 
                         ASKAPCHECK(nrow == nm.nrow(), "Not consistent normal matrix element element dimension!");
                         const size_t ncolumn = nm.ncolumn();

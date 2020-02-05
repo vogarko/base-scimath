@@ -33,13 +33,29 @@
 /// @author Vitaliy Ogarko <vogarko@gmail.com>
 ///
 
-#include <casacore/casa/Arrays/ArrayMath.h>
-
 // own includes
 #include <askap/scimath/fitting/IndexedNormalMatrix.h>
 
-
 namespace askap { namespace scimath {
+
+IndexedMatrixElelment::IndexedMatrixElelment(double a)
+{
+    for (size_t i = 0; i < 2; i++) {
+        for (size_t j = 0; j < 2; j++) {
+            data[i][j] = a;
+        }
+    }
+}
+
+IndexedMatrixElelment& IndexedMatrixElelment::operator+=(const IndexedMatrixElelment& rhs)
+{
+    for (size_t i = 0; i < 2; i++) {
+        for (size_t j = 0; j < 2; j++) {
+            this->data[i][j] += rhs.data[i][j];
+        }
+    }
+    return *this;
+}
 
 IndexedNormalMatrix::IndexedNormalMatrix() :
     isInitialized(false),
@@ -53,11 +69,7 @@ IndexedNormalMatrix& IndexedNormalMatrix::operator=(const IndexedNormalMatrix &s
     if (&src != this) {
         reset();
         initialize(src.nChannelsLocal, src.nBaseParameters, src.chanOffset);
-
-        elements.resize(src.elements.size());
-        std::transform(src.elements.begin(), src.elements.end(), elements.begin(), [](const casacore::Matrix<double> &el) {
-            return el.copy();
-        });
+        elements = src.elements;
     }
     return *this;
 }
@@ -70,12 +82,10 @@ void IndexedNormalMatrix::initialize(size_t nChannelsLocal_, size_t nBaseParamet
         chanOffset = chanOffset_;
 
         size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
-        // Copying casacore::Matrix objects results on different objects, but pointing
-        // to the same storage. Hence after resizing we need to manually assign a new Matrix to each element.
-        elements.resize(nElements);
-        for (auto &element: elements) {
-            element = casacore::Matrix<double>(2, 2, 0.);
-        }
+
+        IndexedMatrixElelment zero = IndexedMatrixElelment(0.);
+        elements.resize(nElements, zero);
+
         isInitialized = true;
     } else {
         throw AskapError("Attempt initialize an already initialized normal matrix!");
@@ -90,7 +100,7 @@ void IndexedNormalMatrix::reset() {
     elements.clear();
 }
 
-const casacore::Matrix<double>& IndexedNormalMatrix::getValue(size_t col, size_t row, size_t chan) const
+const IndexedMatrixElelment& IndexedNormalMatrix::getValue(size_t col, size_t row, size_t chan) const
 {
     if (initialized()) {
         size_t index = get1Dindex(col, row, chan);
@@ -100,7 +110,7 @@ const casacore::Matrix<double>& IndexedNormalMatrix::getValue(size_t col, size_t
     }
 }
 
-void IndexedNormalMatrix::addValue(size_t col, size_t row, size_t chan, const casacore::Matrix<double>& value)
+void IndexedNormalMatrix::addValue(size_t col, size_t row, size_t chan, const IndexedMatrixElelment& value)
 {
     if (initialized()) {
         size_t index = get1Dindex(col, row, chan);
