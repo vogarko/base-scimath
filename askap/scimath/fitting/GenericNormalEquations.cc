@@ -972,11 +972,6 @@ const IndexedMatrixElelment& GenericNormalEquations::indexedNormalMatrix(size_t 
     return itsIndexedNormalMatrix.getValue(col, row, chan);
 }
 
-const IndexedDataVector::element_type& GenericNormalEquations::indexedDataVector(size_t row, size_t chan) const
-{
-    return itsIndexedDataVector.getValue(row, chan);
-}
-
 casacore::Matrix<double> GenericNormalEquations::indexedNormalMatrix(const std::string &colName, const std::string &rowName) const
 {
     std::pair<casacore::uInt, std::string> colInfo = CalParamNameHelper::extractChannelInfo(colName);
@@ -1004,6 +999,16 @@ casacore::Matrix<double> GenericNormalEquations::indexedNormalMatrix(const std::
         }
         return casaEl;
     }
+}
+
+const IndexedDataVector::element_type& GenericNormalEquations::indexedDataVector(size_t row, size_t chan) const
+{
+    return itsIndexedDataVector.getValue(row, chan);
+}
+
+void GenericNormalEquations::unrollIndexedDataVector(std::vector<double>& b) const
+{
+    return itsIndexedDataVector.unroll(b);
 }
 
 }}

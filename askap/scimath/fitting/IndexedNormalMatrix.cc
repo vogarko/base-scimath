@@ -88,7 +88,7 @@ void IndexedNormalMatrix::initialize(size_t nBaseParameters_, size_t nChannelsLo
 
         isInitialized = true;
     } else {
-        throw AskapError("Attempt initialize an already initialized indexed normal matrix!");
+        throw AskapError("Attempt to initialize an already initialized indexed normal matrix!");
     }
 }
 
@@ -151,7 +151,7 @@ void IndexedDataVector::initialize(size_t nBaseParameters_, size_t nChannelsLoca
 
         isInitialized = true;
     } else {
-        throw AskapError("Attempt initialize an already initialized indexed data vector!");
+        throw AskapError("Attempt to initialize an already initialized indexed data vector!");
     }
 }
 
@@ -179,6 +179,25 @@ void IndexedDataVector::addValue(size_t row, size_t chan, const element_type& va
         elements[index] += value;
     } else {
         throw AskapError("Attempt to set an element of non-initialized indexed data vector!");
+    }
+}
+
+void IndexedDataVector::unroll(std::vector<double>& b) const
+{
+    if (b.size() < 2 * elements.size()) { // 2 doubles per complex value.
+        throw AskapError("Not allocated input vector in IndexedDataVector::populate_b!");
+    }
+
+    if (initialized()) {
+        ASKAPCHECK(elements.size() == nBaseParameters * nChannelsLocal, "Wrong number of elements in IndexedDataVector::unroll!");
+
+        // Unrolling complex values to doubles.
+        for (size_t i = 0; i < elements.size(); i++) {
+            b[2 * i + 0] = elements[i].real();
+            b[2 * i + 1] = elements[i].imag();
+        }
+    } else {
+        throw AskapError("Indexed data vector is not initialized in IndexedDataVector::unroll!");
     }
 }
 

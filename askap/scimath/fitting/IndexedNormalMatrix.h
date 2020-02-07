@@ -133,6 +133,9 @@ public:
     /// @brief Increments (+=) the data vector element by a given value
     void addValue(size_t row, size_t chan, const element_type& value);
 
+    /// @brief Populate the right-hand side vector b (unrolling complex values to doubles).
+    void unroll(std::vector<double>& b) const;
+
     /// @brief Returns whether the vector is initialized.
     inline bool initialized() const
     {
@@ -148,7 +151,7 @@ private:
         return row + nBaseParameters * chan;
     }
 
-    // Flag for whether the matrix is initialized.
+    // Flag for whether the data vector is initialized.
     bool isInitialized;
     // Number of parameters at one channel number.
     size_t nBaseParameters;
