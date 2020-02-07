@@ -59,8 +59,8 @@ IndexedMatrixElelment& IndexedMatrixElelment::operator+=(const IndexedMatrixElel
 
 IndexedNormalMatrix::IndexedNormalMatrix() :
     isInitialized(false),
-    nChannelsLocal(0),
     nBaseParameters(0),
+    nChannelsLocal(0),
     chanOffset(0)
 {}
 
@@ -74,28 +74,28 @@ IndexedNormalMatrix& IndexedNormalMatrix::operator=(const IndexedNormalMatrix &s
     return *this;
 }
 
-void IndexedNormalMatrix::initialize(size_t nChannelsLocal_, size_t nBaseParameters_, size_t chanOffset_)
+void IndexedNormalMatrix::initialize(size_t nBaseParameters_, size_t nChannelsLocal_, size_t chanOffset_)
 {
     if (!initialized()) {
-        nChannelsLocal = nChannelsLocal_;
         nBaseParameters = nBaseParameters_;
+        nChannelsLocal = nChannelsLocal_;
         chanOffset = chanOffset_;
 
-        size_t nElements = nChannelsLocal * nBaseParameters * nBaseParameters;
+        size_t nElements = nBaseParameters * nBaseParameters * nChannelsLocal;
 
         IndexedMatrixElelment zero = IndexedMatrixElelment(0.);
         elements.resize(nElements, zero);
 
         isInitialized = true;
     } else {
-        throw AskapError("Attempt initialize an already initialized normal matrix!");
+        throw AskapError("Attempt initialize an already initialized indexed normal matrix!");
     }
 }
 
 void IndexedNormalMatrix::reset() {
     isInitialized = false;
-    nChannelsLocal = 0;
     nBaseParameters = 0;
+    nChannelsLocal = 0;
     chanOffset = 0;
     elements.clear();
 }
@@ -116,7 +116,69 @@ void IndexedNormalMatrix::addValue(size_t col, size_t row, size_t chan, const In
         size_t index = get1Dindex(col, row, chan);
         elements[index] += value;
     } else {
-        throw AskapError("Attempt to set an element of non-initialized normal matrix!");
+        throw AskapError("Attempt to set an element of non-initialized indexed normal matrix!");
+    }
+}
+
+//==============================================================================================================
+// Methods of IndexedDataVector.
+//==============================================================================================================
+
+IndexedDataVector::IndexedDataVector() :
+    isInitialized(false),
+    nBaseParameters(0),
+    nChannelsLocal(0)
+{}
+
+IndexedDataVector& IndexedDataVector::operator=(const IndexedDataVector &src)
+{
+    if (&src != this) {
+        reset();
+        initialize(src.nBaseParameters, src.nChannelsLocal);
+        elements = src.elements;
+    }
+    return *this;
+}
+
+void IndexedDataVector::initialize(size_t nBaseParameters_, size_t nChannelsLocal_)
+{
+    if (!initialized()) {
+        nBaseParameters = nBaseParameters_;
+        nChannelsLocal = nChannelsLocal_;
+
+        size_t nElements = nBaseParameters * nChannelsLocal;
+        elements.resize(nElements, std::complex<double>(0.));
+
+        isInitialized = true;
+    } else {
+        throw AskapError("Attempt initialize an already initialized indexed data vector!");
+    }
+}
+
+void IndexedDataVector::reset() {
+    isInitialized = false;
+    nBaseParameters = 0;
+    nChannelsLocal = 0;
+    elements.clear();
+}
+
+const IndexedDataVector::element_type& IndexedDataVector::getValue(size_t row, size_t chan) const
+{
+    if (initialized()) {
+        size_t index = get1Dindex(row, chan);
+        return elements[index];
+    } else {
+        throw AskapError("Attempt to get an element of non-initialized indexed data vector!");
+    }
+}
+
+void IndexedDataVector::addValue(size_t row, size_t chan, const element_type& value)
+{
+    if (initialized()) {
+        size_t index = get1Dindex(row, chan);
+        elements[index] += value;
+    } else {
+        throw AskapError("Attempt to set an element of non-initialized indexed data vector!");
     }
 }
 

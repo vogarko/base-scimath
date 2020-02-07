@@ -91,6 +91,7 @@ GenericNormalEquations::GenericNormalEquations(const DesignMatrix& dm)
 GenericNormalEquations::GenericNormalEquations(const GenericNormalEquations &src) :
         INormalEquations(src),
         itsIndexedNormalMatrix(src.itsIndexedNormalMatrix),
+        itsIndexedDataVector(src.itsIndexedDataVector),
         itsParameterNameToIndex(src.itsParameterNameToIndex),
         itsParameterIndexToBaseName(src.itsParameterIndexToBaseName),
         itsMetadata(src.itsMetadata)
@@ -118,6 +119,7 @@ GenericNormalEquations& GenericNormalEquations::operator=(const GenericNormalEqu
            deepCopyOfSTDMap(ci->second, itsNormalMatrix[ci->first]);
       }
       itsIndexedNormalMatrix = src.itsIndexedNormalMatrix;
+      itsIndexedDataVector = src.itsIndexedDataVector;
       itsParameterNameToIndex = src.itsParameterNameToIndex;
       itsParameterIndexToBaseName = src.itsParameterIndexToBaseName;
       itsMetadata = src.itsMetadata;
@@ -133,6 +135,7 @@ void GenericNormalEquations::reset()
   itsDataVector.clear();
   itsNormalMatrix.clear();
   itsIndexedNormalMatrix.reset();
+  itsIndexedDataVector.reset();
   itsParameterNameToIndex.clear();
   itsParameterIndexToBaseName.clear();
   itsMetadata.reset();
@@ -180,9 +183,15 @@ void GenericNormalEquations::merge(const INormalEquations& src)
                   itsParameterIndexToBaseName = gne.itsParameterIndexToBaseName;
               }
 
-              // TODO: Copy an indexed data vector here when it is implemented.
+              // Copy data vector.
+              if (gne.indexedDataVectorInitialized() && !indexedDataVectorInitialized()) {
+                  itsIndexedDataVector = gne.itsIndexedDataVector;
+              } else {
+                  throw AskapError("Bad indexed data vector in GenericNormalEquations::merge!");
+              }
+
           } else {
-              // TODO: Do we have this use case, i.e., merging non-empty normal equation with another non-empty one?
+              // TODO: Do we have this use case? (merging non-empty normal equation with another non-empty one)
               throw AskapError("Merging indexed normal matrix with another one which is already initialized!");
           }
 
@@ -499,6 +508,12 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
 
                 // Adding partial data vector.
                 addDataVector(rowName, dataVector);
+
+                if (itsIndexedDataVector.initialized()) {
+                    size_t rowIndex = getParameterIndexByName(rowName);
+                    std::complex<double> el = std::complex<double>(dataVector[0], dataVector[1]);
+                    itsIndexedDataVector.addValue(rowIndex, chan, el);
+                }
             }
         }
     }
@@ -517,8 +532,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
     for (casacore::uInt p = 0; p < nDataPoints; ++p) {
 
         // Two inner loops are from matrix multiplication of cdm to a vector
-        // for A and A^T parts in the product forming the element of the normal
-        // matrix. We can optimise this for speed later, if proved to be a problem.
+        // for A and A^T parts in the product forming the element of the normal matrix.
         for (casacore::uInt p1 = 0; p1 < nDataPoints; ++p1) {
 
             const ComplexDiff& cd1 = cdm(p, p1 + columnOffset);
@@ -933,9 +947,14 @@ size_t GenericNormalEquations::getNumberBaseParameters() const
     return itsParameterIndexToBaseName.size();
 }
 
-void GenericNormalEquations::initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters, size_t chanOffset)
+void GenericNormalEquations::initIndexedNormalMatrix(size_t nBaseParameters, size_t nChannelsLocal, size_t chanOffset)
 {
-    itsIndexedNormalMatrix.initialize(nChannelsLocal, nBaseParameters, chanOffset);
+    itsIndexedNormalMatrix.initialize(nBaseParameters, nChannelsLocal, chanOffset);
+}
+
+void GenericNormalEquations::initIndexedDataVector(size_t nBaseParameters, size_t nChannelsLocal)
+{
+    itsIndexedDataVector.initialize(nBaseParameters, nChannelsLocal);
 }
 
 bool GenericNormalEquations::indexedNormalMatrixInitialized() const
@@ -943,9 +962,19 @@ bool GenericNormalEquations::indexedNormalMatrixInitialized() const
     return itsIndexedNormalMatrix.initialized();
 }
 
+bool GenericNormalEquations::indexedDataVectorInitialized() const
+{
+    return itsIndexedDataVector.initialized();
+}
+
 const IndexedMatrixElelment& GenericNormalEquations::indexedNormalMatrix(size_t col, size_t row, size_t chan) const
 {
     return itsIndexedNormalMatrix.getValue(col, row, chan);
+}
+
+const IndexedDataVector::element_type& GenericNormalEquations::indexedDataVector(size_t row, size_t chan) const
+{
+    return itsIndexedDataVector.getValue(row, chan);
 }
 
 casacore::Matrix<double> GenericNormalEquations::indexedNormalMatrix(const std::string &colName, const std::string &rowName) const

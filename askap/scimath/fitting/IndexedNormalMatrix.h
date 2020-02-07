@@ -40,8 +40,9 @@
 #include <askap/askap/AskapError.h>
 
 // std includes
-#include <vector>
+#include <complex>
 #include <string>
+#include <vector>
 
 namespace askap { namespace scimath {
 
@@ -63,8 +64,8 @@ public:
     /// @brief assignment operator
     IndexedNormalMatrix& operator=(const IndexedNormalMatrix &src);
 
-    /// @brief Allocate memory for matrix elements, and set default value to zero.
-    void initialize(size_t nChannelsLocal_, size_t nBaseParameters_, size_t chanOffset_);
+    /// @brief Allocate memory for matrix elements, and set default values to zero.
+    void initialize(size_t nBaseParameters_, size_t nChannelsLocal_, size_t chanOffset_);
 
     /// @brief Resets the object to its initial state.
     void reset();
@@ -75,16 +76,7 @@ public:
     /// @brief Increments (+=) the matrix element by a given value
     void addValue(size_t col, size_t row, size_t chan, const IndexedMatrixElelment& value);
 
-    /// @brief Converts the 3D index to 1D index.
-    inline size_t get1Dindex(size_t col, size_t row, size_t chan) const
-    {
-        ASKAPDEBUGASSERT(col < nBaseParameters);
-        ASKAPDEBUGASSERT(row < nBaseParameters);
-        ASKAPDEBUGASSERT(chan < nChannelsLocal);
-        return col + nBaseParameters * row + nBaseParameters * nBaseParameters * chan;
-    }
-
-    /// @brief Returns whether the matrix has been initialized.
+    /// @brief Returns whether the matrix is initialized.
     inline bool initialized() const
     {
         return isInitialized;
@@ -98,16 +90,72 @@ public:
     }
 
 private:
+    /// @brief Converts the 3D index to 1D index.
+    inline size_t get1Dindex(size_t col, size_t row, size_t chan) const
+    {
+        ASKAPDEBUGASSERT(col < nBaseParameters);
+        ASKAPDEBUGASSERT(row < nBaseParameters);
+        ASKAPDEBUGASSERT(chan < nChannelsLocal);
+        return col + nBaseParameters * row + nBaseParameters * nBaseParameters * chan;
+    }
+
     // Flag for whether the matrix is initialized.
     bool isInitialized;
-    // Number of channels at the current worker.
-    size_t nChannelsLocal;
     // Number of parameters at one channel number.
     size_t nBaseParameters;
+    // Number of channels at the current worker.
+    size_t nChannelsLocal;
     // Channel offset (store it here for convenience).
     size_t chanOffset;
     // Matrix elements.
     std::vector<IndexedMatrixElelment> elements;
+};
+
+struct IndexedDataVector
+{
+    using element_type = std::complex<double>;
+public:
+    /// @brief default constructor
+    IndexedDataVector();
+
+    /// @brief assignment operator
+    IndexedDataVector& operator=(const IndexedDataVector &src);
+
+    /// @brief Allocate memory for vector elements, and set default values to zero.
+    void initialize(size_t nBaseParameters_, size_t nChannelsLocal_);
+
+    /// @brief Resets the object to its initial state.
+    void reset();
+
+    /// @brief Returns the data vector element by its 2D index.
+    const element_type& getValue(size_t row, size_t chan) const;
+
+    /// @brief Increments (+=) the data vector element by a given value
+    void addValue(size_t row, size_t chan, const element_type& value);
+
+    /// @brief Returns whether the vector is initialized.
+    inline bool initialized() const
+    {
+        return isInitialized;
+    }
+
+private:
+    /// @brief Converts the 2D index to 1D index.
+    inline size_t get1Dindex(size_t row, size_t chan) const
+    {
+        ASKAPDEBUGASSERT(row < nBaseParameters);
+        ASKAPDEBUGASSERT(chan < nChannelsLocal);
+        return row + nBaseParameters * chan;
+    }
+
+    // Flag for whether the matrix is initialized.
+    bool isInitialized;
+    // Number of parameters at one channel number.
+    size_t nBaseParameters;
+    // Number of channels at the current worker.
+    size_t nChannelsLocal;
+    // Vector elements.
+    std::vector<element_type> elements;
 };
 
 }}

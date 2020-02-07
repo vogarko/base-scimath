@@ -246,13 +246,21 @@ struct GenericNormalEquations : public INormalEquations {
   const std::set<size_t>& getParameterChannels() const;
 
   /// @brief Initialize the indexed normal matrix.
-  /// @param[in] nChannelsLocal Number of channels at current worker.
   /// @param[in] nBaseParameters Number of parameters at one channel.
+  /// @param[in] nChannelsLocal Number of channels at current worker.
   /// @param[in] chanOffset Channel offset at the current worker.
-  void initIndexedNormalMatrix(size_t nChannelsLocal, size_t nBaseParameters, size_t chanOffset);
+  void initIndexedNormalMatrix(size_t nBaseParameters, size_t nChannelsLocal, size_t chanOffset);
+
+  /// @brief Initialize the indexed data vector.
+  /// @param[in] nBaseParameters Number of parameters at one channel.
+  /// @param[in] nChannelsLocal Number of channels at current worker.
+  void initIndexedDataVector(size_t nBaseParameters, size_t nChannelsLocal);
 
   /// @brief Returns whether the indexed normal matrix is initialized.
   bool indexedNormalMatrixInitialized() const;
+
+  /// @brief Returns whether the indexed data vector is initialized.
+  bool indexedDataVectorInitialized() const;
 
   /// @brief Returns an element of the indexed normal matrix.
   /// @details Note that chan is a local channel number at the current worker,
@@ -262,8 +270,15 @@ struct GenericNormalEquations : public INormalEquations {
   /// @param[in] chan Local channel number (at the current worker).
   virtual const IndexedMatrixElelment& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
 
+  /// @brief Returns an element of the indexed data vector.
+  /// @details Note that chan is a local channel number at the current worker,
+  /// i.e., not the actual channel number that is stored in the gain name.
+  /// @param[in] row Row number.
+  /// @param[in] chan Local channel number (at the current worker).
+  virtual const IndexedDataVector::element_type& indexedDataVector(size_t row, size_t chan) const;
+
   /// @brief Returns an element of the indexed normal matrix.
-  /// @details Note: This interface should only be used for testing due to its low performance.
+  /// @details Note: This interface should only be used for testing due to its poor performance.
   /// @param[in] colName Column parameter name.
   /// @param[in] rowName Row parameter name.
   virtual casacore::Matrix<double> indexedNormalMatrix(const std::string &colName, const std::string &rowName) const;
@@ -386,6 +401,9 @@ private:
 
   /// @brief Normal matrix with linearized 3D integer index: (column, row, channel).
   IndexedNormalMatrix itsIndexedNormalMatrix;
+
+  /// @brief Data vector with linearized 2D integer index: (row, channel).
+  IndexedDataVector itsIndexedDataVector;
 
   /// @brief the data vectors
   /// @details This parameter may eventually go a level up in the class hierarchy.
