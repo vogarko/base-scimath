@@ -947,6 +947,12 @@ size_t GenericNormalEquations::getNumberBaseParameters() const
     return itsParameterIndexToBaseName.size();
 }
 
+size_t GenericNormalEquations::getNumberLocalChannels() const
+{
+    ASKAPCHECK(itsIndexedNormalMatrix.initialized(), "Indexed normal matrix is not initialized!");
+    return itsIndexedNormalMatrix.getNumberLocalChannels();
+}
+
 void GenericNormalEquations::initIndexedNormalMatrix(size_t nBaseParameters, size_t nChannelsLocal, size_t chanOffset)
 {
     itsIndexedNormalMatrix.initialize(nBaseParameters, nChannelsLocal, chanOffset);
@@ -1006,7 +1012,7 @@ const IndexedDataVector::element_type& GenericNormalEquations::indexedDataVector
     return itsIndexedDataVector.getValue(row, chan);
 }
 
-void GenericNormalEquations::unrollIndexedDataVector(std::vector<double>& b) const
+size_t GenericNormalEquations::unrollIndexedDataVector(std::vector<double>& b) const
 {
     return itsIndexedDataVector.unroll(b);
 }

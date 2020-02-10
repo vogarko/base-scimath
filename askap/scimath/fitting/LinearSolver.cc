@@ -30,6 +30,7 @@
 #include <askap/scimath/fitting/LinearSolver.h>
 #include <askap/scimath/fitting/LinearSolverUtils.h>
 #include <askap/scimath/fitting/LinearSolverLsqrUtils.h>
+#include <askap/scimath/fitting/GenericNormalEquations.h>
 
 #include <askap/askap/AskapError.h>
 #include <askap/profile/AskapProfiler.h>
@@ -438,7 +439,15 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     lsqr::Vector b_RHS(nParametersTotal, 0.);
 
     // Populate the right-hand side vector B.
-    size_t nDataAdded = solverutils::populate_B(normalEquations(), indices, b_RHS, solverutils::assign_to_lsqr_vector);
+    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(normalEquations());
+
+    size_t nDataAdded;
+    if (gne.indexedDataVectorInitialized()) {
+        ASKAPCHECK(gne.indexedNormalMatrixInitialized(), "Indexed normal matrix is not initialized!");
+        nDataAdded = gne.unrollIndexedDataVector(b_RHS);
+    } else {
+        nDataAdded = solverutils::populate_B(normalEquations(), indices, b_RHS, solverutils::assign_to_lsqr_vector);
+    }
     ASKAPCHECK(nDataAdded == (size_t)(nParameters), "Wrong number of data added on rank " << myrank);
 
     if (matrixIsParallel) {

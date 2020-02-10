@@ -111,45 +111,75 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
         }
     }
 
-    // Loop over matrix rows.
-    for (std::vector<std::pair<std::string, int> >::const_iterator indit1 = indices.begin();
-            indit1 != indices.end(); ++indit1) {
+    if (gne.indexedNormalMatrixInitialized()) {
+    // New normal format format (using indexes).
+        ASKAPCHECK(gne.indexedDataVectorInitialized(), "Indexed data vector is not initialized!");
 
-        const auto colItBeg = gne.getNormalMatrixRowBegin(indit1->first);
-        const auto colItEnd = gne.getNormalMatrixRowEnd(indit1->first);
+        size_t nChannelsLocal = gne.getNumberLocalChannels();
+        size_t nBaseParameters = gne.getNumberBaseParameters();
 
-        if (colItBeg != colItEnd) {
-            const size_t nrow = colItBeg->second.nrow();
-            for (size_t row = 0; row < nrow; ++row) {
-                matrix.NewRow();
-                // Loop over column elements.
-                for (auto colIt = colItBeg;
-                        colIt != colItEnd; ++colIt) {
+        ASKAPCHECK(2 * nBaseParameters * nChannelsLocal == nParameters, "Wrong number of parameters in buildLSQRSparseMatrix!");
 
-                    const std::map<std::string, size_t>::const_iterator indicesMapIt = indicesMap.find(colIt->first);
-                    if (indicesMapIt != indicesMap.end()) {
-                    // It is a parameter to solve for, adding it to the matrix.
+        for (size_t chan = 0; chan < nChannelsLocal; chan++) {
+            for (size_t row = 0; row < nBaseParameters; row++) {
+                // Adding 2x2 complex elements (indexed with i, j).
+                for (size_t i = 0; i < 2; i++) {
+                    matrix.NewRow();
+                    for (size_t col = 0; col < nBaseParameters; col++) {
+                        const IndexedMatrixElelment& elem = gne.indexedNormalMatrix(col, row, chan);
+                        for (size_t j = 0; j < 2; j++) {
+                            const double value = elem.data[i][j];
 
-                        const size_t colIndex = indicesMapIt->second;
-                        const casa::Matrix<double>& nm = colIt->second;
-                        //const casa::Matrix<double> nm = gne.indexedNormalMatrix(colIt->first, indit1->first);
-
-                        ASKAPCHECK(nrow == nm.nrow(), "Not consistent normal matrix element element dimension!");
-                        const size_t ncolumn = nm.ncolumn();
-                        for (size_t col = 0; col < ncolumn; ++col) {
-                             const double elem = nm(row, col);
-                             ASKAPCHECK(!std::isnan(elem), "Normal matrix seems to have NaN for row = "<< row << " and col = " << col << ", this shouldn't happen!");
-                             matrix.Add(elem, col + colIndex);
+                            size_t colIndex = 2 * col + j + chan * (2 * nBaseParameters);
+                            matrix.Add(value, colIndex);
                         }
                     }
                 }
             }
-        } else {
-        // Adding empty matrix rows.
-            // Need to add corresponding empty rows in the sparse matrix.
-            const size_t nrow = gne.dataVector(indit1->first).nelements();
-            for (size_t i = 0; i < nrow; ++i) {
-                matrix.NewRow();
+        }
+
+    } else {
+
+        // Loop over matrix rows.
+        for (std::vector<std::pair<std::string, int> >::const_iterator indit1 = indices.begin();
+                indit1 != indices.end(); ++indit1) {
+
+            const auto colItBeg = gne.getNormalMatrixRowBegin(indit1->first);
+            const auto colItEnd = gne.getNormalMatrixRowEnd(indit1->first);
+
+            if (colItBeg != colItEnd) {
+                const size_t nrow = colItBeg->second.nrow();
+                for (size_t row = 0; row < nrow; ++row) {
+                    matrix.NewRow();
+                    // Loop over column elements.
+                    for (auto colIt = colItBeg;
+                            colIt != colItEnd; ++colIt) {
+
+                        const std::map<std::string, size_t>::const_iterator indicesMapIt = indicesMap.find(colIt->first);
+                        if (indicesMapIt != indicesMap.end()) {
+                        // It is a parameter to solve for, adding it to the matrix.
+
+                            const size_t colIndex = indicesMapIt->second;
+                            const casa::Matrix<double>& nm = colIt->second;
+                            //const casa::Matrix<double> nm = gne.indexedNormalMatrix(colIt->first, indit1->first);
+
+                            ASKAPCHECK(nrow == nm.nrow(), "Not consistent normal matrix element element dimension!");
+                            const size_t ncolumn = nm.ncolumn();
+                            for (size_t col = 0; col < ncolumn; ++col) {
+                                 const double elem = nm(row, col);
+                                 ASKAPCHECK(!std::isnan(elem), "Normal matrix seems to have NaN for row = "<< row << " and col = " << col << ", this shouldn't happen!");
+                                 matrix.Add(elem, col + colIndex);
+                            }
+                        }
+                    }
+                }
+            } else {
+            // Adding empty matrix rows.
+                // Need to add corresponding empty rows in the sparse matrix.
+                const size_t nrow = gne.dataVector(indit1->first).nelements();
+                for (size_t i = 0; i < nrow; ++i) {
+                    matrix.NewRow();
+                }
             }
         }
     }

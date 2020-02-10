@@ -89,6 +89,12 @@ public:
         return chanOffset;
     }
 
+    /// @brief Returns the local number of channels (at the current worker).
+    inline size_t getNumberLocalChannels() const
+    {
+        return nChannelsLocal;
+    }
+
 private:
     /// @brief Converts the 3D index to 1D index.
     inline size_t get1Dindex(size_t col, size_t row, size_t chan) const
@@ -134,7 +140,7 @@ public:
     void addValue(size_t row, size_t chan, const element_type& value);
 
     /// @brief Populate the right-hand side vector b (unrolling complex values to doubles).
-    void unroll(std::vector<double>& b) const;
+    size_t unroll(std::vector<double>& b) const;
 
     /// @brief Returns whether the vector is initialized.
     inline bool initialized() const

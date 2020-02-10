@@ -241,9 +241,8 @@ struct GenericNormalEquations : public INormalEquations {
   /// @brief Returns the number of parameters at one channel.
   size_t getNumberBaseParameters() const;
 
-  /// @brief Returns the actual channel numbers used on the current channel.
-  /// @details These are the channels stored directly in the parameter names.
-  const std::set<size_t>& getParameterChannels() const;
+  /// @brief Returns the number of local channels (a current worker).
+  size_t getNumberLocalChannels() const;
 
   /// @brief Initialize the indexed normal matrix.
   /// @param[in] nBaseParameters Number of parameters at one channel.
@@ -286,7 +285,8 @@ struct GenericNormalEquations : public INormalEquations {
   /// @brief Populate the right-hand side vector b (unrolling complex values to doubles).
   /// @details Data is taken from the indexed data vector.
   /// @param[in] b Pre-allocated container where the elements will be written.
-  void unrollIndexedDataVector(std::vector<double>& b) const;
+  /// @return The number of data written.
+  size_t unrollIndexedDataVector(std::vector<double>& b) const;
 
 protected:
   /// @brief map of matrices (data element of each row map)

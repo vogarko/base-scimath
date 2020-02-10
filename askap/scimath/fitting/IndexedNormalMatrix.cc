@@ -68,7 +68,7 @@ IndexedNormalMatrix& IndexedNormalMatrix::operator=(const IndexedNormalMatrix &s
 {
     if (&src != this) {
         reset();
-        initialize(src.nChannelsLocal, src.nBaseParameters, src.chanOffset);
+        initialize(src.nBaseParameters, src.nChannelsLocal, src.chanOffset);
         elements = src.elements;
     }
     return *this;
@@ -182,7 +182,7 @@ void IndexedDataVector::addValue(size_t row, size_t chan, const element_type& va
     }
 }
 
-void IndexedDataVector::unroll(std::vector<double>& b) const
+size_t IndexedDataVector::unroll(std::vector<double>& b) const
 {
     if (b.size() < 2 * elements.size()) { // 2 doubles per complex value.
         throw AskapError("Not allocated input vector in IndexedDataVector::populate_b!");
@@ -196,6 +196,7 @@ void IndexedDataVector::unroll(std::vector<double>& b) const
             b[2 * i + 0] = elements[i].real();
             b[2 * i + 1] = elements[i].imag();
         }
+        return 2 * elements.size();
     } else {
         throw AskapError("Indexed data vector is not initialized in IndexedDataVector::unroll!");
     }
