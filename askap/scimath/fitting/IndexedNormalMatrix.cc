@@ -68,8 +68,10 @@ IndexedNormalMatrix& IndexedNormalMatrix::operator=(const IndexedNormalMatrix &s
 {
     if (&src != this) {
         reset();
-        initialize(src.nBaseParameters, src.nChannelsLocal, src.chanOffset);
-        elements = src.elements;
+        if (src.initialized()) {
+            initialize(src.nBaseParameters, src.nChannelsLocal, src.chanOffset);
+            elements = src.elements;
+        }
     }
     return *this;
 }
@@ -193,7 +195,7 @@ size_t IndexedDataVector::unroll(std::vector<double>& b) const
 
         // Unrolling complex values to doubles.
         for (size_t i = 0; i < elements.size(); i++) {
-            b[2 * i + 0] = elements[i].real();
+            b[2 * i] = elements[i].real();
             b[2 * i + 1] = elements[i].imag();
         }
         return 2 * elements.size();

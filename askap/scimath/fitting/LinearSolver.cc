@@ -31,6 +31,7 @@
 #include <askap/scimath/fitting/LinearSolverUtils.h>
 #include <askap/scimath/fitting/LinearSolverLsqrUtils.h>
 #include <askap/scimath/fitting/GenericNormalEquations.h>
+#include <askap/scimath/fitting/CalParamNameHelper.h>
 
 #include <askap/askap/AskapError.h>
 #include <askap/profile/AskapProfiler.h>
@@ -551,8 +552,38 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     }
 
     //------------------------------------------------------------------
-    // Update the parameters for the calculated changes.
-    solverutils::update_solution(indices, params, x, solverutils::retrieve_from_lsqr_vector);
+    // Update the parameters with the calculated changes.
+    if (gne.indexedNormalMatrixInitialized()) {
+    // TODO: Move to a function.
+    // New normal format format (using indexes).
+        size_t nChannelsLocal = gne.getNumberLocalChannels();
+        size_t nBaseParameters = gne.getNumberBaseParameters();
+        size_t chanOffset = gne.getChannelOffset();
+
+        for (size_t i = 0; i < nBaseParameters; i++) {
+            std::string baseParamName = gne.getBaseParameterNameByIndex(i);
+            for (size_t chan = 0; chan < nChannelsLocal; chan++) {
+                size_t chanNumber = chan + chanOffset;
+                std::string paramName = CalParamNameHelper::addChannelInfo(baseParamName, chanNumber);
+
+                casa::IPosition vecShape(1, 2);
+                casa::Vector<double> value(params.value(paramName).reform(vecShape));
+
+                double adjustment[2];
+
+                size_t index = i + nBaseParameters * chan;
+                adjustment[0] = x[2 * index];
+                adjustment[1] = x[2 * index + 1];
+
+                for (size_t i = 0; i < 2; ++i) {
+                    value(i) += adjustment[i];
+                }
+            }
+        }
+
+    } else {
+        solverutils::update_solution(indices, params, x, solverutils::retrieve_from_lsqr_vector);
+    }
 
     //------------------------------------------------------------------
     // Set approximate solution quality.

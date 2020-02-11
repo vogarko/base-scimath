@@ -244,6 +244,9 @@ struct GenericNormalEquations : public INormalEquations {
   /// @brief Returns the number of local channels (a current worker).
   size_t getNumberLocalChannels() const;
 
+  /// @brief Returns the channel offset.
+  size_t getChannelOffset() const;
+
   /// @brief Initialize the indexed normal matrix.
   /// @param[in] nBaseParameters Number of parameters at one channel.
   /// @param[in] nChannelsLocal Number of channels at current worker.

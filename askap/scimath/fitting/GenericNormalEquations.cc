@@ -953,6 +953,12 @@ size_t GenericNormalEquations::getNumberLocalChannels() const
     return itsIndexedNormalMatrix.getNumberLocalChannels();
 }
 
+size_t GenericNormalEquations::getChannelOffset() const
+{
+    ASKAPCHECK(itsIndexedNormalMatrix.initialized(), "Indexed normal matrix is not initialized!");
+    return itsIndexedNormalMatrix.getChanOffset();
+}
+
 void GenericNormalEquations::initIndexedNormalMatrix(size_t nBaseParameters, size_t nChannelsLocal, size_t chanOffset)
 {
     itsIndexedNormalMatrix.initialize(nBaseParameters, nChannelsLocal, chanOffset);
