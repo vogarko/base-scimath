@@ -1013,35 +1013,6 @@ const IndexedMatrixElelment& GenericNormalEquations::indexedNormalMatrix(size_t 
     return itsIndexedNormalMatrix.getValue(col, row, chan);
 }
 
-casacore::Matrix<double> GenericNormalEquations::indexedNormalMatrix(const std::string &colName, const std::string &rowName) const
-{
-    std::pair<casacore::uInt, std::string> colInfo = CalParamNameHelper::extractChannelInfo(colName);
-    std::pair<casacore::uInt, std::string> rowInfo = CalParamNameHelper::extractChannelInfo(rowName);
-
-    size_t chanOffset = itsIndexedNormalMatrix.getChanOffset();
-    size_t colChan = colInfo.first - chanOffset;
-    size_t rowChan = rowInfo.first - chanOffset;
-
-    if (colChan != rowChan) {
-        throw AskapError("Attempt to get an element of normal matrix with different column and row channels!");
-    } else {
-        size_t chan = rowChan;
-        size_t col = getParameterIndexByName(colName);
-        size_t row = getParameterIndexByName(rowName);
-
-        const IndexedMatrixElelment& el = indexedNormalMatrix(col, row, chan);
-
-        // Building a casa matrix object.
-        casacore::Matrix<casacore::Double> casaEl(2, 2, 0.);
-        for (size_t i = 0; i < 2; i++) {
-            for (size_t j = 0; j < 2; j++) {
-                casaEl(i, j) = el.data[i][j];
-            }
-        }
-        return casaEl;
-    }
-}
-
 const IndexedDataVector::element_type& GenericNormalEquations::indexedDataVector(size_t row, size_t chan) const
 {
     return itsIndexedDataVector.getValue(row, chan);

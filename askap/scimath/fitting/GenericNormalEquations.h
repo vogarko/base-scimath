@@ -272,12 +272,6 @@ struct GenericNormalEquations : public INormalEquations {
   /// @param[in] chan Local channel number (at the current worker).
   virtual const IndexedMatrixElelment& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
 
-  /// @brief Returns an element of the indexed normal matrix.
-  /// @details Note: This interface should be only used for testing due to its poor performance!
-  /// @param[in] colName Column parameter name.
-  /// @param[in] rowName Row parameter name.
-  virtual casacore::Matrix<double> indexedNormalMatrix(const std::string &colName, const std::string &rowName) const;
-
   /// @brief Returns an element of the indexed data vector.
   /// @details Note that chan is a local channel number at the current worker,
   /// i.e., not the actual channel number that is stored in the gain name.
