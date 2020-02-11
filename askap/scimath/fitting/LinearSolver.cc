@@ -373,13 +373,24 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     std::pair<double, double> result(0.,0.);
 
     std::vector<std::string> names = __names;
-    std::sort(names.begin(), names.end(), lsqrutils::compareGainNames);
+    // TODO: Get rid of this vector for new matrix format.
+    std::vector<std::pair<std::string, int> > indices(names.size());
+    size_t nParameters;
+
+    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(normalEquations());
+
+    if (gne.indexedNormalMatrixInitialized()) {
+    // new matrix format
+        ASKAPCHECK(gne.indexedDataVectorInitialized(), "Indexed data vector is not initialized!");
+        nParameters = 2 * names.size();
+    } else {
+    // old matrix format
+        std::sort(names.begin(), names.end(), lsqrutils::compareGainNames);
+        nParameters = calculateGainNameIndices(names, params, indices);
+    }
+    ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
 
     // Solving A^T Q^-1 V = (A^T Q^-1 A) P
-
-    std::vector<std::pair<std::string, int> > indices(names.size());
-    size_t nParameters = calculateGainNameIndices(names, params, indices);
-    ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
 
     //------------------------------------------------------------------------------
     // Define MPI partitioning.
@@ -440,13 +451,13 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     lsqr::Vector b_RHS(nParametersTotal, 0.);
 
     // Populate the right-hand side vector B.
-    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(normalEquations());
-
     size_t nDataAdded;
     if (gne.indexedDataVectorInitialized()) {
+    // new matrix format
         ASKAPCHECK(gne.indexedNormalMatrixInitialized(), "Indexed normal matrix is not initialized!");
         nDataAdded = gne.unrollIndexedDataVector(b_RHS);
     } else {
+    // old matrix format
         nDataAdded = solverutils::populate_B(normalEquations(), indices, b_RHS, solverutils::assign_to_lsqr_vector);
     }
     ASKAPCHECK(nDataAdded == (size_t)(nParameters), "Wrong number of data added on rank " << myrank);
@@ -555,7 +566,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     // Update the parameters with the calculated changes.
     if (gne.indexedNormalMatrixInitialized()) {
     // TODO: Move to a function.
-    // New normal format format (using indexes).
+    // new matrix format
         size_t nChannelsLocal = gne.getNumberLocalChannels();
         size_t nBaseParameters = gne.getNumberBaseParameters();
         size_t chanOffset = gne.getChannelOffset();
@@ -566,22 +577,16 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
                 size_t chanNumber = chan + chanOffset;
                 std::string paramName = CalParamNameHelper::addChannelInfo(baseParamName, chanNumber);
 
-                casa::IPosition vecShape(1, 2);
-                casa::Vector<double> value(params.value(paramName).reform(vecShape));
-
-                double adjustment[2];
-
+                auto *data = params.value(paramName).data();
                 size_t index = i + nBaseParameters * chan;
-                adjustment[0] = x[2 * index];
-                adjustment[1] = x[2 * index + 1];
 
-                for (size_t i = 0; i < 2; ++i) {
-                    value(i) += adjustment[i];
-                }
+                data[0] += x[2 * index];
+                data[1] += x[2 * index + 1];
             }
         }
 
     } else {
+    // old matrix format
         solverutils::update_solution(indices, params, x, solverutils::retrieve_from_lsqr_vector);
     }
 

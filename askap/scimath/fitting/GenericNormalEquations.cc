@@ -168,11 +168,11 @@ void GenericNormalEquations::merge(const INormalEquations& src)
       const GenericNormalEquations &gne = dynamic_cast<const GenericNormalEquations&>(src);
 
       if (gne.indexedNormalMatrixInitialized()) {
-      // We are using the indexed normal matrix.
+      // New normal matrix format.
           if (!indexedNormalMatrixInitialized()) {
-          // Merging an indexed normal matrix with an empty one, so just need to copy it.
-          // Note: not sure why this merge is performed (during calibration starting, from second major iteration),
-          // instead of building normal equations directly in this object.
+              // Merging an indexed normal matrix with an empty one, so just need to copy it.
+              // Note: not sure why this merge is performed (during calibration starting, from second major iteration),
+              // instead of building normal equations directly inside of this object.
               itsIndexedNormalMatrix = gne.itsIndexedNormalMatrix;
 
               if (itsParameterNameToIndex.size() > 0 || itsParameterIndexToBaseName.size() > 0) {
@@ -195,10 +195,7 @@ void GenericNormalEquations::merge(const INormalEquations& src)
               throw AskapError("Merging indexed normal matrix with another one which is already initialized!");
           }
 
-      }// else {
-
-      // TODO: Make this branch conditional when the support of indexed normal matrix format is ready on the solver side!
-
+      } else {
       // Old normal matrix format.
 
           // loop over all parameters, add them one by one.
@@ -209,7 +206,7 @@ void GenericNormalEquations::merge(const INormalEquations& src)
                ci != gne.itsDataVector.end(); ++ci) {
                mergeParameter(ci->first, gne);
           }
-      //}
+      }
 
       itsMetadata.merge(gne.metadata());
 
@@ -507,12 +504,15 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                 }
 
                 // Adding partial data vector.
-                addDataVector(rowName, dataVector);
-
                 if (itsIndexedDataVector.initialized()) {
+                // new matrix format (indexed)
                     size_t rowIndex = getParameterIndexByName(rowName);
                     std::complex<double> el = std::complex<double>(dataVector[0], dataVector[1]);
                     itsIndexedDataVector.addValue(rowIndex, chan, el);
+
+                } else {
+                // old matrix format
+                    addDataVector(rowName, dataVector);
                 }
             }
         }
@@ -599,14 +599,8 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
 
                         const std::string &colName = itRe2->first;
 
-                        if (normalMatrix.find(colName) == normalMatrix.end()) {
-                            normalMatrix[colName] = nmElementBuf;
-                        } else {
-                            normalMatrix[colName] += nmElementBuf;
-                        }
-
                         if (itsIndexedNormalMatrix.initialized()) {
-                        // Using new normal matrix format.
+                        // new matrix format (indexed)
                             size_t colIndex = getParameterIndexByName(colName);
 
                             IndexedMatrixElelment el(0.);
@@ -616,10 +610,21 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                                 }
                             }
                             itsIndexedNormalMatrix.addValue(colIndex, rowIndex, chan, el);
+
+                        } else {
+                        // old matrix format
+                            if (normalMatrix.find(colName) == normalMatrix.end()) {
+                                normalMatrix[colName] = nmElementBuf;
+                            } else {
+                                normalMatrix[colName] += nmElementBuf;
+                            }
                         }
                     }
                 }
-                addParameterSparselyToMatrix(rowName, normalMatrix);
+                if (!itsIndexedNormalMatrix.initialized()) {
+                // old matrix format
+                    addParameterSparselyToMatrix(rowName, normalMatrix);
+                }
             }
         }
     }
@@ -889,15 +894,39 @@ void GenericNormalEquations::readFromBlob(LOFAR::BlobIStream& is)
 std::vector<std::string> GenericNormalEquations::unknowns() const
 {
   std::vector<std::string> result;
-  result.reserve(itsNormalMatrix.size());
-  for (auto ci=itsNormalMatrix.begin();
-       ci!=itsNormalMatrix.end(); ++ci) {
-       result.push_back(ci->first);
+
+  if (indexedNormalMatrixInitialized()) {
+  // new matrix format
+      // TODO: Perhaps we should sore these unknowns when we are adding them
+      //       to them indexed map in PreAvgCalMEBase::calcGenericEquations().
+
+      size_t nChannelsLocal = getNumberLocalChannels();
+      size_t nBaseParameters = getNumberBaseParameters();
+      size_t chanOffset = getChannelOffset();
+
+      result.reserve(nBaseParameters * nChannelsLocal);
+
+      for (size_t i = 0; i < nBaseParameters; i++) {
+          std::string baseParamName = getBaseParameterNameByIndex(i);
+          for (size_t chan = 0; chan < nChannelsLocal; chan++) {
+              size_t chanNumber = chan + chanOffset;
+              std::string paramName = CalParamNameHelper::addChannelInfo(baseParamName, chanNumber);
+              result.push_back(paramName);
+          }
+      }
+  }
+  else {
+  // old matrix format
+      result.reserve(itsNormalMatrix.size());
+      for (auto ci=itsNormalMatrix.begin();
+           ci!=itsNormalMatrix.end(); ++ci) {
+           result.push_back(ci->first);
 // extra consistency checks in the debug mode
 #ifdef ASKAP_DEBUG
-       ASKAPCHECK(itsDataVector.find(ci->first) != itsDataVector.end(), 
-                  "The parameter "<<ci->first<<" is present in the normal matrix but missing in the data vector");
+           ASKAPCHECK(itsDataVector.find(ci->first) != itsDataVector.end(),
+                      "The parameter "<<ci->first<<" is present in the normal matrix but missing in the data vector");
 #endif // #ifdef ASKAP_DEBUG
+      }
   }
   return result;
 } // unknowns method

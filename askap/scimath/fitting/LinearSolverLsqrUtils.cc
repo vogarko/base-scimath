@@ -112,7 +112,7 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
     }
 
     if (gne.indexedNormalMatrixInitialized()) {
-    // New normal format format (using indexes).
+    // new matrix format
         ASKAPCHECK(gne.indexedDataVectorInitialized(), "Indexed data vector is not initialized!");
 
         size_t nChannelsLocal = gne.getNumberLocalChannels();
@@ -139,6 +139,7 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
         }
 
     } else {
+    // old matrix format
 
         // Loop over matrix rows.
         for (std::vector<std::pair<std::string, int> >::const_iterator indit1 = indices.begin();
