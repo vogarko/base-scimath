@@ -125,13 +125,12 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
                 // Adding 2x2 complex elements (indexed with i, j).
                 for (size_t i = 0; i < 2; i++) {
                     matrix.NewRow();
+                    // Loop over matrix columns.
                     for (size_t col = 0; col < nBaseParameters; col++) {
                         const IndexedMatrixElelment& elem = gne.indexedNormalMatrix(col, row, chan);
                         for (size_t j = 0; j < 2; j++) {
-                            const double value = elem.data[i][j];
-
                             size_t colIndex = 2 * col + j + chan * (2 * nBaseParameters);
-                            matrix.Add(value, colIndex);
+                            matrix.Add(elem.data[i][j], colIndex);
                         }
                     }
                 }

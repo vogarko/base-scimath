@@ -48,8 +48,21 @@ namespace askap { namespace scimath {
 
 /// @brief Data holder for the indexed normal matrix element.
 struct IndexedMatrixElelment {
-    IndexedMatrixElelment(double a);
-    IndexedMatrixElelment& operator+=(const IndexedMatrixElelment& rhs);
+    IndexedMatrixElelment() {
+        for (size_t i = 0; i < 2; i++) {
+            for (size_t j = 0; j < 2; j++) {
+                data[i][j] = 0;
+            }
+        }
+    }
+    IndexedMatrixElelment& operator+=(const IndexedMatrixElelment& rhs) {
+        for (size_t i = 0; i < 2; i++) {
+            for (size_t j = 0; j < 2; j++) {
+                data[i][j] += rhs.data[i][j];
+            }
+        }
+        return *this;
+    }
 
     // Complex value stored as 2x2 matrix.
     double data[2][2];

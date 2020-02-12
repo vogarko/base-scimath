@@ -603,7 +603,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                         // new matrix format (indexed)
                             size_t colIndex = getParameterIndexByName(colName);
 
-                            IndexedMatrixElelment el(0.);
+                            IndexedMatrixElelment el;
                             for (size_t i = 0; i < 2; i++) {
                                 for (size_t j = 0; j < 2; j++) {
                                     el.data[i][j] = nmElementBuf(i, j);
@@ -897,7 +897,7 @@ std::vector<std::string> GenericNormalEquations::unknowns() const
 
   if (indexedNormalMatrixInitialized()) {
   // new matrix format
-      // TODO: Perhaps we should sore these unknowns when we are adding them
+      // TODO: Perhaps we should store these unknowns when we are adding them
       //       to them indexed map in PreAvgCalMEBase::calcGenericEquations().
 
       size_t nChannelsLocal = getNumberLocalChannels();

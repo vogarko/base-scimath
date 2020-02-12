@@ -38,25 +38,6 @@
 
 namespace askap { namespace scimath {
 
-IndexedMatrixElelment::IndexedMatrixElelment(double a)
-{
-    for (size_t i = 0; i < 2; i++) {
-        for (size_t j = 0; j < 2; j++) {
-            data[i][j] = a;
-        }
-    }
-}
-
-IndexedMatrixElelment& IndexedMatrixElelment::operator+=(const IndexedMatrixElelment& rhs)
-{
-    for (size_t i = 0; i < 2; i++) {
-        for (size_t j = 0; j < 2; j++) {
-            this->data[i][j] += rhs.data[i][j];
-        }
-    }
-    return *this;
-}
-
 IndexedNormalMatrix::IndexedNormalMatrix() :
     isInitialized(false),
     nBaseParameters(0),
@@ -84,9 +65,7 @@ void IndexedNormalMatrix::initialize(size_t nBaseParameters_, size_t nChannelsLo
         chanOffset = chanOffset_;
 
         size_t nElements = nBaseParameters * nBaseParameters * nChannelsLocal;
-
-        IndexedMatrixElelment zero = IndexedMatrixElelment(0.);
-        elements.resize(nElements, zero);
+        elements.resize(nElements);
 
         isInitialized = true;
     } else {
