@@ -373,8 +373,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     std::pair<double, double> result(0.,0.);
 
     std::vector<std::string> names = __names;
-    // TODO: Get rid of this vector for new matrix format.
-    std::vector<std::pair<std::string, int> > indices(names.size());
+    std::vector<std::pair<std::string, int> > indices;
     size_t nParameters;
 
     const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(normalEquations());
@@ -385,6 +384,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         nParameters = 2 * names.size();
     } else {
     // old matrix format
+        indices.reserve(names.size());
         std::sort(names.begin(), names.end(), lsqrutils::compareGainNames);
         nParameters = calculateGainNameIndices(names, params, indices);
     }
