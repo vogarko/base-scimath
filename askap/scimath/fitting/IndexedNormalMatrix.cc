@@ -115,8 +115,10 @@ IndexedDataVector& IndexedDataVector::operator=(const IndexedDataVector &src)
 {
     if (&src != this) {
         reset();
-        initialize(src.nBaseParameters, src.nChannelsLocal);
-        elements = src.elements;
+        if (src.initialized()) {
+            initialize(src.nBaseParameters, src.nChannelsLocal);
+            elements = src.elements;
+        }
     }
     return *this;
 }
@@ -128,7 +130,7 @@ void IndexedDataVector::initialize(size_t nBaseParameters_, size_t nChannelsLoca
         nChannelsLocal = nChannelsLocal_;
 
         size_t nElements = nBaseParameters * nChannelsLocal;
-        elements.resize(nElements, std::complex<double>(0.));
+        elements.resize(nElements);
 
         isInitialized = true;
     } else {

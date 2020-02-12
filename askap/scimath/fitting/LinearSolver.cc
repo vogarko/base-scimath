@@ -437,7 +437,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 #endif
 
     // Copy matrix elements from normal matrix (map of map of matrixes) to the solver sparse matrix (in CSR format).
-    lsqrutils::buildLSQRSparseMatrix(normalEquations(), indices, matrix, nParameters, matrixIsParallel);
+    lsqrutils::buildLSQRSparseMatrix(gne, indices, matrix, nParameters, matrixIsParallel);
 
     size_t nonzeros = matrix.GetNumberElements();
     double sparsity = (double)(nonzeros) / (double)(nParameters) / (double)(nParameters);
@@ -490,16 +490,29 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         std::vector<double> x0(nParametersTotal);
 
         // Retrieve the local solution (at the current worker).
-        lsqrutils::getCurrentSolutionVector(indices, params, x0);
+        if (gne.indexedNormalMatrixInitialized()) {
+            lsqrutils::getCurrentSolutionVector(gne, params, x0);
+        } else {
+            lsqrutils::getCurrentSolutionVector(indices, params, x0);
+        }
 
 #ifdef HAVE_MPI
         // Retrieve the global solution (at all workers).
         lsqr::ParallelTools::get_full_array_in_place(nParameters, x0, true, myrank, nbproc, itsWorkersComm);
 #endif
+
+        if (!gne.indexedNormalMatrixInitialized()) {
+        // Sanity check (for channel order consistency) for old matrix format.
+            // Assume the same number of channels at every CPU.
+            size_t nChannelsLocal = nChannels / (nParametersTotal / nParameters);
+            // NOTE: Assume channels are ordered with the MPI rank order, i.e., the higher the rank the higher the channel number.
+            ASKAPCHECK(lsqrutils::testMPIRankOrderWithChannels(myrank, nChannelsLocal, indices), "Channels are not ordered with MPI ranks!");
+        }
+
         //--------------------------------------------------------------
         // Adding smoothing constraints into the system of equations.
         int smoothingType = solverutils::getParameter("smoothingType", parameters(), 0);
-        lsqrutils::addSmoothnessConstraints(matrix, b_RHS, indices, x0, nParameters, nChannels, smoothingWeight, smoothingType);
+        lsqrutils::addSmoothnessConstraints(matrix, b_RHS, x0, nParameters, nChannels, smoothingWeight, smoothingType);
     }
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "Matrix nelements = " << matrix.GetNumberElements());
 

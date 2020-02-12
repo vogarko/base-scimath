@@ -28,7 +28,6 @@
 ///
 #include <askap/scimath/fitting/LinearSolverLsqrUtils.h>
 #include <askap/scimath/fitting/LinearSolverUtils.h>
-#include <askap/scimath/fitting/GenericNormalEquations.h>
 #include <askap/scimath/fitting/CalParamNameHelper.h>
 #include <askap/scimath/lsqr_solver/ParallelTools.h>
 
@@ -74,7 +73,7 @@ bool compareGainNames(const std::string& gainA, const std::string& gainB) {
     }
 }
 
-void buildLSQRSparseMatrix(const INormalEquations &ne,
+void buildLSQRSparseMatrix(const GenericNormalEquations& gne,
                            const std::vector<std::pair<std::string, int> > &indices,
                            lsqr::SparseMatrix &matrix,
                            size_t nParameters,
@@ -95,14 +94,7 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
     size_t nParametersSmaller = 0;
 #endif
 
-    std::map<std::string, size_t> indicesMap;
-    for (std::vector<std::pair<std::string, int> >::const_iterator it = indices.begin();
-         it != indices.end(); ++it) {
-        indicesMap[it->first] = (size_t)(it->second);
-    }
-
     //------------------------------------------------------------------------------------------------------------------------
-    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(ne);
 
     if (matrixIsParallel) {
         // Adding starting matrix empty rows, i.e., the rows in a big block-diagonal matrix above the current block.
@@ -140,6 +132,12 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
     } else {
     // old matrix format
 
+        std::map<std::string, size_t> indicesMap;
+        for (std::vector<std::pair<std::string, int> >::const_iterator it = indices.begin();
+             it != indices.end(); ++it) {
+            indicesMap[it->first] = (size_t)(it->second);
+        }
+
         // Loop over matrix rows.
         for (std::vector<std::pair<std::string, int> >::const_iterator indit1 = indices.begin();
                 indit1 != indices.end(); ++indit1) {
@@ -161,7 +159,6 @@ void buildLSQRSparseMatrix(const INormalEquations &ne,
 
                             const size_t colIndex = indicesMapIt->second;
                             const casa::Matrix<double>& nm = colIt->second;
-                            //const casa::Matrix<double> nm = gne.indexedNormalMatrix(colIt->first, indit1->first);
 
                             ASKAPCHECK(nrow == nm.nrow(), "Not consistent normal matrix element element dimension!");
                             const size_t ncolumn = nm.ncolumn();
@@ -208,6 +205,29 @@ void getCurrentSolutionVector(const std::vector<std::pair<std::string, int> >& i
         casa::Vector<double> value(params.value(indit->first).reform(vecShape));
         for (size_t i = 0; i < value.nelements(); ++i) {
             solution[indit->second + i] = value(i);
+        }
+    }
+}
+
+void getCurrentSolutionVector(const GenericNormalEquations& gne,
+                              const Params& params,
+                              std::vector<double>& solution)
+{
+    size_t nChannelsLocal = gne.getNumberLocalChannels();
+    size_t nBaseParameters = gne.getNumberBaseParameters();
+    size_t chanOffset = gne.getChannelOffset();
+
+    for (size_t i = 0; i < nBaseParameters; i++) {
+        std::string baseParamName = gne.getBaseParameterNameByIndex(i);
+        for (size_t chan = 0; chan < nChannelsLocal; chan++) {
+            size_t chanNumber = chan + chanOffset;
+            std::string paramName = CalParamNameHelper::addChannelInfo(baseParamName, chanNumber);
+
+            auto *data = params.value(paramName).data();
+            size_t index = i + nBaseParameters * chan;
+
+            solution[2 * index] = data[0];
+            solution[2 * index + 1] = data[1];
         }
     }
 }
@@ -423,7 +443,6 @@ void calculateIndexesCD(size_t nParametersTotal,
 /// @brief Adding smoothness constraints to the system of equations.
 void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               lsqr::Vector& b_RHS,
-                              const std::vector<std::pair<std::string, int> >& indices,
                               const std::vector<double>& x0,
                               size_t nParameters,
                               size_t nChannels,
@@ -451,9 +470,6 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     //-----------------------------------------------------------------------------
     // Assume the same number of channels at every CPU.
     size_t nChannelsLocal = nChannels / (nParametersTotal / nParameters);
-
-    // NOTE: Assume channels are ordered with the MPI rank order, i.e., the higher the rank the higher the channel number.
-    ASKAPCHECK(testMPIRankOrderWithChannels(myrank, nChannelsLocal, indices), "Channels are not ordered with MPI ranks!");
 
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nChannelsLocal = " << nChannelsLocal);
 
