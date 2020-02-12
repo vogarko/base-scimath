@@ -384,8 +384,8 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         nParameters = 2 * names.size();
     } else {
     // old matrix format
-        indices.reserve(names.size());
         std::sort(names.begin(), names.end(), lsqrutils::compareGainNames);
+        indices.resize(names.size());
         nParameters = calculateGainNameIndices(names, params, indices);
     }
     ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
