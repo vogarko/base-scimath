@@ -270,7 +270,7 @@ struct GenericNormalEquations : public INormalEquations {
   /// @param[in] col Column number.
   /// @param[in] row Row number.
   /// @param[in] chan Local channel number (at the current worker).
-  virtual const IndexedMatrixElelment& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
+  virtual const IndexedNormalMatrix::elem_type& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
 
   /// @brief Returns an element of the indexed data vector.
   /// @details Note that chan is a local channel number at the current worker,

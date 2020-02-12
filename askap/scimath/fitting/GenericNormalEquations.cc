@@ -525,7 +525,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
     // Buffer for the element of normal matrix
     // treat all parameters as complex here to simplify the logic
     // (and they're complex anyway) -> 2x2 matrix
-    casacore::Matrix<casacore::Double> nmElementBuf(2, 2, 0.);
+    IndexedNormalMatrix::elem_type nmElementBuf;
 
     // The first loop is over polarisations, essentially summing over
     // data points in the calculation of normal matrix.
@@ -592,31 +592,31 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                         const casacore::DComplex colParDerivRe2_modelProduct = colParDerivRe2 * modelProduct;
                         const casacore::DComplex colParDerivIm2_modelProduct = colParDerivIm2 * modelProduct;
 
-                        nmElementBuf(0, 0) = real(conj(rowParDerivRe1) * colParDerivRe2_modelProduct);
-                        nmElementBuf(0, 1) = real(conj(rowParDerivRe1) * colParDerivIm2_modelProduct);
-                        nmElementBuf(1, 0) = real(conj(rowParDerivIm1) * colParDerivRe2_modelProduct);
-                        nmElementBuf(1, 1) = real(conj(rowParDerivIm1) * colParDerivIm2_modelProduct);
+                        nmElementBuf.data[0][0] = real(conj(rowParDerivRe1) * colParDerivRe2_modelProduct);
+                        nmElementBuf.data[0][1] = real(conj(rowParDerivRe1) * colParDerivIm2_modelProduct);
+                        nmElementBuf.data[1][0] = real(conj(rowParDerivIm1) * colParDerivRe2_modelProduct);
+                        nmElementBuf.data[1][1] = real(conj(rowParDerivIm1) * colParDerivIm2_modelProduct);
 
                         const std::string &colName = itRe2->first;
 
                         if (itsIndexedNormalMatrix.initialized()) {
                         // new matrix format (indexed)
                             size_t colIndex = getParameterIndexByName(colName);
-
-                            IndexedMatrixElelment el;
-                            for (size_t i = 0; i < 2; i++) {
-                                for (size_t j = 0; j < 2; j++) {
-                                    el.data[i][j] = nmElementBuf(i, j);
-                                }
-                            }
-                            itsIndexedNormalMatrix.addValue(colIndex, rowIndex, chan, el);
+                            itsIndexedNormalMatrix.addValue(colIndex, rowIndex, chan, nmElementBuf);
 
                         } else {
                         // old matrix format
+                            casacore::Matrix<casacore::Double> nmElementBuf_casa(2, 2, 0.);
+                            for (size_t i = 0; i < 2; i++) {
+                                for (size_t j = 0; j < 2; j++) {
+                                    nmElementBuf_casa(i, j) = nmElementBuf.data[i][j];
+                                }
+                            }
+
                             if (normalMatrix.find(colName) == normalMatrix.end()) {
-                                normalMatrix[colName] = nmElementBuf;
+                                normalMatrix[colName] = nmElementBuf_casa;
                             } else {
-                                normalMatrix[colName] += nmElementBuf;
+                                normalMatrix[colName] += nmElementBuf_casa;
                             }
                         }
                     }
@@ -1008,7 +1008,7 @@ bool GenericNormalEquations::indexedDataVectorInitialized() const
     return itsIndexedDataVector.initialized();
 }
 
-const IndexedMatrixElelment& GenericNormalEquations::indexedNormalMatrix(size_t col, size_t row, size_t chan) const
+const IndexedNormalMatrix::elem_type& GenericNormalEquations::indexedNormalMatrix(size_t col, size_t row, size_t chan) const
 {
     return itsIndexedNormalMatrix.getValue(col, row, chan);
 }

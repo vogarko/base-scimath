@@ -46,30 +46,35 @@
 
 namespace askap { namespace scimath {
 
-/// @brief Data holder for the indexed normal matrix element.
-struct IndexedMatrixElelment {
-    IndexedMatrixElelment() {
-        for (size_t i = 0; i < 2; i++) {
-            for (size_t j = 0; j < 2; j++) {
-                data[i][j] = 0;
-            }
-        }
-    }
-    IndexedMatrixElelment& operator+=(const IndexedMatrixElelment& rhs) {
-        for (size_t i = 0; i < 2; i++) {
-            for (size_t j = 0; j < 2; j++) {
-                data[i][j] += rhs.data[i][j];
-            }
-        }
-        return *this;
-    }
-
-    // Complex value stored as 2x2 matrix.
-    double data[2][2];
-};
-
+/// @brief Normal matrix with elements indexed by a 3D integer index: (column, row, channel).
+/// @details Column and row index is local within one channel (and consistent for all channels, i.e., the same order).
+/// This data structure allows storing block diagonal matrix in compressed format, i.e., only values inside each block are stored.
+/// Matrix elements are accessed by the integer index in constant time O(1), and stored linearly in memory (i.e, in 1D vector).
+/// This is unlike to previous normal matrix data structure where elements are stored in the map of maps,
+/// i.e., std::map<string, std::map<std::string, casacore::Matrix<double> >>, with string based keys corresponding to gain names.
 struct IndexedNormalMatrix
 {
+    /// @brief Data holder for the indexed normal matrix element.
+    struct elem_type {
+        elem_type() {
+            for (size_t i = 0; i < 2; i++) {
+                for (size_t j = 0; j < 2; j++) {
+                    data[i][j] = 0;
+                }
+            }
+        }
+        elem_type& operator+=(const elem_type& rhs) {
+            for (size_t i = 0; i < 2; i++) {
+                for (size_t j = 0; j < 2; j++) {
+                    data[i][j] += rhs.data[i][j];
+                }
+            }
+            return *this;
+        }
+
+        // Complex value stored as 2x2 matrix.
+        double data[2][2];
+    };
 public:
     /// @brief default constructor
     IndexedNormalMatrix();
@@ -84,10 +89,10 @@ public:
     void reset();
 
     /// @brief Returns the matrix element by its 3D index.
-    const IndexedMatrixElelment& getValue(size_t col, size_t row, size_t chan) const;
+    const elem_type& getValue(size_t col, size_t row, size_t chan) const;
 
     /// @brief Increments (+=) the matrix element by a given value
-    void addValue(size_t col, size_t row, size_t chan, const IndexedMatrixElelment& value);
+    void addValue(size_t col, size_t row, size_t chan, const elem_type& value);
 
     /// @brief Returns whether the matrix is initialized.
     inline bool initialized() const
@@ -127,7 +132,7 @@ private:
     // Channel offset (store it here for convenience).
     size_t chanOffset;
     // Matrix elements.
-    std::vector<IndexedMatrixElelment> elements;
+    std::vector<elem_type> elements;
 };
 
 struct IndexedDataVector

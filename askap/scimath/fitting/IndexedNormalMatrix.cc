@@ -81,7 +81,7 @@ void IndexedNormalMatrix::reset() {
     elements.clear();
 }
 
-const IndexedMatrixElelment& IndexedNormalMatrix::getValue(size_t col, size_t row, size_t chan) const
+const IndexedNormalMatrix::elem_type& IndexedNormalMatrix::getValue(size_t col, size_t row, size_t chan) const
 {
     if (initialized()) {
         size_t index = get1Dindex(col, row, chan);
@@ -91,7 +91,7 @@ const IndexedMatrixElelment& IndexedNormalMatrix::getValue(size_t col, size_t ro
     }
 }
 
-void IndexedNormalMatrix::addValue(size_t col, size_t row, size_t chan, const IndexedMatrixElelment& value)
+void IndexedNormalMatrix::addValue(size_t col, size_t row, size_t chan, const elem_type& value)
 {
     if (initialized()) {
         size_t index = get1Dindex(col, row, chan);
