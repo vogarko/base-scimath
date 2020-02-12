@@ -236,7 +236,13 @@ struct GenericNormalEquations : public INormalEquations {
   /// @brief Returns the base parameter name by its integer index.
   /// @param[in] index Index of the parameter to return the name for.
   /// @return The base parameter name (without channel info).
-  std::string getBaseParameterNameByIndex(size_t index) const;
+  const std::string& getBaseParameterNameByIndex(size_t index) const;
+
+  /// @brief Returns the full parameter name by its integer index and local channel number.
+  /// @details Note that the input channel number is local for current worker.
+  /// @param[in] index Index of the parameter.
+  /// @param[in] chan Local channel number.
+  std::string getFullParameterName(size_t index, size_t chan) const;
 
   /// @brief Returns the number of parameters at one channel.
   size_t getNumberBaseParameters() const;

@@ -902,15 +902,11 @@ std::vector<std::string> GenericNormalEquations::unknowns() const
 
       size_t nChannelsLocal = getNumberLocalChannels();
       size_t nBaseParameters = getNumberBaseParameters();
-      size_t chanOffset = getChannelOffset();
 
       result.reserve(nBaseParameters * nChannelsLocal);
-
       for (size_t i = 0; i < nBaseParameters; i++) {
-          std::string baseParamName = getBaseParameterNameByIndex(i);
           for (size_t chan = 0; chan < nChannelsLocal; chan++) {
-              size_t chanNumber = chan + chanOffset;
-              std::string paramName = CalParamNameHelper::addChannelInfo(baseParamName, chanNumber);
+              std::string paramName = getFullParameterName(i, chan);
               result.push_back(paramName);
           }
       }
@@ -962,13 +958,17 @@ size_t GenericNormalEquations::getParameterIndexByName(const std::string &name) 
     }
 }
 
-std::string GenericNormalEquations::getBaseParameterNameByIndex(size_t index) const
+const std::string& GenericNormalEquations::getBaseParameterNameByIndex(size_t index) const
 {
-    if (index < itsParameterIndexToBaseName.size()) {
-        return itsParameterIndexToBaseName[index];
-    } else {
-        ASKAPCHECK(false, "The parameter index is out of range: " << index);
-    }
+    ASKAPDEBUGASSERT(index < itsParameterIndexToBaseName.size());
+    return itsParameterIndexToBaseName[index];
+}
+
+std::string GenericNormalEquations::getFullParameterName(size_t index, size_t chan) const
+{
+    const std::string& baseParamName = getBaseParameterNameByIndex(index);
+    size_t chanOffset = getChannelOffset();
+    return CalParamNameHelper::addChannelInfo(baseParamName, chan + chanOffset);
 }
 
 size_t GenericNormalEquations::getNumberBaseParameters() const
@@ -978,13 +978,13 @@ size_t GenericNormalEquations::getNumberBaseParameters() const
 
 size_t GenericNormalEquations::getNumberLocalChannels() const
 {
-    ASKAPCHECK(itsIndexedNormalMatrix.initialized(), "Indexed normal matrix is not initialized!");
+    ASKAPDEBUGASSERT(itsIndexedNormalMatrix.initialized());
     return itsIndexedNormalMatrix.getNumberLocalChannels();
 }
 
 size_t GenericNormalEquations::getChannelOffset() const
 {
-    ASKAPCHECK(itsIndexedNormalMatrix.initialized(), "Indexed normal matrix is not initialized!");
+    ASKAPDEBUGASSERT(itsIndexedNormalMatrix.initialized());
     return itsIndexedNormalMatrix.getChanOffset();
 }
 

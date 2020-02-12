@@ -215,13 +215,10 @@ void getCurrentSolutionVector(const GenericNormalEquations& gne,
 {
     size_t nChannelsLocal = gne.getNumberLocalChannels();
     size_t nBaseParameters = gne.getNumberBaseParameters();
-    size_t chanOffset = gne.getChannelOffset();
 
     for (size_t i = 0; i < nBaseParameters; i++) {
-        std::string baseParamName = gne.getBaseParameterNameByIndex(i);
         for (size_t chan = 0; chan < nChannelsLocal; chan++) {
-            size_t chanNumber = chan + chanOffset;
-            std::string paramName = CalParamNameHelper::addChannelInfo(baseParamName, chanNumber);
+            std::string paramName = gne.getFullParameterName(i, chan);
 
             auto *data = params.value(paramName).data();
             size_t index = i + nBaseParameters * chan;
