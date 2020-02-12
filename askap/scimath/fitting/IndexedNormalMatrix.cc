@@ -83,22 +83,16 @@ void IndexedNormalMatrix::reset() {
 
 const IndexedNormalMatrix::elem_type& IndexedNormalMatrix::getValue(size_t col, size_t row, size_t chan) const
 {
-    if (initialized()) {
-        size_t index = get1Dindex(col, row, chan);
-        return elements[index];
-    } else {
-        throw AskapError("Attempt to get an element of non-initialized normal matrix!");
-    }
+    ASKAPDEBUGASSERT(initialized());
+    size_t index = get1Dindex(col, row, chan);
+    return elements[index];
 }
 
 void IndexedNormalMatrix::addValue(size_t col, size_t row, size_t chan, const elem_type& value)
 {
-    if (initialized()) {
-        size_t index = get1Dindex(col, row, chan);
-        elements[index] += value;
-    } else {
-        throw AskapError("Attempt to set an element of non-initialized indexed normal matrix!");
-    }
+    ASKAPDEBUGASSERT(initialized());
+    size_t index = get1Dindex(col, row, chan);
+    elements[index] += value;
 }
 
 //==============================================================================================================
@@ -147,22 +141,16 @@ void IndexedDataVector::reset() {
 
 const IndexedDataVector::element_type& IndexedDataVector::getValue(size_t row, size_t chan) const
 {
-    if (initialized()) {
-        size_t index = get1Dindex(row, chan);
-        return elements[index];
-    } else {
-        throw AskapError("Attempt to get an element of non-initialized indexed data vector!");
-    }
+    ASKAPDEBUGASSERT(initialized());
+    size_t index = get1Dindex(row, chan);
+    return elements[index];
 }
 
 void IndexedDataVector::addValue(size_t row, size_t chan, const element_type& value)
 {
-    if (initialized()) {
-        size_t index = get1Dindex(row, chan);
-        elements[index] += value;
-    } else {
-        throw AskapError("Attempt to set an element of non-initialized indexed data vector!");
-    }
+    ASKAPDEBUGASSERT(initialized());
+    size_t index = get1Dindex(row, chan);
+    elements[index] += value;
 }
 
 size_t IndexedDataVector::unroll(std::vector<double>& b) const
