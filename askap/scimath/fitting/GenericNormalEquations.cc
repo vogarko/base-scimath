@@ -855,32 +855,42 @@ const casacore::Vector<double>& GenericNormalEquations::dataVector(const std::st
 /// @param[in] os the output stream
 void GenericNormalEquations::writeToBlob(LOFAR::BlobOStream& os) const
 { 
-  std::map<std::string, casacore::Vector<double> > dataVectorTemp;
-  dataVectorTemp.insert(itsDataVector.begin(), itsDataVector.end());
+    if (indexedNormalMatrixInitialized()) {
+        throw AskapError("Indexed normal matrix format is not yet supported in writeToBlob!");
 
-  // increment version number on the next line and in the next method
-  // if any new data members are added  
-  os.putStart("GenericNormalEquations",2);
-  os << itsNormalMatrix << dataVectorTemp << itsMetadata;
-  os.putEnd();
+    } else {
+        std::map<std::string, casacore::Vector<double> > dataVectorTemp;
+        dataVectorTemp.insert(itsDataVector.begin(), itsDataVector.end());
+
+        // increment version number on the next line and in the next method
+        // if any new data members are added
+        os.putStart("GenericNormalEquations",2);
+        os << itsNormalMatrix << dataVectorTemp << itsMetadata;
+        os.putEnd();
+    }
 }
 
 /// @brief read the object from a blob stream
 /// @param[in] is the input stream
 /// @note Not sure whether the parameter should be made const or not 
 void GenericNormalEquations::readFromBlob(LOFAR::BlobIStream& is)
-{ 
-  const int version = is.getStart("GenericNormalEquations");
-  ASKAPCHECK(version == 2, 
-              "Attempting to read from a blob stream an object of the wrong "
-              "version: expect version 2, found version "<<version);
+{
+    if (indexedNormalMatrixInitialized()) {
+        throw AskapError("Indexed normal matrix format is not yet supported in readFromBlob!");
 
-  std::map<std::string, casacore::Vector<double> > dataVectorTemp;
+    } else {
+        const int version = is.getStart("GenericNormalEquations");
+        ASKAPCHECK(version == 2,
+                  "Attempting to read from a blob stream an object of the wrong "
+                  "version: expect version 2, found version "<<version);
 
-  is >> itsNormalMatrix >> dataVectorTemp >> itsMetadata;
-  is.getEnd();
+        std::map<std::string, casacore::Vector<double> > dataVectorTemp;
 
-  itsDataVector.insert(dataVectorTemp.begin(), dataVectorTemp.end());
+        is >> itsNormalMatrix >> dataVectorTemp >> itsMetadata;
+        is.getEnd();
+
+        itsDataVector.insert(dataVectorTemp.begin(), dataVectorTemp.end());
+    }
 }
 
 /// @brief obtain all parameters dealt with by these normal equations
