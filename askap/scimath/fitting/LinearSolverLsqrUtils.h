@@ -93,13 +93,15 @@ namespace askap { namespace scimath { namespace lsqrutils {
     /// @param[in] nChannels The total number of channels.
     /// @param[in] smoothingWeight The smoothing weight.
     /// @param[in] smoothingType The type of gradient approximation (0 - forward difference, 1- central difference, 2 - Laplacian).
+    /// @param[in] indexedNormalMatrixFormat Flag for whether we are using indexed normal matrix format.
     void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                                   lsqr::Vector& b_RHS,
                                   const std::vector<double>& x0,
                                   size_t nParameters,
                                   size_t nChannels,
                                   double smoothingWeight,
-                                  int smoothingType);
+                                  int smoothingType,
+                                  bool indexedNormalMatrixFormat);
 
     /// @brief Calculates the least squares cost.
     /// @param[in] b_RHS The right-hand side of the least squares system.

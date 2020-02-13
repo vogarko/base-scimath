@@ -283,15 +283,13 @@ size_t getNextChannelIndexShift(size_t nParametersLocal, size_t nChannelsLocal)
 }
 
 // Calculates matrix indexes for the Forward Difference (FD) gradient operator.
-void calculateIndexesFWD(size_t nParametersTotal,
-                         size_t nParametersLocal,
-                         size_t nChannelsLocal,
-                         std::vector<int>& leftIndexGlobal,
-                         std::vector<int>& rightIndexGlobal)
+// For old normal matrix format.
+void calculateIndexesFWD_old(size_t nParametersTotal,
+                             size_t nParametersLocal,
+                             size_t nChannelsLocal,
+                             std::vector<int>& leftIndexGlobal,
+                             std::vector<int>& rightIndexGlobal)
 {
-    ASKAPCHECK(nParametersTotal == leftIndexGlobal.size()
-               && nParametersTotal == rightIndexGlobal.size(), "Wrong vector size in calculateIndexesFWD!");
-
     size_t nextChannelIndexShift = getNextChannelIndexShift(nParametersLocal, nChannelsLocal);
 
     size_t localChannelNumber = 0;
@@ -335,6 +333,57 @@ void calculateIndexesFWD(size_t nParametersTotal,
         } else {
             localChannelNumber++;
         }
+    }
+}
+
+// Calculates matrix indexes for the Forward Difference (FD) gradient operator.
+// For new indexed normal matrix format (it has different column order).
+void calculateIndexesFWD_new(size_t nParametersTotal,
+                             size_t nParametersLocal,
+                             size_t nChannelsLocal,
+                             std::vector<int>& leftIndexGlobal,
+                             std::vector<int>& rightIndexGlobal)
+{
+    size_t nextChannelIndexShift = nParametersLocal / nChannelsLocal;
+
+    for (size_t i = 0; i < nParametersTotal; i += 2) {
+        size_t shiftedIndex = i + nextChannelIndexShift;
+
+        if (shiftedIndex < nParametersTotal) {
+            // Real part.
+            leftIndexGlobal[i] = i;
+            rightIndexGlobal[i] = shiftedIndex;
+            // Imaginary part.
+            leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+            rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+
+        } else {
+        // Reached last global channel - do not add constraints - it is already coupled with previous one.
+            // Real part.
+            leftIndexGlobal[i] = -1;
+            rightIndexGlobal[i] = -1;
+            // Imaginary part.
+            leftIndexGlobal[i + 1] = -1;
+            rightIndexGlobal[i + 1] = -1;
+        }
+    }
+}
+
+// Calculates matrix indexes for the Forward Difference (FD) gradient operator.
+void calculateIndexesFWD(size_t nParametersTotal,
+                         size_t nParametersLocal,
+                         size_t nChannelsLocal,
+                         std::vector<int>& leftIndexGlobal,
+                         std::vector<int>& rightIndexGlobal,
+                         bool indexedNormalMatrixFormat)
+{
+    ASKAPCHECK(nParametersTotal == leftIndexGlobal.size()
+               && nParametersTotal == rightIndexGlobal.size(), "Wrong vector size in calculateIndexesFWD!");
+
+    if (indexedNormalMatrixFormat) {
+        calculateIndexesFWD_new(nParametersTotal, nParametersLocal, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+    } else {
+        calculateIndexesFWD_old(nParametersTotal, nParametersLocal, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
     }
 }
 
@@ -444,7 +493,8 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               size_t nParameters,
                               size_t nChannels,
                               double smoothingWeight,
-                              int smoothingType)
+                              int smoothingType,
+                              bool indexedNormalMatrixFormat)
 {
     ASKAPCHECK(nChannels > 1, "Wrong number of channels for smoothness constraints!");
 
@@ -489,7 +539,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         if (smoothingType == 0 || smoothingType == 1) {
             if (smoothingType == 0) {
             // Forawrd difference scheme.
-                calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+                calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
             }
             else if (smoothingType == 1) {
             // Central difference scheme.
