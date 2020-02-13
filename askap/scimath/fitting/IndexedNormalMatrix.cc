@@ -81,20 +81,6 @@ void IndexedNormalMatrix::reset() {
     elements.clear();
 }
 
-const IndexedNormalMatrix::elem_type& IndexedNormalMatrix::getValue(size_t col, size_t row, size_t chan) const
-{
-    ASKAPDEBUGASSERT(initialized());
-    size_t index = get1Dindex(col, row, chan);
-    return elements[index];
-}
-
-void IndexedNormalMatrix::addValue(size_t col, size_t row, size_t chan, const elem_type& value)
-{
-    ASKAPDEBUGASSERT(initialized());
-    size_t index = get1Dindex(col, row, chan);
-    elements[index] += value;
-}
-
 //==============================================================================================================
 // Methods of IndexedDataVector.
 //==============================================================================================================
@@ -137,20 +123,6 @@ void IndexedDataVector::reset() {
     nBaseParameters = 0;
     nChannelsLocal = 0;
     elements.clear();
-}
-
-const IndexedDataVector::element_type& IndexedDataVector::getValue(size_t row, size_t chan) const
-{
-    ASKAPDEBUGASSERT(initialized());
-    size_t index = get1Dindex(row, chan);
-    return elements[index];
-}
-
-void IndexedDataVector::addValue(size_t row, size_t chan, const element_type& value)
-{
-    ASKAPDEBUGASSERT(initialized());
-    size_t index = get1Dindex(row, chan);
-    elements[index] += value;
 }
 
 size_t IndexedDataVector::unroll(std::vector<double>& b) const

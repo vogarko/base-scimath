@@ -89,10 +89,20 @@ public:
     void reset();
 
     /// @brief Returns the matrix element by its 3D index.
-    const elem_type& getValue(size_t col, size_t row, size_t chan) const;
+    inline const elem_type& getValue(size_t col, size_t row, size_t chan) const
+    {
+        ASKAPDEBUGASSERT(initialized());
+        size_t index = get1Dindex(col, row, chan);
+        return elements[index];
+    }
 
     /// @brief Increments (+=) the matrix element by a given value
-    void addValue(size_t col, size_t row, size_t chan, const elem_type& value);
+    inline void addValue(size_t col, size_t row, size_t chan, const elem_type& value)
+    {
+        ASKAPDEBUGASSERT(initialized());
+        size_t index = get1Dindex(col, row, chan);
+        elements[index] += value;
+    }
 
     /// @brief Returns whether the matrix is initialized.
     inline bool initialized() const
@@ -152,10 +162,20 @@ public:
     void reset();
 
     /// @brief Returns the data vector element by its 2D index.
-    const element_type& getValue(size_t row, size_t chan) const;
+    inline const element_type& getValue(size_t row, size_t chan) const
+    {
+        ASKAPDEBUGASSERT(initialized());
+        size_t index = get1Dindex(row, chan);
+        return elements[index];
+    }
 
     /// @brief Increments (+=) the data vector element by a given value
-    void addValue(size_t row, size_t chan, const element_type& value);
+    inline void addValue(size_t row, size_t chan, const element_type& value)
+    {
+        ASKAPDEBUGASSERT(initialized());
+        size_t index = get1Dindex(row, chan);
+        elements[index] += value;
+    }
 
     /// @brief Populate the right-hand side vector b (unrolling complex values to doubles).
     size_t unroll(std::vector<double>& b) const;
