@@ -480,9 +480,6 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                 // Elements correspond to real and imaginary part derivatives of projected residual.
                 casacore::Vector<double> dataVector(2, 0.);
 
-                // Parameter name corresponding to the row of the normal matrix.
-                std::string rowName = itRe1->first;
-
                 if (measProduct != czero) {
                     dataVector[0] += real(conj(rowParDerivRe1) * measProduct);
                     dataVector[1] += real(conj(rowParDerivIm1) * measProduct);
@@ -502,6 +499,9 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                     dataVector[0] -= real(conj(rowParDerivRe1) * val2_modelProduct);
                     dataVector[1] -= real(conj(rowParDerivIm1) * val2_modelProduct);
                 }
+
+                // Parameter name corresponding to the row of the normal matrix.
+                const std::string& rowName = itRe1->first;
 
                 // Adding partial data vector.
                 if (itsIndexedDataVector.initialized()) {
