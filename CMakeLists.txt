@@ -29,6 +29,22 @@ set(REQUIRED_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}")
 option (CXX11 "Compile as C++11 if possible" YES)
 option (ENABLE_SHARED "Build shared libraries" YES)
 option (ENABLE_RPATH "Include rpath in executables and shared libraries" YES)
+option (ENABLE_OPENMP "Build with OPENMP Support" NO)
+
+if (ENABLE_OPENMP)
+	find_package(OpenMP)
+    if (OPENMP_FOUND)
+        if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qopenmp")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
+        else( )
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        endif( )
+    else (OPENMP_FOUND)
+        message(WARNING "Cannot fullfill USE_OPENMP, compiler does not support it")
+    endif (OPENMP_FOUND)
+endif()
 
 
 # uninstall target
@@ -123,7 +139,7 @@ askap_scimath.cc
 ./askap/scimath/lsqr_solver/ParallelTools.cc
 ./askap/scimath/lsqr_solver/SparseMatrix.cc
 )
-
+   
 install (FILES
 
 ./askap/scimath/fitting/PolynomialEquation.h
@@ -214,6 +230,10 @@ target_link_libraries(scimath PUBLIC
 	${FFTW_LIBRARIES}
 	${GSL_LIBRARIES}
 )
+if (OPENMP_FOUND)
+    target_link_libraries(scimath PRIVATE OpenMP::OpenMP_CXX)
+endif (OPENMP_FOUND)
+
 
 add_library(askap::scimath ALIAS scimath)
 
