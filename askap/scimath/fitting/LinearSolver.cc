@@ -625,7 +625,17 @@ bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
 
     // Solving A^T Q^-1 V = (A^T Q^-1 A) P
     // Find all the free parameters.
-    std::vector<std::string> names(params.freeNames());
+    std::vector<std::string> names;
+
+    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(normalEquations());
+
+    if (gne.indexedNormalMatrixInitialized()) {
+    // Solve for all unknowns in the indexed normal matrix case.
+        names = normalEquations().unknowns();
+    } else {
+        names = params.freeNames();
+    }
+
     if (names.size() == 0) {
         // List of parameters is empty, will solve for all unknowns in the equation.
         names = normalEquations().unknowns();
