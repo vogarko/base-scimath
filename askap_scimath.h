@@ -1,4 +1,3 @@
-// This is an automatically generated file. Please DO NOT edit!
 /// @file
 ///
 /// Package config file. ONLY include in ".cc" files never in header files!

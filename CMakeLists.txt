@@ -13,11 +13,7 @@ include(version_utils)
 get_version_string()
 
 project(askap-scimath VERSION ${VERSION_SHORT} LANGUAGES C CXX)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/askap_scimath.h.in
-                ${CMAKE_CURRENT_SOURCE_DIR}/askap_scimath.h)
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/askap_scimath.cc.in
-                ${CMAKE_CURRENT_SOURCE_DIR}/askp_scimath.cc)
+configure_file(askap_scimath.cc.in askap_scimath.cc)
 
 # Required Version of ASKAP dependencies is the MAJOR and MINOR version
 # of this package. This allows the PATCH versions to change on everything
@@ -78,7 +74,7 @@ if (CPPUNIT_FOUND)
 endif (CPPUNIT_FOUND)
 
 add_library(scimath
-askap_scimath.cc
+${CMAKE_CURRENT_BINARY_DIR}/askap_scimath.cc
 ./askap/scimath/fitting/ParamsTable.cc
 ./askap/scimath/fitting/ComplexDiffMatrix.cc
 ./askap/scimath/fitting/Quality.cc
