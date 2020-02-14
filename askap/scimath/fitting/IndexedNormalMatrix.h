@@ -57,18 +57,16 @@ struct IndexedNormalMatrix
     /// @brief Data holder for the indexed normal matrix element.
     struct elem_type {
         elem_type() {
-            for (size_t i = 0; i < 2; i++) {
-                for (size_t j = 0; j < 2; j++) {
-                    data[i][j] = 0;
-                }
-            }
+            data[0][0] = 0;
+            data[0][1] = 0;
+            data[1][0] = 0;
+            data[1][1] = 0;
         }
         elem_type& operator+=(const elem_type& rhs) {
-            for (size_t i = 0; i < 2; i++) {
-                for (size_t j = 0; j < 2; j++) {
-                    data[i][j] += rhs.data[i][j];
-                }
-            }
+            data[0][0] += rhs.data[0][0];
+            data[0][1] += rhs.data[0][1];
+            data[1][0] += rhs.data[1][0];
+            data[1][1] += rhs.data[1][1];
             return *this;
         }
 
