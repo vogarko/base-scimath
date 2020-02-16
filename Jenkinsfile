@@ -1,12 +1,17 @@
+def get_email() {
+   dir(path: "${env.REPO}" ) {
+      return sh (script:"git log -1 --pretty=format:'%ae'",returnStdout:true).trim()
+   }
+}  
 pipeline {
   agent {
     docker {
-      image 'sord/yanda:latest'
+      image 'sord/devops:lofar'
     }
 
   }
   stages {
-    stage('Building base-askap') {
+      stage('Building Dependency (ASKAP)') {
       steps {
         dir(path: '.') {
           sh '''if [ -d base-askap ]; then
@@ -15,6 +20,7 @@ rm -rf base-askap
 fi
 git clone https://bitbucket.csiro.au/scm/askapsdp/base-askap.git
 cd base-askap
+git checkout develop
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} ../
@@ -22,29 +28,9 @@ make -j2
 make -j2 install
 '''
         }
-
       }
-    }
-    stage('Building base-logfilters') {
-      steps {
-        dir(path: '.') {
-          sh '''if [ -d base-logfilters ]; then
-echo "base-logfilters directory already exists"
-rm -rf base-logfilters
-fi
-git clone https://bitbucket.csiro.au/scm/askapsdp/base-logfilters.git
-cd base-logfilters
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} ../
-make -j2
-make -j2 install
-'''
-        }
-
       }
-    }
-    stage('Building base-imagemath') {
+      stage('Building Dependency (IMAGEMATH)') {
       steps {
         dir(path: '.') {
           sh '''if [ -d base-imagemath ]; then
@@ -53,6 +39,7 @@ rm -rf base-imagemath
 fi
 git clone https://bitbucket.csiro.au/scm/askapsdp/base-imagemath.git
 cd base-imagemath
+git checkout develop
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} ../
@@ -60,39 +47,107 @@ make -j2
 make -j2 install
 '''
         }
-
       }
-    }
+      }
 
-    stage('Building base-scimath') {
+      stage('Building Dependency (PARALLEL)') {
       steps {
         dir(path: '.') {
-          sh '''if [ -d build ]; then
-echo "base-imagemath build directory already exists"
-if [ -f build/install_manifest.txt ]; then
-cd build
-make uninstall
-cd ..
+          sh '''if [ -d base-askapparallel ]; then
+echo "base-askapparallel directory already exists"
+rm -rf base-askapparallel
 fi
-rm -rf build
+git clone https://bitbucket.csiro.au/scm/askapsdp/base-askapparallel.git
+cd base-askapparallel
+git checkout develop
 mkdir build
-else
-mkdir build
-fi'''
-        }
-
-        dir(path: 'build') {
-          sh '''cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} ../
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} ../
 make -j2
 make -j2 install
 '''
         }
+      }
+      }
 
+      stage('Building Debug') {
+      steps {
+        dir(path: '.') {
+          sh '''git fetch --tags
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-coverage" ../
+make 
+'''
+        }
       }
     }
+
+    stage('Building Release)') {
+      steps {
+        dir(path: '.') {
+          sh '''git fetch --tags
+mkdir build-release
+cd build-release
+cmake -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_BUILD_TYPE=Release ../
+make 
+'''
+        }
+      }
+    }    
+    stage('Test') {
+     steps {
+        dir(path: '.') {
+          sh '''cd build
+ctest -T test --no-compress-output
+../askap-cmake/ctest2junit > ctest.xml
+          cp ctest.xml $WORKSPACE
+'''     }
+     }
+    }
+
   }
+
+post {
+        always {
+             junit 'ctest.xml'
+        }
+        success {        
+             mail to: "${env.EMAIL_TO}",
+             from: "jenkins@csiro.au",
+             subject: "Succeeded Pipeline: ${currentBuild.fullDisplayName}",
+             body: "Build ${env.BUILD_URL} succeeded"
+ 
+        }
+
+        failure {        
+             mail to: "${env.EMAIL_TO}",
+             from: "jenkins@csiro.au",
+             subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
+             body: "Something is wrong with ${env.BUILD_URL}"
+ 
+        }
+        unstable {
+             mail to: "${env.EMAIL_TO}",
+             from: "jenkins@csiro.au",
+             subject: "Unstable Pipeline: ${currentBuild.fullDisplayName}",
+             body: "${env.BUILD_URL} unstable"
+        } 
+        changed {
+             mail to: "${env.EMAIL_TO}",
+             from: "jenkins@csiro.au",
+             subject: "Changed Pipeline: ${currentBuild.fullDisplayName}",
+             body: "${env.BUILD_URL} changed"
+        }
+ }
+ 
   environment {
+    
     WORKSPACE = pwd()
     PREFIX = "${WORKSPACE}/install"
+    REPO = "${WORKSPACE}/base-imagemath/"
+    EMAIL_TO = get_email()
+
   }
 }
+
