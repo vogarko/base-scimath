@@ -145,7 +145,7 @@ post {
     
     WORKSPACE = pwd()
     PREFIX = "${WORKSPACE}/install"
-    REPO = "${WORKSPACE}/base-imagemath/"
+    REPO = "${WORKSPACE}/base-scimath/"
     EMAIL_TO = get_email()
 
   }
