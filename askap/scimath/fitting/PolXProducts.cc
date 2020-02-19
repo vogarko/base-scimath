@@ -38,8 +38,9 @@
 #include <askap/scimath/fitting/PolXProducts.h>
 #include <askap/askap/AskapError.h>
 
-using namespace askap;
-using namespace askap::scimath;
+namespace askap {
+
+namespace scimath {
 
 /// @brief basic constructor, uninitialised arrays
 /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
@@ -379,6 +380,7 @@ std::pair<casacore::uInt,casacore::uInt> PolXProducts::indexToPol(casacore::uInt
   }
   ASKAPTHROW(AskapError, "Index "<<index<<" exceeds maximum possible for nPol="<<npol);
 }
-            
 
+} // namespace scimath
 
+} // namespace askap
