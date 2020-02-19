@@ -358,7 +358,7 @@ void calculateIndexesFWD_new(size_t nParametersTotal,
             rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
 
         } else {
-        // Reached last global channel - do not add constraints - it is already coupled with previous one.
+        // Last global channel - do not add constraints - it is already coupled with previous one.
             // Real part.
             leftIndexGlobal[i] = -1;
             rightIndexGlobal[i] = -1;
@@ -388,15 +388,12 @@ void calculateIndexesFWD(size_t nParametersTotal,
 }
 
 // Calculates matrix indexes for the Central Difference (CD) gradient operator.
-void calculateIndexesCD(size_t nParametersTotal,
-                         size_t nParametersLocal,
-                         size_t nChannelsLocal,
-                         std::vector<int>& leftIndexGlobal,
-                         std::vector<int>& rightIndexGlobal)
+void calculateIndexesCD_old(size_t nParametersTotal,
+                            size_t nParametersLocal,
+                            size_t nChannelsLocal,
+                            std::vector<int>& leftIndexGlobal,
+                            std::vector<int>& rightIndexGlobal)
 {
-    ASKAPCHECK(nParametersTotal == leftIndexGlobal.size()
-               && nParametersTotal == rightIndexGlobal.size(), "Wrong vector size in calculateIndexesCD!");
-
     size_t nextChannelIndexShift = getNextChannelIndexShift(nParametersLocal, nChannelsLocal);
 
     size_t localChannelNumber = 0;
@@ -486,6 +483,58 @@ void calculateIndexesCD(size_t nParametersTotal,
     }
 }
 
+// Calculates matrix indexes for the Central Difference (CD) gradient operator.
+void calculateIndexesCD_new(size_t nParametersTotal,
+                            size_t nParametersLocal,
+                            size_t nChannelsLocal,
+                            std::vector<int>& leftIndexGlobal,
+                            std::vector<int>& rightIndexGlobal)
+{
+    size_t nextChannelIndexShift = nParametersLocal / nChannelsLocal;
+
+    for (size_t i = 0; i < nParametersTotal; i += 2) {
+
+        int shiftedLeftIndex = i - nextChannelIndexShift;
+        size_t shiftedRightIndex = i + nextChannelIndexShift;
+
+        if (shiftedLeftIndex >= 0 && shiftedRightIndex < nParametersTotal) {
+            // Real part.
+            leftIndexGlobal[i] = shiftedLeftIndex;
+            rightIndexGlobal[i] = shiftedRightIndex;
+            // Imaginary part.
+            leftIndexGlobal[i + 1] = leftIndexGlobal[i] + 1;
+            rightIndexGlobal[i + 1] = rightIndexGlobal[i] + 1;
+
+        } else {
+        // First or last global channel - do not add constraints - it is already coupled with the next one.
+            // Real part.
+            leftIndexGlobal[i] = -1;
+            rightIndexGlobal[i] = -1;
+            // Imaginary part.
+            leftIndexGlobal[i + 1] = -1;
+            rightIndexGlobal[i + 1] = -1;
+        }
+    }
+}
+
+// Calculates matrix indexes for the Central Difference (CD) gradient operator.
+void calculateIndexesCD(size_t nParametersTotal,
+                         size_t nParametersLocal,
+                         size_t nChannelsLocal,
+                         std::vector<int>& leftIndexGlobal,
+                         std::vector<int>& rightIndexGlobal,
+                         bool indexedNormalMatrixFormat)
+{
+    ASKAPCHECK(nParametersTotal == leftIndexGlobal.size()
+               && nParametersTotal == rightIndexGlobal.size(), "Wrong vector size in calculateIndexesCD!");
+
+    if (indexedNormalMatrixFormat) {
+        calculateIndexesCD_new(nParametersTotal, nParametersLocal, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+    } else {
+        calculateIndexesCD_old(nParametersTotal, nParametersLocal, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+    }
+}
+
 /// @brief Adding smoothness constraints to the system of equations.
 void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               lsqr::Vector& b_RHS,
@@ -543,7 +592,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
             }
             else if (smoothingType == 1) {
             // Central difference scheme.
-                calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+                calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
             }
 
             columnIndexGlobal[0] = leftIndexGlobal;
@@ -555,7 +604,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         else if (smoothingType == 2) {
         // Laplacian.
             // Utilize that the left and right indexes in Laplacian are the same as in the Central Difference (CD) scheme.
-            calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+            calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
 
             std::vector<int> middleIndexGlobal(nParametersTotal);
             for (size_t i = 0; i < nParametersTotal; i++) {
