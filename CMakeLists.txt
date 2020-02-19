@@ -13,7 +13,7 @@ include(version_utils)
 get_version_string()
 
 project(askap-scimath VERSION ${VERSION_SHORT} LANGUAGES C CXX)
-configure_file(askap_scimath.cc.in askap_scimath.cc)
+configure_file(askap_scimath.cc.in ${CMAKE_CURRENT_BINARY_DIR}/askap_scimath.cc)
 
 # Required Version of ASKAP dependencies is the MAJOR and MINOR version
 # of this package. This allows the PATCH versions to change on everything
