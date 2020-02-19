@@ -6,7 +6,7 @@ def get_email() {
 pipeline {
   agent {
     docker {
-      image 'sord/devops:lofar'
+      image 'sord/devops:gcovr'
     }
 
   }
@@ -103,6 +103,21 @@ ctest -T test --no-compress-output
 ../askap-cmake/ctest2junit > ctest.xml
           cp ctest.xml $WORKSPACE
 '''     }
+        dir(path: '.') {
+          sh '''gcovr -r . \
+--xml-pretty \
+--exclude-unreachable-branches \
+-o coverage.xml 
+'''
+        }
+        step([
+            $class: 'CoberturaPublisher',
+            coberturaReportFile: 'coverage.xml',
+            failNoReports: false,
+            failUnhealthy: false,
+            failUnstable: false,
+            maxNumberOfBuilds: 100
+        ])
      }
     }
 
