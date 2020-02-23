@@ -124,7 +124,7 @@ static bool allMatrixElementsAreZeros(const casa::Matrix<double> &matr, const do
 }
 
 /// @brief extract an independent subset of parameters
-/// @details This method analyses the normal equations and forms a subset of 
+/// @details This method analyses the normal equations and forms a subset of
 /// parameters which can be solved for independently. Although the SVD is more than
 /// capable of dealing with degeneracies, it is often too slow if the number of parameters is large.
 /// This method essentially gives the solver a hint based on the structure of the equations
@@ -158,7 +158,7 @@ std::vector<std::string> LinearSolver::getIndependentSubset(std::vector<std::str
                 resultNames.push_back(*ci);
                 // also add it to the temporary list of added names to erased
                 toErase.push_back(*ci);
-            } 
+            }
         }
 
         // erase all of the names that have just been added from the main list
@@ -167,7 +167,7 @@ std::vector<std::string> LinearSolver::getIndependentSubset(std::vector<std::str
             if (it != names.end()) names.erase(it);
         }
 
-    } 
+    }
     return resultNames;
 }
 
@@ -199,7 +199,7 @@ size_t LinearSolver::calculateGainNameIndices(const std::vector<std::string> &na
 /// @details This method is used in solveNormalEquations
 /// @param[in] params parameters to be updated
 /// @param[in] quality Quality of the solution
-/// @param[in] names names of the parameters to solve for 
+/// @param[in] names names of the parameters to solve for
 std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &params, Quality& quality,
                    const std::vector<std::string> &names) const
 {
@@ -261,7 +261,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
         gsl_error_handler_t *oldhandler=gsl_set_error_handler_off();
         ASKAPLOG_DEBUG_STR(logger, "Running SV decomp");
         const int status = gsl_linalg_SV_decomp (A, V, S, work);
-        ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status);
+        //ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status);
         gsl_set_error_handler(oldhandler);
 
         // A hack for now. For some reason, for some matrices gsl_linalg_SV_decomp may return NaN as singular value, perhaps some
@@ -272,7 +272,9 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
               gsl_vector_set(S,i,0.);
           }
           for (int k=0; k < nParameters; ++k) {
-               ASKAPCHECK(!std::isnan(gsl_matrix_get(V,i,k)), "NaN in V: i="<<i<<" k="<<k);
+               if(std::isnan(gsl_matrix_get(V,i,k))) {
+                   gsl_matrix_set(V,i,k,0.);
+               }
           }
         }
         // end of the hack
@@ -652,7 +654,7 @@ bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
             solveSubsetOfNormalEquations(params, quality, subsetNames);
         }
     }
-    
+
     return true;
 };
 

@@ -128,8 +128,8 @@ void update_solution(const std::vector<std::pair<std::string, int> > &indices,
         casa::Vector<double> value(params.value(indit->first).reform(vecShape));
         for (size_t i = 0; i < value.nelements(); ++i) {
             double adjustment = retrieval(delta_X, indit->second + i);
-            ASKAPCHECK(!std::isnan(adjustment), "Solution resulted in NaN as an update for parameter " << (indit->second + i));
-            value(i) += adjustment;
+            //ASKAPCHECK(!std::isnan(adjustment), "Solution resulted in NaN as an update for parameter " << (indit->second + i));
+            if (!std::isnan(adjustment)) value(i) += adjustment;
         }
     }
 }
