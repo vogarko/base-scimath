@@ -14,7 +14,7 @@ else ()
 endif ()
 
 endif ()
-(
+
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/askap-cmake")
 include(version_utils)
 get_version_string()
