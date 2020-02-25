@@ -260,8 +260,15 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
 
         gsl_error_handler_t *oldhandler=gsl_set_error_handler_off();
         ASKAPLOG_DEBUG_STR(logger, "Running SV decomp");
-        const int status = gsl_linalg_SV_decomp (A, V, S, work);
-        //ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status);
+        
+        int status = 1;
+        int failures = 0;
+        int failure_limit = 10;
+        while (status != 0 && failures < failure_limit ) {
+            status = gsl_linalg_SV_decomp (A, V, S, work);
+            ++failures;
+        }
+        ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status << ". Tries = " << failures );
         gsl_set_error_handler(oldhandler);
 
         // A hack for now. For some reason, for some matrices gsl_linalg_SV_decomp may return NaN as singular value, perhaps some
@@ -315,7 +322,6 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
         }
         result.first = smin;
         result.second = smax;
-
         quality.setDOF(nParameters);
         if (status != 0) {
             ASKAPLOG_WARN_STR(logger, "Solution is considered invalid due to gsl_linalg_SV_decomp failure, main matrix is effectively rank zero");
