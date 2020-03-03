@@ -13,6 +13,20 @@
 
 namespace askap { namespace lsqr {
 
+SparseMatrix::SparseMatrix() :
+    finalized(false),
+    nel(0),
+    nl(0),
+    nl_current(0),
+    sa(),
+    ija(),
+    ijl(1)
+#ifdef HAVE_MPI
+    ,itsComm(MPI_COMM_NULL)
+#endif
+{
+}
+
 SparseMatrix::SparseMatrix(size_t nl) :
     finalized(false),
     nel(0),

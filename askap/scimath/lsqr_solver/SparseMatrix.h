@@ -22,6 +22,12 @@ typedef std::vector<double> Vector;
  */
 class SparseMatrix {
 public:
+
+    /**
+     * Constructs an empty sparse matrix
+     */
+    SparseMatrix();
+
     /*
      * Constructor: initializes the sparse matrix.
      * nl - number of matrix lines.
