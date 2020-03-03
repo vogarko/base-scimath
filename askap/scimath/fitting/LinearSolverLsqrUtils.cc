@@ -79,20 +79,24 @@ void buildLSQRSparseMatrix(const GenericNormalEquations& gne,
                            size_t nParameters,
                            bool matrixIsParallel)
 {
+    size_t nParametersTotal;
+    size_t nParametersSmaller;
+
 #ifdef HAVE_MPI
     MPI_Comm workersComm = matrix.GetComm();
-    ASKAPCHECK(workersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
-
-    int myrank, nbproc;
-    MPI_Comm_rank(workersComm, &myrank);
-    MPI_Comm_size(workersComm, &nbproc);
-
-    size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, workersComm);
-    size_t nParametersSmaller = lsqr::ParallelTools::get_nsmaller(nParameters, myrank, nbproc, workersComm);
-#else
-    size_t nParametersTotal = nParameters;
-    size_t nParametersSmaller = 0;
+    if (workersComm != MPI_COMM_NULL) {
+        int myrank, nbproc;
+        MPI_Comm_rank(workersComm, &myrank);
+        MPI_Comm_size(workersComm, &nbproc);
+        nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, workersComm);
+        nParametersSmaller = lsqr::ParallelTools::get_nsmaller(nParameters, myrank, nbproc, workersComm);
+    }
+    else
 #endif
+    {
+        nParametersTotal = nParameters;
+        nParametersSmaller = 0;
+    }
 
     //------------------------------------------------------------------------------------------------------------------------
 
@@ -547,19 +551,23 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
 {
     ASKAPCHECK(nChannels > 1, "Wrong number of channels for smoothness constraints!");
 
+    int myrank;
+    size_t nParametersTotal;
+
 #ifdef HAVE_MPI
     MPI_Comm workersComm = matrix.GetComm();
-    ASKAPCHECK(workersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
-
-    int myrank, nbproc;
-    MPI_Comm_rank(workersComm, &myrank);
-    MPI_Comm_size(workersComm, &nbproc);
-
-    size_t nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, workersComm);
-#else
-    int myrank = 0;
-    size_t nParametersTotal = nParameters;
+    if (workersComm != MPI_COMM_NULL) {
+        int nbproc;
+        MPI_Comm_rank(workersComm, &myrank);
+        MPI_Comm_size(workersComm, &nbproc);
+        nParametersTotal = lsqr::ParallelTools::get_total_number_elements(nParameters, nbproc, workersComm);
+    }
+    else
 #endif
+    {
+        myrank = 0;
+        nParametersTotal = nParameters;
+    }
 
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding smoothness constraints, with weight = " << smoothingWeight << ", smoothingType = " << smoothingType);
 

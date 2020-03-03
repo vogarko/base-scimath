@@ -251,20 +251,25 @@ void SparseMatrix::addParallelSparseOperator(size_t nDiag,
                                              const std::vector<std::vector<int> >& columnIndexGlobal,
                                              const std::vector<double>& matrixValue)
 {
+    int myrank;
+    size_t nParametersTotal;
+    size_t nParametersSmaller;
+
 #ifdef HAVE_MPI
-    assert(itsComm != MPI_COMM_NULL);
-
-    int myrank, nbproc;
-    MPI_Comm_rank(itsComm, &myrank);
-    MPI_Comm_size(itsComm, &nbproc);
-
-    size_t nParametersTotal = ParallelTools::get_total_number_elements(nParametersLocal, nbproc, itsComm);
-    size_t nParametersSmaller = ParallelTools::get_nsmaller(nParametersLocal, myrank, nbproc, itsComm);
-#else
-    int myrank = 0;
-    size_t nParametersTotal = nParametersLocal;
-    size_t nParametersSmaller = 0;
+    if (itsComm != MPI_COMM_NULL) {
+        int myrank, nbproc;
+        MPI_Comm_rank(itsComm, &myrank);
+        MPI_Comm_size(itsComm, &nbproc);
+        nParametersTotal = ParallelTools::get_total_number_elements(nParametersLocal, nbproc, itsComm);
+        nParametersSmaller = ParallelTools::get_nsmaller(nParametersLocal, myrank, nbproc, itsComm);
+    }
+    else
 #endif
+    {
+        myrank = 0;
+        nParametersTotal = nParametersLocal;
+        nParametersSmaller = 0;
+    }
 
     Extend(nParametersTotal);
 
