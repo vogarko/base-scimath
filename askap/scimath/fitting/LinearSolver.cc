@@ -409,17 +409,11 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     bool matrixIsParallel = solverutils::getParameter("parallelMatrix", parameters(), false);
 
 #ifdef HAVE_MPI
-    MPI_Comm mpi_comm = MPI_COMM_WORLD;
-
     if (matrixIsParallel) {
     // The parallel matrix case - need to define the parallel partitioning.
         ASKAPCHECK(itsWorkersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
         MPI_Comm_rank(itsWorkersComm, &myrank);
         MPI_Comm_size(itsWorkersComm, &nbproc);
-
-        mpi_comm = itsWorkersComm;
-    } else {
-        mpi_comm = MPI_COMM_SELF;
     }
 #endif
     if (myrank == 0) {
@@ -438,11 +432,16 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParameters = " << nParameters);
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParametersTotal = " << nParametersTotal);
 
+    lsqr::SparseMatrix matrix;
 #ifdef HAVE_MPI
-    lsqr::SparseMatrix matrix(nParametersTotal, mpi_comm);
-#else
-    lsqr::SparseMatrix matrix(nParametersTotal);
+    if (matrixIsParallel) {
+        matrix = lsqr::SparseMatrix(nParametersTotal, itsWorkersComm);
+    }
+    else
 #endif
+    {
+        matrix = lsqr::SparseMatrix(nParametersTotal);
+    }
 
     // Copy matrix elements from normal matrix (map of map of matrixes) to the solver sparse matrix (in CSR format).
     lsqrutils::buildLSQRSparseMatrix(gne, indices, matrix, nParameters, matrixIsParallel);
