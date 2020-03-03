@@ -136,7 +136,9 @@ public:
 
 #ifdef HAVE_MPI
     /*
-     * Returns the MPI communicator.
+     * Returns the MPI communicator. If the communicator is MPI_COMM_NULL it
+     * means that this object is not using MPI, and hence it's not split across
+     * many ranks.
      */
     const MPI_Comm& GetComm() const;
 #endif
