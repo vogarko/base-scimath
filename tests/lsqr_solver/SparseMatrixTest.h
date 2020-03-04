@@ -39,7 +39,8 @@ namespace askap { namespace lsqr {
         CPPUNIT_TEST(testTransMultVectorAllNonZero3x2);
         CPPUNIT_TEST(testReset);
         CPPUNIT_TEST(testExtendNonEmpty);
-        CPPUNIT_TEST(testExtendEmpty);
+        CPPUNIT_TEST(testExtendEmptyZero);
+        CPPUNIT_TEST(testExtendEmptyDefaultCtor);
         CPPUNIT_TEST(testGetNumberNonemptyRowsNoEmpty);
         CPPUNIT_TEST(testGetNumberNonemptyRowsAllEmpty);
         CPPUNIT_TEST(testGetNumberNonemptyRowsSomeEmpty);
@@ -654,9 +655,8 @@ namespace askap { namespace lsqr {
 
         // Test of Extend.
         // Extending an empty matrix.
-        void testExtendEmpty()
+        void _testExtendEmpty(SparseMatrix &&matrix)
         {
-            SparseMatrix matrix(0);
             matrix.Finalize(3);
 
             matrix.Extend(3);
@@ -692,6 +692,17 @@ namespace askap { namespace lsqr {
             CPPUNIT_ASSERT_EQUAL(7.0, matrix.GetValue(0, 2));
             CPPUNIT_ASSERT_EQUAL(8.0, matrix.GetValue(1, 2));
             CPPUNIT_ASSERT_EQUAL(9.0, matrix.GetValue(2, 2));
+        }
+
+
+        void testExtendEmptyZero()
+        {
+            _testExtendEmpty(SparseMatrix{0});
+        }
+
+        void testExtendEmptyDefaultCtor()
+        {
+            _testExtendEmpty(SparseMatrix{});
         }
 
         // Test of GetNumberNonemptyRows.
