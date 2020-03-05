@@ -42,15 +42,21 @@ void ModelDamping::Add(double alpha,
         throw std::runtime_error("Matrix has not been finalized yet in ModelDamping::Add!");
     }
 
+    size_t nelementsTotal;
+    size_t nsmaller;
+
 #ifdef HAVE_MPI
     MPI_Comm mpi_comm = matrix.GetComm();
-    assert(mpi_comm != MPI_COMM_NULL);
-    size_t nelementsTotal = ParallelTools::get_total_number_elements(nelements, nbproc, mpi_comm);
-    size_t nsmaller = ParallelTools::get_nsmaller(nelements, myrank, nbproc, mpi_comm);
-#else
-    size_t nelementsTotal = nelements;
-    size_t nsmaller = 0;
+    if (mpi_comm != MPI_COMM_NULL) {
+        nelementsTotal = ParallelTools::get_total_number_elements(nelements, nbproc, mpi_comm);
+        nsmaller = ParallelTools::get_nsmaller(nelements, myrank, nbproc, mpi_comm);
+    }
+    else
 #endif
+    {
+        nelementsTotal = nelements;
+        nsmaller = 0;
+    }
 
     // Extend matrix and right-hand size for adding damping.
     matrix.Extend(nelementsTotal);
@@ -108,7 +114,9 @@ void ModelDamping::Add(double alpha,
     // Set the full right-hand side.
     //------------------------------------------------------------------------------
 #ifdef HAVE_MPI
-    ParallelTools::get_full_array_in_place(nelements, b_loc, true, myrank, nbproc, mpi_comm);
+    if (mpi_comm != MPI_COMM_NULL) {
+        ParallelTools::get_full_array_in_place(nelements, b_loc, true, myrank, nbproc, mpi_comm);
+    }
 #endif
 
     for (size_t i = 0; i < nelementsTotal; ++i)
