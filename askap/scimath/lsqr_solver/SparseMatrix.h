@@ -140,6 +140,27 @@ public:
      */
     bool Finalize(size_t ncolumns);
 
+    /// Copy assignment operator
+    SparseMatrix &operator=(const SparseMatrix &other)
+    {
+#ifdef HAVE_MPI
+        if (itsComm != MPI_COMM_NULL) {
+            MPI_Comm_free(&itsComm);
+        }
+        if (other.itsComm != MPI_COMM_NULL) {
+            MPI_Comm_dup(other.itsComm, &itsComm);
+        }
+#endif // HAVE_MPI
+        finalized = other.finalized;
+        nel = other.nel;
+        nl = other.nl;
+        nl_current = other.nl_current;
+        sa = other.sa;
+        ija = other.ija;
+        ijl = other.ijl;
+        return *this;
+    }
+
 #ifdef HAVE_MPI
     /*
      * Returns the MPI communicator. If the communicator is MPI_COMM_NULL it
