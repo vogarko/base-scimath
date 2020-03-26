@@ -72,8 +72,10 @@ ASKAP_LOGGER(logger, ".genericne");
 
 /// @brief a default constructor
 /// @details It creates an empty normal equations class
-GenericNormalEquations::GenericNormalEquations() {}
-  
+GenericNormalEquations::GenericNormalEquations() :
+        useIndexedNormalMatrixFormat(false)
+    {}
+
 /// @brief constructor from a design matrix
 /// @details This version of the constructor is equivalent to an
 /// empty constructor plus a call to add method with the given
@@ -90,6 +92,7 @@ GenericNormalEquations::GenericNormalEquations(const DesignMatrix& dm)
 /// @param[in] src other class
 GenericNormalEquations::GenericNormalEquations(const GenericNormalEquations &src) :
         INormalEquations(src),
+        useIndexedNormalMatrixFormat(src.useIndexedNormalMatrixFormat),
         itsIndexedNormalMatrix(src.itsIndexedNormalMatrix),
         itsIndexedDataVector(src.itsIndexedDataVector),
         itsParameterNameToIndex(src.itsParameterNameToIndex),
@@ -118,6 +121,7 @@ GenericNormalEquations& GenericNormalEquations::operator=(const GenericNormalEqu
            ci!=src.itsNormalMatrix.end(); ++ci) {
            deepCopyOfSTDMap(ci->second, itsNormalMatrix[ci->first]);
       }
+      useIndexedNormalMatrixFormat = src.useIndexedNormalMatrixFormat;
       itsIndexedNormalMatrix = src.itsIndexedNormalMatrix;
       itsIndexedDataVector = src.itsIndexedDataVector;
       itsParameterNameToIndex = src.itsParameterNameToIndex;
@@ -134,6 +138,7 @@ void GenericNormalEquations::reset()
 {
   itsDataVector.clear();
   itsNormalMatrix.clear();
+  useIndexedNormalMatrixFormat = false;
   itsIndexedNormalMatrix.reset();
   itsIndexedDataVector.reset();
   itsParameterNameToIndex.clear();
@@ -996,6 +1001,16 @@ size_t GenericNormalEquations::getChannelOffset() const
 {
     ASKAPDEBUGASSERT(itsIndexedNormalMatrix.initialized());
     return itsIndexedNormalMatrix.getChanOffset();
+}
+
+void GenericNormalEquations::setIndexedNormalMatrixFormat(bool flag)
+{
+    useIndexedNormalMatrixFormat = flag;
+}
+
+bool GenericNormalEquations::useIndexedNormalMatrix()
+{
+    return useIndexedNormalMatrixFormat;
 }
 
 void GenericNormalEquations::initIndexedNormalMatrix(size_t nBaseParameters, size_t nChannelsLocal, size_t chanOffset)

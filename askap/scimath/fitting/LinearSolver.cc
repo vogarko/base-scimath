@@ -638,6 +638,9 @@ bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
 
     if (gne.indexedNormalMatrixInitialized()) {
     // Solve for all unknowns in the indexed normal matrix case.
+    // Currently, the indexed normal matrix format is activated when the parallel matrix is used.
+    // Note that for the parallel matrix case, params.freeNames() should also contain all unknowns,
+    // as we do not fix model parameters for the local models, and thus solve for all parameters (including flagged data).
         names = normalEquations().unknowns();
     } else {
         names = params.freeNames();
@@ -648,6 +651,10 @@ bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
         names = normalEquations().unknowns();
     }
     ASKAPCHECK(names.size() > 0, "No free parameters in Linear Solver");
+
+    ASKAPLOG_INFO_STR(logger, "LinearSolver free names: " << params.freeNames().size());
+    ASKAPLOG_INFO_STR(logger, "LinearSolver fixed names: " << params.fixedNames().size());
+    ASKAPLOG_INFO_STR(logger, "LinearSolver names: " << names.size());
 
     if (algorithm() == "LSQR") {
     // LSQR solver.

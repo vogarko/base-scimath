@@ -253,6 +253,12 @@ struct GenericNormalEquations : public INormalEquations {
   /// @brief Returns the channel offset.
   size_t getChannelOffset() const;
 
+  /// @brief Set flag for using the indexed normal matrix format.
+  void setIndexedNormalMatrixFormat(bool flag);
+
+  /// @brief Get flag for using the indexed normal matrix format.
+  bool useIndexedNormalMatrix();
+
   /// @brief Initialize the indexed normal matrix.
   /// @param[in] nBaseParameters Number of parameters at one channel.
   /// @param[in] nChannelsLocal Number of channels at current worker.
@@ -406,6 +412,9 @@ private:
   /// @details Normal matrices stored as a map or maps of Matrixes - 
   /// it's really just a big matrix.
   std::map<string, MapOfMatrices> itsNormalMatrix;
+
+  /// @brief Flag for using the indexed normal matrix format.
+  bool useIndexedNormalMatrixFormat;
 
   /// @brief Normal matrix with linearized 3D integer index: (column, row, channel).
   IndexedNormalMatrix itsIndexedNormalMatrix;
