@@ -485,6 +485,8 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 
     if (addSmoothing) {
         ASKAPCHECK(matrixIsParallel, "Smoothing constraints should be used in the parallel matrix mode!");
+        // TODO: Remove non indexed normal matrix branches below, after all tests are passing.
+        ASKAPCHECK(gne.indexedNormalMatrixInitialized(), "Smoothing constraints should be used with indexed normal matrix format!");
 
         // Reading the number of channels.
         size_t nChannels = solverutils::getParameter("nChan", parameters(), 0);
@@ -518,7 +520,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 
         //--------------------------------------------------------------
         // Adding smoothing constraints into the system of equations.
-        int smoothingType = solverutils::getParameter("smoothingType", parameters(), 0);
+        int smoothingType = solverutils::getParameter("smoothingType", parameters(), 2);
         bool indexedNormalMatrixFormat = gne.indexedNormalMatrixInitialized();
         lsqrutils::addSmoothnessConstraints(matrix, b_RHS, x0, nParameters, nChannels,
                                             smoothingWeight, smoothingType, indexedNormalMatrixFormat);
