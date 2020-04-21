@@ -521,9 +521,14 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         //--------------------------------------------------------------
         // Adding smoothing constraints into the system of equations.
         int smoothingType = solverutils::getParameter("smoothingType", parameters(), 2);
+        bool addSpectralDiscont = solverutils::getParameter("spectralDiscont", parameters(), false);
+        size_t spectralDiscontStep = (size_t)solverutils::getParameter("spectralDiscontStep", parameters(), 40);
+
         bool indexedNormalMatrixFormat = gne.indexedNormalMatrixInitialized();
         lsqrutils::addSmoothnessConstraints(matrix, b_RHS, x0, nParameters, nChannels,
-                                            smoothingWeight, smoothingType, indexedNormalMatrixFormat);
+                                            smoothingWeight, smoothingType,
+                                            addSpectralDiscont, spectralDiscontStep,
+                                            indexedNormalMatrixFormat);
     }
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "Matrix nelements = " << matrix.GetNumberElements());
 

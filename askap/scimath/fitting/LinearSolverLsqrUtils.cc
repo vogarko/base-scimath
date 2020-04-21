@@ -547,6 +547,8 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               size_t nChannels,
                               double smoothingWeight,
                               int smoothingType,
+                              bool addSpectralDiscont,
+                              size_t spectralDiscontStep,
                               bool indexedNormalMatrixFormat)
 {
     ASKAPCHECK(nChannels > 1, "Wrong number of channels for smoothness constraints!");
@@ -626,6 +628,25 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                 }
             }
 
+            if (addSpectralDiscont) {
+                //-----------------------------------------------------------------------------------------
+                // Skipping constraints every several channels to account for spectral discontinuities.
+                //-----------------------------------------------------------------------------------------
+                // Number of parameters per channel.
+                size_t paramPerChannel = nParametersTotal / nChannels;
+                for (size_t ch = 0; ch < nChannels - 1; ch++) {
+                    if ((ch + 1) % spectralDiscontStep == 0) {
+                        // Loop over all parameters at the current channel.
+                        for (size_t i = ch * paramPerChannel; i < (ch + 2) * paramPerChannel; i++) {
+                            leftIndexGlobal[i] = -1;
+                            middleIndexGlobal[i] = -1;
+                            rightIndexGlobal[i] = -1;
+                        }
+                    }
+                }
+            }
+            //-----------------------------------------------------------------------------------------
+
             columnIndexGlobal[0] = leftIndexGlobal;
             columnIndexGlobal[1] = middleIndexGlobal;
             columnIndexGlobal[2] = rightIndexGlobal;
@@ -653,7 +674,9 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     for (size_t i = 0; i < nParametersTotal; i++) {
         double Ax0 = 0.;
         for (size_t k = 0; k < nDiag; k++) {
-            Ax0 += matrixValue[k] * x0[columnIndexGlobal[k][i]];
+            if (columnIndexGlobal[k][i] >= 0) {
+                Ax0 += matrixValue[k] * x0.at(columnIndexGlobal[k][i]);
+            }
         }
 
         // b = - F(x0) = - A.x0.

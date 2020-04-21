@@ -93,6 +93,8 @@ namespace askap { namespace scimath { namespace lsqrutils {
     /// @param[in] nChannels The total number of channels.
     /// @param[in] smoothingWeight The smoothing weight.
     /// @param[in] smoothingType The type of gradient approximation (0 - forward difference, 1- central difference, 2 - Laplacian).
+    /// @param[in] addSpectralDiscont Flag for adding spectral discontinuities (skipping smoothing constraints at some channels).
+    /// @param[in] spectralDiscontStep Spectral discontinuities step.
     /// @param[in] indexedNormalMatrixFormat Flag for whether we are using indexed normal matrix format.
     void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                                   lsqr::Vector& b_RHS,
@@ -101,6 +103,8 @@ namespace askap { namespace scimath { namespace lsqrutils {
                                   size_t nChannels,
                                   double smoothingWeight,
                                   int smoothingType,
+                                  bool addSpectralDiscont,
+                                  size_t spectralDiscontStep,
                                   bool indexedNormalMatrixFormat);
 
     /// @brief Calculates the least squares cost.
