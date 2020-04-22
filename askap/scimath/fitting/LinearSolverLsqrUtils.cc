@@ -589,6 +589,10 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         throw std::invalid_argument("Unknown smoothing type!");
     }
 
+    if (addSpectralDiscont) {
+        ASKAPCHECK(smoothingType == 2, "Spectral discontinuities are supported only for Laplacian smoothing!");
+    }
+
     std::vector<std::vector<int> > columnIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
     std::vector<double> matrixValue(nDiag);
     {
@@ -629,6 +633,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
             }
 
             if (addSpectralDiscont) {
+                if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding spectral discontinuities, with step = " << spectralDiscontStep);
                 //-----------------------------------------------------------------------------------------
                 // Skipping constraints every several channels to account for spectral discontinuities.
                 //-----------------------------------------------------------------------------------------
