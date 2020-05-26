@@ -17,7 +17,7 @@ endif ()
 
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/askap-cmake")
 include(version_utils)
-get_version_string()
+get_version_string(${CMAKE_SOURCE_DIR})
 
 project(askap-scimath VERSION ${VERSION_SHORT} LANGUAGES C CXX)
 configure_file(askap_scimath.cc.in ${CMAKE_CURRENT_BINARY_DIR}/askap_scimath.cc)
