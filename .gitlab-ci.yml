@@ -17,7 +17,7 @@ build:
   before_script:
     - apt update && apt install -y g++ git cmake
   script:
-    - git pull --tags
+    - git fetch --tags
     - n_cpus=`grep '^processor' /proc/cpuinfo  | wc -l`
     - mkdir build
     - cd build
