@@ -1,0 +1,93 @@
+# GitLab CI script for base-scimath
+
+#image: sord/devops:lofar
+image: sord/devops:30032020-162000
+
+.common: {tags: [azure]}
+
+stages:
+  - build
+  - test
+  - pages
+  - ci_status
+
+build:
+  extends: .common
+  stage: build
+  before_script:
+    - apt update && apt install -y g++ git cmake
+  script:
+    - n_cpus=`grep '^processor' /proc/cpuinfo  | wc -l`
+    - mkdir build
+    - cd build
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-coverage" -DCMAKE_EXE_LINKER_FLAGS="-coverage"
+    - cmake --build . -j $n_cpus
+  artifacts:
+    paths:
+      - build
+      - askap-cmake
+
+test:
+  extends: .common
+  stage: test
+  dependencies:
+    - build
+  before_script:
+    - apt update && apt install -y cmake xsltproc
+#  variables:
+#    CASARCFILES: /builds/ASKAPSDP/base-askap/build/test_gitlab_casarc.cfg
+  script:
+    - cd build
+#    - tar -xjf /home/all_yandasoft/base-accessors/measdata.tar.bz2
+#    - "echo 'measures.directory: '${PWD}'/data' > ${CASARCFILES}"
+#    - cat $CASARCFILES
+    - ctest -T test --verbose --no-compress-output
+  after_script:
+    - cd build
+    - ../askap-cmake/ctest2junit > ctest.xml
+  artifacts:
+    paths:
+      - build
+    reports:
+      junit: build/ctest.xml
+
+pages:
+  extends: .common
+  stage: pages
+  dependencies:
+    - test
+  before_script:
+    - apt update && apt install -y gcovr curl doxygen graphviz
+  script:
+    - mkdir -p public/build/reports
+    - mkdir -p public/coverage
+    - gcovr -r . -e '.*/CompilerIdCXX/.*' -e '.*/test/.*' --html --html-details -o public/coverage/index.html
+    - gcovr -r . -e '.*/CompilerIdCXX/.*' -e '.*/test/.*' --xml -o public/build/reports/code-coverage.xml
+    - cp build/ctest.xml public/build/reports/unit-tests.xml
+    - doxygen doxy.conf && mv html public/doxygen
+    - cd public
+    - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
+  artifacts:
+    paths:
+      - public
+
+success:
+  stage: ci_status
+  before_script:
+    - apt update && apt install -y curl
+  after_script:
+    - ""
+  script:
+    - BUILD_STATUS=passed BUILD_KEY=push ./build_status
+  when: on_success
+
+failure:
+  stage: ci_status
+  before_script:
+    - apt update && apt install -y curl
+  after_script:
+    - ""
+  script:
+    - BUILD_STATUS=failed BUILD_KEY=push ./build_status
+  when: on_failure
+
