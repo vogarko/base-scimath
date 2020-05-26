@@ -16,9 +16,10 @@ endif ()
 endif ()
 
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/askap-cmake")
+include(version_utils)
+get_version_string()
 
-
-project(askap-scimath LANGUAGES C CXX)
+project(askap-scimath VERSION ${VERSION_SHORT} LANGUAGES C CXX)
 configure_file(askap_scimath.cc.in ${CMAKE_CURRENT_BINARY_DIR}/askap_scimath.cc)
 
 # Required Version of ASKAP dependencies is the MAJOR and MINOR version
