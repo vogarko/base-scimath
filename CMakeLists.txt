@@ -17,7 +17,7 @@ endif ()
 
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/askap-cmake")
 include(version_utils)
-get_version_string()
+get_version_string(${CMAKE_SOURCE_DIR})
 
 project(askap-scimath VERSION ${VERSION_SHORT} LANGUAGES C CXX)
 configure_file(askap_scimath.cc.in ${CMAKE_CURRENT_BINARY_DIR}/askap_scimath.cc)
@@ -26,7 +26,7 @@ configure_file(askap_scimath.cc.in ${CMAKE_CURRENT_BINARY_DIR}/askap_scimath.cc)
 # of this package. This allows the PATCH versions to change on everything
 # but the version number cannot be less or more than the current version
 # 
-set(REQUIRED_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}")
+#set(REQUIRED_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}")
 
 
 option (CXX11 "Compile as C++11 if possible" YES)
@@ -76,9 +76,9 @@ endif(ENABLE_SHARED)
 # find packages
 find_package(lofar-common REQUIRED)
 find_package(lofar-blob REQUIRED)
-find_package(askap-askap ${REQUIRED_VERSION} REQUIRED)
-find_package(askap-imagemath ${REQUIRED_VERSION} REQUIRED)
-find_package(askap-parallel ${REQUIRED_VERSION} REQUIRED)
+find_package(askap-askap REQUIRED)
+find_package(askap-imagemath REQUIRED)
+find_package(askap-parallel REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system program_options thread chrono )
 find_package(log4cxx REQUIRED)
 find_package(Casacore REQUIRED COMPONENTS  ms images mirlib coordinates fits lattices measures scimath scimath_f tables casa)
