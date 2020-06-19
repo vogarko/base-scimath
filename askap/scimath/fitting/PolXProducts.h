@@ -43,6 +43,9 @@
 #include <casacore/casa/Arrays/Array.h>
 #include <casacore/casa/Arrays/Slicer.h>
 
+// askap includes
+#include <askap/askap/AskapError.h>
+
 
 namespace askap {
 
@@ -207,8 +210,19 @@ public:
    /// @param[in] pol2 second polarisation coordinate of the pair forming the product
    /// @param[in] modelProduct a complex number to add to the modelProduct buffer   
    /// @note to avoid bugs with unnecessary addition we enforce here that pol1>=pol2
-   void addModelProduct(const casacore::uInt x, const casacore::uInt y, const casacore::uInt pol1, 
-            const casacore::uInt pol2, const casacore::Complex modelProduct);   
+   void addModelProduct(const casacore::uInt x, const casacore::uInt y, const casacore::uInt pol1,
+            const casacore::uInt pol2, const casacore::Complex modelProduct)
+   {
+       ASKAPDEBUGASSERT(itsModelProducts.shape().nelements() == 3);
+       ASKAPDEBUGASSERT(itsModelMeasProducts.shape().nelements() == 3);
+       // enforcing pol1 >= pol2 here to avoid bugs in the code using this method (although it is not
+       // required technically and we could've just conjugate the input value if this condition is not
+       // fulfilled)
+       ASKAPDEBUGASSERT(pol1 >= pol2);
+       const int index = int(polToIndex(pol1,pol2));
+       const casacore::IPosition pos(3,int(x),int(y),index);
+       itsModelProducts(pos) += modelProduct;
+   }
 
    /// @brief add to the model product buffer
    /// @details The real usage of the model product buffer. This method encapsulates
@@ -231,8 +245,15 @@ public:
    /// @param[in] modelMeasProduct a complex number to add to the modelMeasProduct buffer   
    /// @note For cross-products between model and measured data any combination of pol1 and
    /// pol2 is allowed (i.e. there is no restriction that pol1>=pol2)
-   void addModelMeasProduct(const casacore::uInt x, const casacore::uInt y, const casacore::uInt pol1, 
-            const casacore::uInt pol2, const casacore::Complex modelMeasProduct);   
+   void addModelMeasProduct(const casacore::uInt x, const casacore::uInt y, const casacore::uInt pol1,
+            const casacore::uInt pol2, const casacore::Complex modelMeasProduct)
+   {
+       ASKAPDEBUGASSERT(itsModelProducts.shape().nelements() == 3);
+       ASKAPDEBUGASSERT(itsModelMeasProducts.shape().nelements() == 3);
+       const int index = int(pol1 + nPol() * pol2);
+       const casacore::IPosition pos(3,int(x),int(y),index);
+       itsModelMeasProducts(pos) += modelMeasProduct;
+   }
 
    /// @brief add to the model and measured product buffer
    /// @details The real usage of the model and measured product buffer. This method encapsulates

@@ -1,4 +1,3 @@
-// This is an automatically generated file. Please DO NOT edit!
 /// @file
 ///
 /// Package config file. ONLY include in ".cc" files never in header files!
@@ -15,11 +14,10 @@
 /// askap namespace
 namespace askap {
   /// @return version of the package
-///  std::string getAskapPackageVersion_scimath();
+  std::string getAskapPackageVersion_scimath();
 }
 
   /// The version of the package
-//#define ASKAP_PACKAGE_VERSION askap::getAskapPackageVersion_scimath()
-#define ASKAP_PACKAGE_VERSION "0.0.0"
+#define ASKAP_PACKAGE_VERSION askap::getAskapPackageVersion_scimath()
 
 #endif

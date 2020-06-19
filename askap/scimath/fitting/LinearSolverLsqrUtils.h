@@ -29,7 +29,7 @@
 #ifndef LinearSolverLsqrUtils_h_
 #define LinearSolverLsqrUtils_h_
 
-#include <askap/scimath/fitting/INormalEquations.h>
+#include <askap/scimath/fitting/GenericNormalEquations.h>
 #include <askap/scimath/fitting/Params.h>
 #include <askap/scimath/lsqr_solver/SparseMatrix.h>
 
@@ -44,12 +44,12 @@ namespace askap { namespace scimath { namespace lsqrutils {
 
     /// @brief Builds a sparse matrix for the LSQR solver.
     /// @details Copy matrix elements from normal matrix (map of map of matrixes) to the LSQR solver sparse matrix (in CSR format).
-    /// @param[in] ne Normal equation.
+    /// @param[in] gne Normal equation.
     /// @param[in] indices List of gain name/index pairs.
     /// @param[in] matrix The output sparse matrix.
     /// @param[in] nParameters Local number of parameters (at the current worker).
     /// @param[in] matrixIsParallel Flag for whether the matrix is parallel (columns distributed among workers).
-    void buildLSQRSparseMatrix(const INormalEquations &ne,
+    void buildLSQRSparseMatrix(const GenericNormalEquations &gne,
                                const std::vector<std::pair<string, int> > &indices,
                                lsqr::SparseMatrix &matrix,
                                size_t nParameters,
@@ -63,6 +63,14 @@ namespace askap { namespace scimath { namespace lsqrutils {
                                   const Params& params,
                                   std::vector<double>& solution);
 
+    /// @brief Returns a current solution vector of doubles.
+    /// @param[in] gne Normal equation.
+    /// @param[in] params Normal equation parameters.
+    /// @param[in] solution A container where the solution will be returned.
+    void getCurrentSolutionVector(const GenericNormalEquations &gne,
+                                  const Params& params,
+                                  std::vector<double>& solution);
+
     /// @brief Calculates the smoothing weight for given major loop iteration.
     /// @details This smoothing weight is used to weight the smoothing constraints in the cost function.
     /// @param[in] parameters Configuration parameters.
@@ -71,24 +79,36 @@ namespace askap { namespace scimath { namespace lsqrutils {
     double getSmoothingWeight(const std::map<std::string, std::string>& parameters,
                               size_t majorLoopIterationNumber);
 
+    /// @brief For testing, for old normal matrix format.
+    bool testMPIRankOrderWithChannels(int workerRank, size_t nChannelsLocal,
+                                      const std::vector<std::pair<std::string, int> >& indices);
+
     /// @brief Adding smoothness constraints to the system of equations.
     /// @details Extends the matrix and right-hand side with smoothness constraints,
     /// which are defined for the least squares minimization framework.
     /// @param[in] matrix The matrix where constraints will be added.
     /// @param[in] b_RHS The right-hand side where constraints will be added.
-    /// @param[in] indices List of gain name/index pairs (note two parameters in x0 per gain: real & imaginary parts).
     /// @param[in] x0 The current global solution (at all workers).
     /// @param[in] nParameters Local number of parameters (at the current worker).
     /// @param[in] nChannels The total number of channels.
     /// @param[in] smoothingWeight The smoothing weight.
-    /// @param[in] gradientType The type of gradient approximation (0 - forward difference, 1- central difference).
+    /// @param[in] smoothingType The type of gradient approximation (0 - forward difference, 1- central difference, 2 - Laplacian).
+    /// @param[in] addSpectralDiscont Flag for adding spectral discontinuities (skipping smoothing constraints at some channels).
+    /// @param[in] spectralDiscontStep Spectral discontinuities step.
+    /// @param[in] indexedNormalMatrixFormat Flag for whether we are using indexed normal matrix format.
     void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                                   lsqr::Vector& b_RHS,
-                                  const std::vector<std::pair<std::string, int> >& indices,
                                   const std::vector<double>& x0,
                                   size_t nParameters,
                                   size_t nChannels,
                                   double smoothingWeight,
-                                  int gradientType = 0);
+                                  int smoothingType,
+                                  bool addSpectralDiscont,
+                                  size_t spectralDiscontStep,
+                                  bool indexedNormalMatrixFormat);
+
+    /// @brief Calculates the least squares cost.
+    /// @param[in] b_RHS The right-hand side of the least squares system.
+    double calculateCost(const std::vector<double> &b_RHS);
 }}}
 #endif

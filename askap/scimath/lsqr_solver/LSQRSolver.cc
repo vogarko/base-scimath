@@ -40,17 +40,22 @@ void LSQRSolver::Solve(size_t niter,
         Vector& x,
         bool suppress_output)
 {
-    int myrank = 0;
-    int nbproc = 1;
+    int myrank;
+    int nbproc;
 
 #ifdef HAVE_MPI
-    MPI_Comm mpi_comm = matrix.GetComm();
-    assert(mpi_comm != MPI_COMM_NULL);
-
     // Retrieve MPI partitioning.
-    MPI_Comm_rank(mpi_comm, &myrank);
-    MPI_Comm_size(mpi_comm, &nbproc);
+    MPI_Comm matrix_comm = matrix.GetComm();
+    if (matrix_comm != MPI_COMM_NULL) {
+        MPI_Comm_rank(matrix_comm, &myrank);
+        MPI_Comm_size(matrix_comm, &nbproc);
+    }
+    else
 #endif
+    {
+        myrank = 0;
+        nbproc = 1;
+    }
 
     // Sanity check.
     if (matrix.GetNumberElements() == 0) {
@@ -93,12 +98,18 @@ void LSQRSolver::Solve(size_t niter,
     matrix.TransMultVector(u, v);
 
     // Normalize v and initialize alpha.
+    bool v_normalized;
 #ifdef HAVE_MPI
-    if (!MathUtils::NormalizeParallel(v, alpha, nbproc, matrix.GetComm())) {
-#else
-    assert(nbproc == 1);
-    if (!MathUtils::Normalize(v, alpha)) {
+    if (nbproc > 1) {
+        v_normalized = MathUtils::NormalizeParallel(v, alpha, nbproc, matrix_comm);
+    }
+    else
 #endif
+    {
+        assert(nbproc == 1);
+        v_normalized = MathUtils::Normalize(v, alpha);
+    }
+    if (!v_normalized) {
         throw std::runtime_error("Could not normalize initial v, zero denominator!");
     }
 
@@ -118,14 +129,14 @@ void LSQRSolver::Solve(size_t niter,
 #ifdef HAVE_MPI
         if (nbproc > 1) {
             matrix.MultVector(v, Hv_loc);
-            MPI_Allreduce(Hv_loc.data(), Hv.data(), nlines, MPI_DOUBLE, MPI_SUM, mpi_comm);
-        } else {
+            MPI_Allreduce(Hv_loc.data(), Hv.data(), nlines, MPI_DOUBLE, MPI_SUM, matrix_comm);
+        }
+        else
+#endif
+        {
+            assert(nbproc == 1);
             matrix.MultVector(v, Hv);
         }
-#else
-        assert(nbproc == 1);
-        matrix.MultVector(v, Hv);
-#endif
 
         // u = u + Hv
         MathUtils::Add(u, Hv);
@@ -147,11 +158,16 @@ void LSQRSolver::Solve(size_t niter,
 
         // Normalize v and update alpha.
 #ifdef HAVE_MPI
-        if (!MathUtils::NormalizeParallel(v, alpha, nbproc, matrix.GetComm())) {
-#else
-        assert(nbproc == 1);
-        if (!MathUtils::Normalize(v, alpha)) {
+        if (nbproc > 1) {
+            v_normalized = MathUtils::NormalizeParallel(v, alpha, nbproc, matrix_comm);
+        }
+        else
 #endif
+        {
+            assert(nbproc == 1);
+            v_normalized = MathUtils::Normalize(v, alpha);
+        }
+        if (!v_normalized) {
             // Found an exact solution.
             ASKAPLOG_WARN_STR(logger, "|v| = 0. Possibly found an exact solution in the LSQR solver!");
         }
@@ -191,14 +207,14 @@ void LSQRSolver::Solve(size_t niter,
 #ifdef HAVE_MPI
             if (nbproc > 1) {
                 matrix.MultVector(x, Hv_loc);
-                MPI_Allreduce(Hv_loc.data(), Hv.data(), nlines, MPI_DOUBLE, MPI_SUM, mpi_comm);
-            } else {
+                MPI_Allreduce(Hv_loc.data(), Hv.data(), nlines, MPI_DOUBLE, MPI_SUM, matrix_comm);
+            }
+            else
+#endif
+            {
+                assert(nbproc == 1);
                 matrix.MultVector(x, Hv);
             }
-#else
-            assert(nbproc == 1);
-            matrix.MultVector(x, Hv);
-#endif
 
             // Hv = Hv - b
             MathUtils::Transform(1.0, Hv, - 1.0, b);
@@ -207,7 +223,7 @@ void LSQRSolver::Solve(size_t niter,
 
             // Norm of the gradient.
 #ifdef HAVE_MPI
-            double g = 2.0 * MathUtils::GetNormParallel(v0, nbproc, matrix.GetComm());
+            double g = 2.0 * MathUtils::GetNormParallel(v0, nbproc, matrix_comm);
 #else
             double g = 2.0 * MathUtils::GetNorm(v0);
 #endif
@@ -231,7 +247,9 @@ void LSQRSolver::Solve(size_t niter,
     // Mainly for sanity reasons. E.g. if a function is mistakenly called with a vector b,
     // that is not the same on all CPUs, then some CPUs may quit the loop while others not.
     // Having a barrier here makes it easier to debug such bugs.
-    MPI_Barrier(mpi_comm);
+    if (nbproc > 1) {
+        MPI_Barrier(matrix_comm);
+    }
 #endif
 
     if (myrank == 0) {

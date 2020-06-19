@@ -1,0 +1,8 @@
+#include <string>
+#include "askap_scimath.h"
+
+  /// @return version of the package
+std::string askap::getAskapPackageVersion_scimath() {
+    return "@VERSION_SHORT@";
+}
+

@@ -85,7 +85,6 @@ void saveAsCasaImage(const std::string &imagename, const casacore::Array<casacor
    result.copyData(lattice);
 }
 
-
 } // namespace scimath
 
 } // namespace askap

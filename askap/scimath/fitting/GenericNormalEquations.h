@@ -47,10 +47,12 @@
 #include <askap/scimath/fitting/ComplexDiffMatrix.h>
 #include <askap/scimath/fitting/PolXProducts.h>
 #include <askap/scimath/fitting/Params.h>
+#include <askap/scimath/fitting/IndexedNormalMatrix.h>
 
 // std includes
 #include <map>
 #include <string>
+#include <unordered_map>
 
 namespace askap {
 
@@ -135,7 +137,9 @@ struct GenericNormalEquations : public INormalEquations {
   /// a square matrix of npol x npol size.
   /// @param[in] pxp cross-products (model by measured and model by model, where 
   /// measured is the vector cdm is multiplied to).
-  void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp);
+  /// @param[in] columnOffset column offset
+  /// @param[in] chan channel number (on the current worker)
+  void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset = 0, size_t chan = 0);
     
   /// @brief add normal matrix for a given parameter
   /// @details This means that the cross terms between parameters 
@@ -219,11 +223,85 @@ struct GenericNormalEquations : public INormalEquations {
   /// @return const reference to metadata
   inline const Params& metadata() const { return itsMetadata; }
 
+  /// @brief Adds the parameter name to the mapping between parameter names and ineteger indexes.
+  /// @param[in] name Name of the parameter to add.
+  void addParameterNameToIndexMap(const std::string &name);
+
+  /// @brief Returns the unique parameter's integer index by its name.
+  /// @param[in] name Name of the parameter to return the index for.
+  /// @return The parameter index, if parameter name exists, and -1 otherwise.
+  /// Throws an exception if the name is not found.
+  size_t getParameterIndexByName(const std::string &name) const;
+
+  /// @brief Returns the base parameter name by its integer index.
+  /// @param[in] index Index of the parameter to return the name for.
+  /// @return The base parameter name (without channel info).
+  const std::string& getBaseParameterNameByIndex(size_t index) const;
+
+  /// @brief Returns the full parameter name by its integer index and local channel number.
+  /// @details Note that the input channel number is local for current worker.
+  /// @param[in] index Index of the parameter.
+  /// @param[in] chan Local channel number.
+  std::string getFullParameterName(size_t index, size_t chan) const;
+
+  /// @brief Returns the number of parameters at one channel.
+  size_t getNumberBaseParameters() const;
+
+  /// @brief Returns the number of local channels (a current worker).
+  size_t getNumberLocalChannels() const;
+
+  /// @brief Returns the channel offset.
+  size_t getChannelOffset() const;
+
+  /// @brief Set flag for using the indexed normal matrix format.
+  void setIndexedNormalMatrixFormat(bool flag);
+
+  /// @brief Get flag for using the indexed normal matrix format.
+  bool useIndexedNormalMatrix();
+
+  /// @brief Initialize the indexed normal matrix.
+  /// @param[in] nBaseParameters Number of parameters at one channel.
+  /// @param[in] nChannelsLocal Number of channels at current worker.
+  /// @param[in] chanOffset Channel offset at the current worker.
+  void initIndexedNormalMatrix(size_t nBaseParameters, size_t nChannelsLocal, size_t chanOffset);
+
+  /// @brief Initialize the indexed data vector.
+  /// @param[in] nBaseParameters Number of parameters at one channel.
+  /// @param[in] nChannelsLocal Number of channels at current worker.
+  void initIndexedDataVector(size_t nBaseParameters, size_t nChannelsLocal);
+
+  /// @brief Returns whether the indexed normal matrix is initialized.
+  bool indexedNormalMatrixInitialized() const;
+
+  /// @brief Returns whether the indexed data vector is initialized.
+  bool indexedDataVectorInitialized() const;
+
+  /// @brief Returns an element of the indexed normal matrix.
+  /// @details Note that chan is a local channel number at the current worker,
+  /// i.e., not the actual channel number that is stored in the gain name.
+  /// @param[in] col Column number.
+  /// @param[in] row Row number.
+  /// @param[in] chan Local channel number (at the current worker).
+  virtual const IndexedNormalMatrix::elem_type& indexedNormalMatrix(size_t col, size_t row, size_t chan) const;
+
+  /// @brief Returns an element of the indexed data vector.
+  /// @details Note that chan is a local channel number at the current worker,
+  /// i.e., not the actual channel number that is stored in the gain name.
+  /// @param[in] row Row number.
+  /// @param[in] chan Local channel number (at the current worker).
+  virtual const IndexedDataVector::element_type& indexedDataVector(size_t row, size_t chan) const;
+
+  /// @brief Populate the right-hand side vector b (unrolling complex values to doubles).
+  /// @details Data is taken from the indexed data vector.
+  /// @param[in] b Pre-allocated container where the elements will be written.
+  /// @return The number of data written.
+  size_t unrollIndexedDataVector(std::vector<double>& b) const;
+
 protected:
   /// @brief map of matrices (data element of each row map)
   typedef std::map<std::string, casacore::Matrix<double> > MapOfMatrices;
   /// @brief map of vectors (data vectors for all parameters)
-  typedef std::map<std::string, casacore::Vector<double> > MapOfVectors;
+  typedef std::unordered_map<std::string, casacore::Vector<double> > MapOfVectors;
 
   /// @brief Add one parameter from another normal equations class
   /// @details This helper method is used in merging of two normal equations.
@@ -300,7 +378,7 @@ protected:
   /// @param[in] dv an element of the data vector
   /// @return element of the right-hand side of the normal equations
   static casa::Vector<double> dvElement(const casa::Matrix<double> &dm,
-              const casa::Vector<double> &dv); 
+              const casa::Vector<double> &dv);
 
   /// @brief Extract derivatives from design matrix
   /// @details This method extracts an appropriate derivative matrix
@@ -315,6 +393,12 @@ protected:
              const std::string &par, casacore::uInt dataPoint);
   
 private:
+  /// @brief Add/update one parameter to/in sparse matrix, using given matrix.
+  /// @details Note that this function does not update the data vector, but the matrix only.
+  /// @param[in] par name of the parameter to work with
+  /// @param[in] inNM input normal matrix
+  void addParameterSparselyToMatrix(const std::string &par, const MapOfMatrices &inNM);
+
   // Adding the data vector for a parameter.
   void addDataVector(const std::string &par, const casa::Vector<double>& inDV);
 
@@ -328,12 +412,25 @@ private:
   /// @details Normal matrices stored as a map or maps of Matrixes - 
   /// it's really just a big matrix.
   std::map<string, MapOfMatrices> itsNormalMatrix;
-  
+
+  /// @brief Flag for using the indexed normal matrix format.
+  bool useIndexedNormalMatrixFormat;
+
+  /// @brief Normal matrix with linearized 3D integer index: (column, row, channel).
+  IndexedNormalMatrix itsIndexedNormalMatrix;
+
+  /// @brief Data vector with linearized 2D integer index: (row, channel).
+  IndexedDataVector itsIndexedDataVector;
+
   /// @brief the data vectors
-  /// @details This parameter may eventually go a level up in the class
-  /// hierarchy
+  /// @details This parameter may eventually go a level up in the class hierarchy.
   MapOfVectors itsDataVector;
-  
+
+  /// @brief The containers for storing the forward and inverse mappings between parameter names and indexes.
+  /// @details These indexes are needed for storing the normal matrix with integer-based indexing.
+  std::map<std::string, size_t> itsParameterNameToIndex;
+  std::vector<std::string> itsParameterIndexToBaseName;
+
   /// @brief metadata
   /// @details It is handy to have key=value type metadata transported along with the
   /// normal equations. The main applications are the metadata for calibration parameters
@@ -342,7 +439,7 @@ private:
   /// calibration is the main driver. Therefore, this data field and handling methods are
   /// implemented only for GenericNormalEquations. We could move this up in the hierarchy
   /// and even expose access methods via the main interface.
-  Params itsMetadata; 
+  Params itsMetadata;
 };
 
 } // namespace scimath

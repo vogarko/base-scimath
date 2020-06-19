@@ -47,17 +47,19 @@ namespace scimath {
 /// @param[in] in input array
 /// @param[out] out output array (will be resized)
 /// @ingroup utils
-template<typename Key, typename T>
-void deepCopyOfSTDMap(const std::map<Key, T> &in,
-                         std::map<Key, T> &out)
+template<typename Map>
+void deepCopyOfSTDMap(const Map &in,
+                         Map &out)
 {
-   out = std::map<Key, T>();
-   const typename std::map<Key, T>::const_iterator inEnd = in.end();
-   for (typename std::map<Key, T>::const_iterator inIt = in.begin();
+   out = Map();
+   const typename Map::const_iterator inEnd = in.end();
+   for (typename Map::const_iterator inIt = in.begin();
         inIt != inEnd; ++inIt) {
         out[inIt->first] = inIt->second.copy();
    }
 }
+
+
 
 } // namespace scimath
 

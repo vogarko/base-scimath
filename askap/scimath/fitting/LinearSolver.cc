@@ -30,6 +30,8 @@
 #include <askap/scimath/fitting/LinearSolver.h>
 #include <askap/scimath/fitting/LinearSolverUtils.h>
 #include <askap/scimath/fitting/LinearSolverLsqrUtils.h>
+#include <askap/scimath/fitting/GenericNormalEquations.h>
+#include <askap/scimath/fitting/CalParamNameHelper.h>
 
 #include <askap/askap/AskapError.h>
 #include <askap/profile/AskapProfiler.h>
@@ -122,7 +124,7 @@ static bool allMatrixElementsAreZeros(const casa::Matrix<double> &matr, const do
 }
 
 /// @brief extract an independent subset of parameters
-/// @details This method analyses the normal equations and forms a subset of 
+/// @details This method analyses the normal equations and forms a subset of
 /// parameters which can be solved for independently. Although the SVD is more than
 /// capable of dealing with degeneracies, it is often too slow if the number of parameters is large.
 /// This method essentially gives the solver a hint based on the structure of the equations
@@ -156,7 +158,7 @@ std::vector<std::string> LinearSolver::getIndependentSubset(std::vector<std::str
                 resultNames.push_back(*ci);
                 // also add it to the temporary list of added names to erased
                 toErase.push_back(*ci);
-            } 
+            }
         }
 
         // erase all of the names that have just been added from the main list
@@ -165,7 +167,7 @@ std::vector<std::string> LinearSolver::getIndependentSubset(std::vector<std::str
             if (it != names.end()) names.erase(it);
         }
 
-    } 
+    }
     return resultNames;
 }
 
@@ -197,7 +199,7 @@ size_t LinearSolver::calculateGainNameIndices(const std::vector<std::string> &na
 /// @details This method is used in solveNormalEquations
 /// @param[in] params parameters to be updated
 /// @param[in] quality Quality of the solution
-/// @param[in] names names of the parameters to solve for 
+/// @param[in] names names of the parameters to solve for
 std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &params, Quality& quality,
                    const std::vector<std::string> &names) const
 {
@@ -258,8 +260,15 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
 
         gsl_error_handler_t *oldhandler=gsl_set_error_handler_off();
         ASKAPLOG_DEBUG_STR(logger, "Running SV decomp");
-        const int status = gsl_linalg_SV_decomp (A, V, S, work);
-        // ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status);
+        
+        int status = 1;
+        int failures = 0;
+        int failure_limit = 10;
+        while (status != 0 && failures < failure_limit ) {
+            status = gsl_linalg_SV_decomp (A, V, S, work);
+            ++failures;
+        }
+        ASKAPCHECK(status == 0, "gsl_linalg_SV_decomp failed, status = "<<status << ". Tries = " << failures );
         gsl_set_error_handler(oldhandler);
 
         // A hack for now. For some reason, for some matrices gsl_linalg_SV_decomp may return NaN as singular value, perhaps some
@@ -270,7 +279,9 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
               gsl_vector_set(S,i,0.);
           }
           for (int k=0; k < nParameters; ++k) {
-               ASKAPCHECK(!std::isnan(gsl_matrix_get(V,i,k)), "NaN in V: i="<<i<<" k="<<k);
+               if(std::isnan(gsl_matrix_get(V,i,k))) {
+                   gsl_matrix_set(V,i,k,0.);
+               }
           }
         }
         // end of the hack
@@ -311,7 +322,6 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
         }
         result.first = smin;
         result.second = smax;
-
         quality.setDOF(nParameters);
         if (status != 0) {
             ASKAPLOG_WARN_STR(logger, "Solution is considered invalid due to gsl_linalg_SV_decomp failure, main matrix is effectively rank zero");
@@ -371,13 +381,24 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     std::pair<double, double> result(0.,0.);
 
     std::vector<std::string> names = __names;
-    std::sort(names.begin(), names.end(), lsqrutils::compareGainNames);
+    std::vector<std::pair<std::string, int> > indices;
+    size_t nParameters;
+
+    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(normalEquations());
+
+    if (gne.indexedNormalMatrixInitialized()) {
+    // new matrix format
+        ASKAPCHECK(gne.indexedDataVectorInitialized(), "Indexed data vector is not initialized!");
+        nParameters = 2 * names.size();
+    } else {
+    // old matrix format
+        std::sort(names.begin(), names.end(), lsqrutils::compareGainNames);
+        indices.resize(names.size());
+        nParameters = calculateGainNameIndices(names, params, indices);
+    }
+    ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
 
     // Solving A^T Q^-1 V = (A^T Q^-1 A) P
-
-    std::vector<std::pair<std::string, int> > indices(names.size());
-    size_t nParameters = calculateGainNameIndices(names, params, indices);
-    ASKAPCHECK(nParameters > 0, "No free parameters in a subset of normal equations!");
 
     //------------------------------------------------------------------------------
     // Define MPI partitioning.
@@ -388,17 +409,11 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     bool matrixIsParallel = solverutils::getParameter("parallelMatrix", parameters(), false);
 
 #ifdef HAVE_MPI
-    MPI_Comm mpi_comm = MPI_COMM_WORLD;
-
     if (matrixIsParallel) {
     // The parallel matrix case - need to define the parallel partitioning.
         ASKAPCHECK(itsWorkersComm != MPI_COMM_NULL, "Workers communicator is not defined!");
         MPI_Comm_rank(itsWorkersComm, &myrank);
         MPI_Comm_size(itsWorkersComm, &nbproc);
-
-        mpi_comm = itsWorkersComm;
-    } else {
-        mpi_comm = MPI_COMM_SELF;
     }
 #endif
     if (myrank == 0) {
@@ -417,14 +432,19 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParameters = " << nParameters);
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "nParametersTotal = " << nParametersTotal);
 
+    lsqr::SparseMatrix matrix;
 #ifdef HAVE_MPI
-    lsqr::SparseMatrix matrix(nParametersTotal, mpi_comm);
-#else
-    lsqr::SparseMatrix matrix(nParametersTotal);
+    if (matrixIsParallel) {
+        matrix = lsqr::SparseMatrix(nParametersTotal, itsWorkersComm);
+    }
+    else
 #endif
+    {
+        matrix = lsqr::SparseMatrix(nParametersTotal);
+    }
 
     // Copy matrix elements from normal matrix (map of map of matrixes) to the solver sparse matrix (in CSR format).
-    lsqrutils::buildLSQRSparseMatrix(normalEquations(), indices, matrix, nParameters, matrixIsParallel);
+    lsqrutils::buildLSQRSparseMatrix(gne, indices, matrix, nParameters, matrixIsParallel);
 
     size_t nonzeros = matrix.GetNumberElements();
     double sparsity = (double)(nonzeros) / (double)(nParameters) / (double)(nParameters);
@@ -432,13 +452,21 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Solving normal equations using the LSQR solver");
 
-    //----------------------------------------------------
+    //------------------------------------------------------------------
     // Define the right-hand side (the data misfit part).
-    //----------------------------------------------------
+    //------------------------------------------------------------------
     lsqr::Vector b_RHS(nParametersTotal, 0.);
 
     // Populate the right-hand side vector B.
-    size_t nDataAdded = solverutils::populate_B(normalEquations(), indices, b_RHS, solverutils::assign_to_lsqr_vector);
+    size_t nDataAdded;
+    if (gne.indexedDataVectorInitialized()) {
+    // new matrix format
+        ASKAPCHECK(gne.indexedNormalMatrixInitialized(), "Indexed normal matrix is not initialized!");
+        nDataAdded = gne.unrollIndexedDataVector(b_RHS);
+    } else {
+    // old matrix format
+        nDataAdded = solverutils::populate_B(normalEquations(), indices, b_RHS, solverutils::assign_to_lsqr_vector);
+    }
     ASKAPCHECK(nDataAdded == (size_t)(nParameters), "Wrong number of data added on rank " << myrank);
 
     if (matrixIsParallel) {
@@ -447,6 +475,9 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 #endif
     }
 
+    double misfit_cost = lsqrutils::calculateCost(b_RHS);
+    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Misfit cost = " << misfit_cost);
+
     //------------------------------------------------------------------
     // Adding smoothness constraints.
     //------------------------------------------------------------------
@@ -454,6 +485,8 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
 
     if (addSmoothing) {
         ASKAPCHECK(matrixIsParallel, "Smoothing constraints should be used in the parallel matrix mode!");
+        // TODO: Remove non indexed normal matrix branches below, after all tests are passing.
+        ASKAPCHECK(gne.indexedNormalMatrixInitialized(), "Smoothing constraints should be used with indexed normal matrix format!");
 
         // Reading the number of channels.
         size_t nChannels = solverutils::getParameter("nChan", parameters(), 0);
@@ -466,15 +499,36 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         std::vector<double> x0(nParametersTotal);
 
         // Retrieve the local solution (at the current worker).
-        lsqrutils::getCurrentSolutionVector(indices, params, x0);
+        if (gne.indexedNormalMatrixInitialized()) {
+            lsqrutils::getCurrentSolutionVector(gne, params, x0);
+        } else {
+            lsqrutils::getCurrentSolutionVector(indices, params, x0);
+        }
 
 #ifdef HAVE_MPI
         // Retrieve the global solution (at all workers).
         lsqr::ParallelTools::get_full_array_in_place(nParameters, x0, true, myrank, nbproc, itsWorkersComm);
 #endif
+
+        if (!gne.indexedNormalMatrixInitialized()) {
+        // Sanity check (for channel order consistency) for old matrix format.
+            // Assume the same number of channels at every CPU.
+            size_t nChannelsLocal = nChannels / (nParametersTotal / nParameters);
+            // NOTE: Assume channels are ordered with the MPI rank order, i.e., the higher the rank the higher the channel number.
+            ASKAPCHECK(lsqrutils::testMPIRankOrderWithChannels(myrank, nChannelsLocal, indices), "Channels are not ordered with MPI ranks!");
+        }
+
         //--------------------------------------------------------------
         // Adding smoothing constraints into the system of equations.
-        lsqrutils::addSmoothnessConstraints(matrix, b_RHS, indices, x0, nParameters, nChannels, smoothingWeight);
+        int smoothingType = solverutils::getParameter("smoothingType", parameters(), 2);
+        bool addSpectralDiscont = solverutils::getParameter("spectralDiscont", parameters(), false);
+        size_t spectralDiscontStep = (size_t)solverutils::getParameter("spectralDiscontStep", parameters(), 40);
+
+        bool indexedNormalMatrixFormat = gne.indexedNormalMatrixInitialized();
+        lsqrutils::addSmoothnessConstraints(matrix, b_RHS, x0, nParameters, nChannels,
+                                            smoothingWeight, smoothingType,
+                                            addSpectralDiscont, spectralDiscontStep,
+                                            indexedNormalMatrixFormat);
     }
     if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "Matrix nelements = " << matrix.GetNumberElements());
 
@@ -493,40 +547,76 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     lsqr::ModelDamping damping(nParameters);
     damping.Add(alpha, norm, matrix, b_RHS, NULL, NULL, NULL, myrank, nbproc);
 
-    //-----------------------------------------------
-    // Calculating the total cost.
-    //-----------------------------------------------
-    double total_cost = 0.;
-    for (size_t i = 0; i < b_RHS.size(); ++i) {
-        total_cost += b_RHS[i] * b_RHS[i];
+    //------------------------------------------------------------------
+    // Column normalisation.
+    bool normalizeColumns = solverutils::getParameter("normalizeColumns", parameters(), false);
+
+    std::vector<double> columnNorms;
+    if (normalizeColumns) {
+        if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Normalizing matrix columns");
+        columnNorms.resize(nParameters);
+        matrix.NormalizeColumns(columnNorms);
     }
+
+    //------------------------------------------------------------------
+    // Calculating the total cost.
+    double total_cost = lsqrutils::calculateCost(b_RHS);
     if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Total cost = " << total_cost);
 
-    //-----------------------------------------------
+    //------------------------------------------------------------------
     // Setting solver parameters.
-    //-----------------------------------------------
     int niter = solverutils::getParameter("niter", parameters(), 100);
     double rmin = solverutils::getParameter("rmin", parameters(), 1.e-13);
     bool suppress_output = !(solverutils::getParameter("verbose", parameters(), false));
 
-    //-----------------------------------------------
+    //------------------------------------------------------------------
     // Solving the matrix system.
-    //-----------------------------------------------
+    //------------------------------------------------------------------
     casa::Timer timer;
     timer.mark();
 
-    lsqr::Vector x(nParameters, 0.0);
+    lsqr::Vector x(nParameters, 0.);
     lsqr::LSQRSolver solver(matrix.GetCurrentNumberRows(), nParameters);
 
     solver.Solve(niter, rmin, matrix, b_RHS, x, suppress_output);
 
     ASKAPLOG_INFO_STR(logger, "Completed LSQR in " << timer.real() << " seconds on rank " << myrank);
 
-    //------------------------------------------------------------------------
-    // Update the parameters for the calculated changes.
-    solverutils::update_solution(indices, params, x, solverutils::retrieve_from_lsqr_vector);
+    //------------------------------------------------------------------
+    // Solution re-scaling.
+    if (normalizeColumns) {
+        for (size_t i = 0; i < x.size(); i++) {
+            assert(columnNorms[i] != 0.);
+            x[i] /= columnNorms[i];
+        }
+    }
 
-    //------------------------------------------------------------------------
+    //------------------------------------------------------------------
+    // Update the parameters with the calculated changes.
+    if (gne.indexedNormalMatrixInitialized()) {
+    // TODO: Move to a function.
+    // new matrix format
+        size_t nChannelsLocal = gne.getNumberLocalChannels();
+        size_t nBaseParameters = gne.getNumberBaseParameters();
+
+        for (size_t i = 0; i < nBaseParameters; i++) {
+            for (size_t chan = 0; chan < nChannelsLocal; chan++) {
+                std::string paramName = gne.getFullParameterName(i, chan);
+
+                auto *data = params.value(paramName).data();
+                size_t index = i + nBaseParameters * chan;
+
+                data[0] += x[2 * index];
+                data[1] += x[2 * index + 1];
+            }
+        }
+
+    } else {
+    // old matrix format
+        solverutils::update_solution(indices, params, x, solverutils::retrieve_from_lsqr_vector);
+    }
+
+    //------------------------------------------------------------------
     // Set approximate solution quality.
     quality.setDOF(nParameters);
     quality.setRank(rank_approx);
@@ -549,28 +639,41 @@ bool LinearSolver::solveNormalEquations(Params &params, Quality& quality)
 
     // Solving A^T Q^-1 V = (A^T Q^-1 A) P
     // Find all the free parameters.
-    std::vector<std::string> names(params.freeNames());
+    std::vector<std::string> names;
+
+    const GenericNormalEquations& gne = dynamic_cast<const GenericNormalEquations&>(normalEquations());
+
+    if (gne.indexedNormalMatrixInitialized()) {
+    // Solve for all unknowns in the indexed normal matrix case.
+    // Currently, the indexed normal matrix format is activated when the parallel matrix is used.
+    // Note that for the parallel matrix case, params.freeNames() should also contain all unknowns,
+    // as we do not fix model parameters for the local models, and thus solve for all parameters (including flagged data).
+        names = normalEquations().unknowns();
+    } else {
+        names = params.freeNames();
+    }
+
     if (names.size() == 0) {
         // List of parameters is empty, will solve for all unknowns in the equation.
         names = normalEquations().unknowns();
     }
     ASKAPCHECK(names.size() > 0, "No free parameters in Linear Solver");
 
+    ASKAPLOG_INFO_STR(logger, "LinearSolver free names: " << params.freeNames().size());
+    ASKAPLOG_INFO_STR(logger, "LinearSolver fixed names: " << params.fixedNames().size());
+    ASKAPLOG_INFO_STR(logger, "LinearSolver names: " << names.size());
+
     if (algorithm() == "LSQR") {
     // LSQR solver.
         solveSubsetOfNormalEquationsLSQR(params, quality, names);
     } else {
-    // SVD solver.
-        if (names.size() < 100) { // No need to extract independent blocks if number of unknowns is small.
-            solveSubsetOfNormalEquations(params, quality, names);
-        } else {
-            while (names.size() > 0) {
-                ASKAPLOG_INFO_STR(logger, "Solving independent subset of parameters");
-                const std::vector<std::string> subsetNames = getIndependentSubset(names,1e-6);
-                solveSubsetOfNormalEquations(params, quality, subsetNames);
-            }
+        while (names.size() > 0) {
+            ASKAPLOG_INFO_STR(logger, "Solving independent subset of parameters");
+            const std::vector<std::string> subsetNames = getIndependentSubset(names,1e-6);
+            solveSubsetOfNormalEquations(params, quality, subsetNames);
         }
     }
+
     return true;
 };
 
