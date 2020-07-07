@@ -635,6 +635,103 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
     }
 }
 
+/// DDCALTAG
+void GenericNormalEquations::DDupdate(const ComplexDiffMatrix &cdm1,
+                                      const ComplexDiffMatrix &cdm2, const PolXProducts &pxp2,
+                                      const casa::uInt doConj, size_t columnOffset, size_t chan)
+{
+
+    if (pxp2.nPol() == 0) {
+        return; // nothing to process
+    }
+    ASKAPDEBUGASSERT(pxp2.nPol() == cdm1.nRow());
+    ASKAPDEBUGASSERT(pxp2.nPol() == cdm2.nRow());
+    const casacore::uInt nDataPoints = pxp2.nPol();
+
+    // Pre-calculate the array frequently used in the embedded loops.
+    std::vector<casacore::DComplex> modelProductMatrix(nDataPoints * nDataPoints);
+    for (casacore::uInt p1 = 0; p1 < nDataPoints; ++p1) {
+        for (casacore::uInt p2 = 0; p2 < nDataPoints; ++p2) {
+            // not sure about this, but presumably it should be Hermitian transposed
+            if ( doConj ) {
+                modelProductMatrix[p2 + nDataPoints * p1] = conj(pxp2.getModelProduct(p2,p1));
+            } else {
+                modelProductMatrix[p2 + nDataPoints * p1] = pxp2.getModelProduct(p1,p2);
+            }
+        }
+    }
+
+    const std::complex<double> czero(0, 0);
+
+    //-----------------------------------------------------------------------------
+    // Form the data vector.
+    //-----------------------------------------------------------------------------
+
+    // The first loop is over polarisations, essentially summing over
+    // data points in the calculation of normal matrix
+    for (casacore::uInt p = 0; p < nDataPoints; ++p) {
+
+        // Two inner loops are from matrix multiplication of cdm to a vector
+        // for Y and A^T parts in the product forming the element of the data vector (projected).
+        for (casacore::uInt p1 = 0; p1 < nDataPoints; ++p1) {
+
+            const ComplexDiff& cd1 = cdm1(p, p1 + columnOffset);
+
+            auto itRe1 = cd1.derivReBegin();
+            auto itIm1 = cd1.derivImBegin();
+
+            // Loop over the list of derivatives corresponding to the ComplexDiff cd1.
+            for (; itRe1 != cd1.derivReEnd(); itRe1++, itIm1++) {
+
+                ASKAPDEBUGASSERT(itIm1 != cd1.derivImEnd());
+
+                const casacore::DComplex rowParDerivRe1 = itRe1->second;
+                const casacore::DComplex rowParDerivIm1 = itIm1->second;
+
+                // TODO: Perhaps after we inverted the loops to iterate only over derivatives of the current complex diff,
+                // we dont need this check anymore, as there wont be zero derivatives after the first major iteration?
+                if (rowParDerivRe1 == czero && rowParDerivIm1 == czero) {
+                    continue;
+                }
+
+                // Partial projected data vector buffer for this row (size of 2 - all parameters are complex).
+                // Elements correspond to real and imaginary part derivatives of projected residual.
+                casacore::Vector<double> dataVector(2, 0.);
+
+                for (casacore::uInt p2 = 0; p2 < nDataPoints; ++p2) {
+
+                    const casacore::DComplex modelProduct = modelProductMatrix[p2 + nDataPoints * p1];
+                    if (modelProduct == czero) {
+                        continue;
+                    }
+
+                    const ComplexDiff &cd2 = cdm2(p, p2 + columnOffset);
+                    const casacore::DComplex val2 = cd2.value();
+                    const casacore::DComplex val2_modelProduct = val2 * modelProduct;
+
+                    dataVector[0] -= real(conj(rowParDerivRe1) * val2_modelProduct);
+                    dataVector[1] -= real(conj(rowParDerivIm1) * val2_modelProduct);
+                }
+
+                // Parameter name corresponding to the row of the normal matrix.
+                const std::string& rowName = itRe1->first;
+
+                // Adding partial data vector.
+                if (itsIndexedDataVector.initialized()) {
+                // new matrix format (indexed)
+                    size_t rowIndex = getParameterIndexByName(rowName);
+                    std::complex<double> el = std::complex<double>(dataVector[0], dataVector[1]);
+                    itsIndexedDataVector.addValue(rowIndex, chan, el);
+
+                } else {
+                // old matrix format
+                    addDataVector(rowName, dataVector);
+                }
+            }
+        }
+    }
+}
+
 /// @brief Add a design matrix to the normal equations
 /// @details This method computes the contribution to the normal matrix 
 /// using a given design matrix and adds it.

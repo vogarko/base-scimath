@@ -78,6 +78,17 @@ public:
    /// fills them with zeros.
    PolXProducts(const casacore::uInt npol, const casacore::IPosition &shape, const bool doZero = true);
    
+   /// DDCALTAG
+   /// @brief constructor initialising arrays with support for multiple directions
+   /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
+   /// @param[in] ndir number of separate calibration directions (i.e. dimension of visibility model vector)
+   /// @param[in] shape shape of the arrays without polarisation dimension which is always added last
+   /// @param[in] doZero if true (default), the buffer arrays are filled with zeros. 
+   /// @note This version of the constructor does initialise the arrays to the requested size and by default
+   /// fills them with zeros.
+   PolXProducts(const casacore::uInt npol, const casacore::uInt ndir,
+                const casacore::IPosition &shape, const bool doZero = true);
+   
    /// @brief asignment operator to ensure reference semantics
    /// @param[in] other object to reference from
    /// @return reference to this instance
@@ -106,6 +117,16 @@ public:
    /// @return the one dimensional slice at the given position
    PolXProducts roSlice(const casacore::IPosition &pos) const;   
    
+   /// DDCALTAG -- explain why this is needed
+   /// @brief obtain the slice at the given position
+   /// @details This method makes a slice of the underlying arrays along the polarisation axis 
+   /// at the given position for other dimensions. Note, unlike slice, this method makes a copy, so
+   /// it needs a read-only access to the original buffer. 
+   /// @param[in] pos position vector for all axes except the last one (polarisation). The vector size
+   /// should be the dimension of arrays minus 1.
+   /// @return the one dimensional slice at the given position
+   PolXProducts roModelSlice(const casacore::IPosition &pos) const;   
+
    /// @brief obtain the slice at the given position
    /// @details This is a specialisation of the method which makes a slice of the underlying arrays along 
    /// the polarisation axis at the given position for other dimensions. It is valid for 3-dimensional buffers
@@ -124,7 +145,27 @@ public:
    /// @return the one dimensional slice at the given position
    inline PolXProducts roSlice(const casacore::uInt x, const casacore::uInt y) const
      { return roSlice(casacore::IPosition(2, casacore::Int(x), casacore::Int(y)));}
+  
+   /// DDCALTAG -- explain why this is needed
+   /// @brief obtain the slice at the given position
+   /// @details This specialisation works with 3-dimensional buffers (x,y + polarisation dimension) and takes
+   /// the coordinates of the slice position explicitly. 
+   /// @param[in] x first coordinate
+   /// @param[in] y second coordinate
+   /// @return the one dimensional slice at the given position
+   inline PolXProducts roModelSlice(const casacore::uInt x, const casacore::uInt y) const
+     { return roModelSlice(casacore::IPosition(2, casacore::Int(x), casacore::Int(y)));}
    
+   /// DDCALTAG
+   /// @brief resize the arrays storing products
+   /// @details After a call to this method the class is put to the same state as after the call
+   /// to the constructor with array initialisation.
+   /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
+   /// @param[in] ndir number of separate calibration directions
+   /// @param[in] shape shape of the arrays without polarisation dimension which is always added last
+   /// @param[in] doZero if true (default), the buffer arrays are filled with zeros. 
+   void resize(const casacore::uInt npol, const casacore::uInt ndir,
+               const casacore::IPosition &shape, const bool doZero = true); 
    
    /// @brief resize the arrays storing products
    /// @details After a call to this method the class is put to the same state as after the call
@@ -265,11 +306,25 @@ public:
    /// @note For cross-products between model and measured data any combination of pol1 and
    /// pol2 is allowed (i.e. there is no restriction that pol1>=pol2)
    void addModelMeasProduct(const casacore::uInt pol1, const casacore::uInt pol2, const casacore::Complex modelMeasProduct);   
-   
-   
+  
    /// @brief obtain number of polarisations
    /// @return the number of polarisations
    inline casacore::uInt nPol() const { return itsNPol; }
+
+   /// DDCALTAG
+   /// @brief obtain number of separate calibration directions
+   /// @return the number of separate calibration directions
+   inline casacore::uInt nDir() const { return itsNDir; }
+
+   /// DDCALTAG
+   /// @brief obtain the shape of the model-model visibility product buffers
+   /// @return IPosition
+   inline const casacore::IPosition &getModelProductShape(void) const {return itsModelProducts.shape();}
+
+   /// DDCALTAG
+   /// @brief obtain the shape of the model-measured visibility product buffers
+   /// @return IPosition
+   inline const casacore::IPosition &getModelMeasProductShape(void) const {return itsModelMeasProducts.shape();}
 
 protected:   
    /// @brief setup a slicer for a given position
@@ -302,6 +357,10 @@ private:
    /// @brief number of polarisations (i.e. dimension of visibility vector)
    casacore::uInt itsNPol;     
    
+   /// DDCALTAG
+   /// @brief number of separate calibration directions
+   casacore::uInt itsNDir;     
+
    /// @brief products of components of model visibility
    casacore::Array<casacore::Complex> itsModelProducts;
    

@@ -42,11 +42,12 @@ namespace askap {
 
 namespace scimath {
 
+/// DDCALTAG -- itsNDir added to all constructors and class operators
 /// @brief basic constructor, uninitialised arrays
 /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
 /// @note The arrays are left uninitialised after this constructor, their size have to be changed 
 /// before they can be used
-PolXProducts::PolXProducts(const casacore::uInt npol) : itsNPol(npol) {}
+PolXProducts::PolXProducts(const casacore::uInt npol) : itsNPol(npol), itsNDir(1) {}
    
 /// @brief constructor initialising arrays
 /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
@@ -54,7 +55,28 @@ PolXProducts::PolXProducts(const casacore::uInt npol) : itsNPol(npol) {}
 /// @param[in] doZero if true (default), the buffer arrays are filled with zeros. 
 /// @note This version of the constructor does initialise the arrays to the requested size and by default
 /// fills them with zeros.
-PolXProducts::PolXProducts(const casacore::uInt npol, const casacore::IPosition &shape, const bool doZero) : itsNPol(npol),
+PolXProducts::PolXProducts(const casacore::uInt npol, const casacore::IPosition &shape, const bool doZero) :
+     itsNPol(npol), itsNDir(1),
+     itsModelProducts(shape.concatenate(casacore::IPosition(1,int(npol*(npol+1)/2)))),
+     itsModelMeasProducts(shape.concatenate(casacore::IPosition(1,int(npol*npol)))) 
+{
+  if (doZero) {
+      itsModelProducts.set(0.);
+      itsModelMeasProducts.set(0.);
+  }
+}
+
+/// DDCALTAG
+/// @brief constructor initialising arrays
+/// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
+/// @param[in] ndir number of separate calibration directions (i.e. dimension of visibility model vector)
+/// @param[in] shape shape of the arrays without polarisation dimension which is always added last
+/// @param[in] doZero if true (default), the buffer arrays are filled with zeros. 
+/// @note This version of the constructor does initialise the arrays to the requested size and by default
+/// fills them with zeros.
+PolXProducts::PolXProducts(const casacore::uInt npol, const casacore::uInt ndir,
+                           const casacore::IPosition &shape, const bool doZero) :
+     itsNPol(npol), itsNDir(ndir),
      itsModelProducts(shape.concatenate(casacore::IPosition(1,int(npol*(npol+1)/2)))),
      itsModelMeasProducts(shape.concatenate(casacore::IPosition(1,int(npol*npol)))) 
 {
@@ -71,6 +93,7 @@ PolXProducts::PolXProducts(const casacore::uInt npol, const casacore::IPosition 
 void PolXProducts::reference(PolXProducts &other)
 {
   itsNPol = other.itsNPol;
+  itsNDir = other.itsNDir;
   itsModelProducts.reference(other.itsModelProducts);
   itsModelMeasProducts.reference(other.itsModelMeasProducts);
 }
@@ -82,6 +105,7 @@ PolXProducts& PolXProducts::operator=(const PolXProducts &other)
 {
   if (this != &other) {
       itsNPol = other.itsNPol;
+      itsNDir = other.itsNDir;
       itsModelProducts.reference(other.itsModelProducts);
       itsModelMeasProducts.reference(other.itsModelMeasProducts);
   }
@@ -148,13 +172,42 @@ PolXProducts PolXProducts::roSlice(const casacore::IPosition &pos) const
   // of the reference semantics. We don't actually change anything and moreover make a copy after the slice
   // is taken.
 
-  casacore::Array<casacore::Complex> & modelProducts = const_cast<casacore::Array<casacore::Complex>&>(itsModelProducts);
+  casacore::Array<casacore::Complex> & modelProducts =
+      const_cast<casacore::Array<casacore::Complex>&>(itsModelProducts);
   // assignment operator for arrays makes a copy!
   result.itsModelProducts = modelProducts(getSlicer(pos,false)).nonDegenerate();
 
-  casacore::Array<casacore::Complex> & modelMeasProducts = const_cast<casacore::Array<casacore::Complex>&>(itsModelMeasProducts);
+  casacore::Array<casacore::Complex> & modelMeasProducts =
+      const_cast<casacore::Array<casacore::Complex>&>(itsModelMeasProducts);
   // assignment operator for arrays makes a copy!
   result.itsModelMeasProducts = modelMeasProducts(getSlicer(pos,true)).nonDegenerate();
+  return result;  
+}
+
+/// DDCALTAG -- explain why this is needed
+/// @brief obtain the slice at the given position
+/// @details This method makes a slice of the underlying arrays along the polarisation axis 
+/// at the given position for other dimensions. Note, unlike slice, this method makes a copy, so
+/// it needs a read-only access to the original buffer. 
+/// @param[in] pos position vector for all axes except the last one (polarisation). The vector size
+/// should be the dimension of arrays minus 1.
+/// @return the one dimensional slice at the given position
+PolXProducts PolXProducts::roModelSlice(const casacore::IPosition &pos) const
+{
+  const casacore::uInt nDim = itsModelProducts.shape().nelements();
+  ASKAPASSERT(nDim>0);
+
+  PolXProducts result(nPol());
+
+  // take the slices, make copies; const_cast is used to bypass constness requirement introduced because
+  // of the reference semantics. We don't actually change anything and moreover make a copy after the slice
+  // is taken.
+
+  casacore::Array<casacore::Complex> & modelProducts =
+      const_cast<casacore::Array<casacore::Complex>&>(itsModelProducts);
+  // assignment operator for arrays makes a copy!
+  result.itsModelProducts = modelProducts(getSlicer(pos,false)).nonDegenerate();
+
   return result;  
 }
 
@@ -170,7 +223,7 @@ void PolXProducts::resize(const casacore::uInt npol, const casacore::IPosition &
   itsNPol = npol;
   resize(shape,doZero);
 }
-   
+
 /// @brief resize without changing the number of polarisations
 /// @details This method is equivalent to the previous one, but the dimensionality of the visibility
 /// vector is not changed.
@@ -186,7 +239,43 @@ void PolXProducts::resize(const casacore::IPosition &shape, const bool doZero)
       reset();
   }  
 }
+   
+/// DDCALTAG
+/// @brief resize the arrays storing products, including direction-dependent calibration coupling temrs
+/// @details After a call to this method the class is put to the same state as after the call
+/// to the constructor with array initialisation.
+/// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
+/// @param[in] ndir number of separate calibration directions
+/// @param[in] shape shape of the arrays without polarisation dimension which is always added last
+/// @param[in] doZero if true (default), the buffer arrays are filled with zeros. 
+void PolXProducts::resize(const casacore::uInt npol, const casacore::uInt ndir,
+                          const casacore::IPosition &shape, const bool doZero) 
+{
+  itsNPol = npol;
+  itsNDir = ndir;
 
+  // Input shape(0) is numberOfRows = nBeam * nAnt*(nAnt-1)/2
+  // If itsNDir > 1, the beam dimension has been used to store each calibration direction, and
+  // the first dimention of targetShapeModel needs to include extra coupling terms and should be
+  // nDir*(nDir+1)/2 * nAnt*(nAnt-1)/2. So need separate shapes for the two buffers.
+  // Can't just multiply numberOfRows by (nDir+1)/2 because of the /2 rounding, so need to factorise
+  // e.g.
+  // nDir=1, nDir*(nDir+1)/2 = 1, (nDir+1)/2*nDir = 1
+  // nDir=2, nDir*(nDir+1)/2 = 3, (nDir+1)/2*nDir = 2 (incorrect; need 2 self terms plus 1 coupling term)
+
+  casacore::IPosition mshape(shape);
+  ASKAPCHECK(shape(0) % itsNDir == 0, "nDir must be a factor of nRow. "<<shape(0)<<" % "<<itsNDir<<" != 0");
+  const casacore::uInt nBaselines = shape(0) / itsNDir;
+  mshape(0) = itsNDir*(itsNDir+1)/2 * nBaselines;
+  const casacore::IPosition targetShapeModel = mshape.concatenate(casacore::IPosition(1,int(itsNPol*(itsNPol+1)/2)));
+  const casacore::IPosition targetShapeMeas = shape.concatenate(casacore::IPosition(1,int(itsNPol*itsNPol)));
+  itsModelProducts.resize(targetShapeModel);
+  itsModelMeasProducts.resize(targetShapeMeas); 
+
+  if (doZero) {
+      reset();
+  }  
+}
 /// @brief reset buffers to zero
 /// @details This method resets accumulation without changing the dimensions
 void PolXProducts::reset() {
