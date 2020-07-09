@@ -39,20 +39,16 @@
 #include "casacore/casa/Arrays/ArrayIter.h"
 #include "fftw3.h"
 
-#ifdef _OPENMP
 // boost include
 #include "boost/thread/mutex.hpp"
-#endif
 
 using namespace casa;
 
 namespace askap {
     namespace scimath {
 
-#ifdef _OPENMP
         /// @brief mutex to ensure thread safety in the calls to fft
         static boost::mutex fftWrapperMutex;
-#endif
 
         /**
          * Scale the array by 1/N were N is the total number of elements in
@@ -126,9 +122,7 @@ namespace askap {
         void fft(casacore::Vector<casacore::DComplex>& vec, const bool forward)
         {
             ASKAPTRACE("fft<casacore::DComplex>");
-#ifdef _OPENMP
             boost::unique_lock<boost::mutex> lock(fftWrapperMutex);
-#endif
 
             Bool deleteIt;
             DComplex *dataPtr = vec.getStorage(deleteIt);
@@ -157,9 +151,7 @@ namespace askap {
         void fft(casacore::Vector<casacore::Complex>& vec, const bool forward)
         {
             ASKAPTRACE("fft<casacore::Complex>");
-#ifdef _OPENMP
             boost::unique_lock<boost::mutex> lock(fftWrapperMutex);
-#endif
 
             Bool deleteIt;
             Complex *dataPtr = vec.getStorage(deleteIt);
@@ -188,9 +180,7 @@ namespace askap {
         void fft2d(casacore::Array<casacore::Complex>& arr, const bool forward)
         {
             ASKAPTRACE("fft2d<casacore::Complex>");
-#ifdef _OPENMP
             boost::unique_lock<boost::mutex> lock(fftWrapperMutex);
-#endif
             // 1: Make an iterator that returns plane by plane
             casacore::ArrayIterator<casacore::Complex> it(arr, 2);
 
@@ -238,9 +228,7 @@ namespace askap {
         void fft2d(casacore::Array<casacore::DComplex>& arr, const bool forward)
         {
             ASKAPTRACE("fft2d<casacore::DComplex>");
-#ifdef _OPENMP
             boost::unique_lock<boost::mutex> lock(fftWrapperMutex);
-#endif
 
             /// 1: Make an iterator that returns plane by plane
             casacore::ArrayIterator<casacore::DComplex> it(arr, 2);
