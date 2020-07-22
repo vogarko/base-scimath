@@ -43,6 +43,9 @@ test:
 #    - tar -xjf /home/all_yandasoft/base-accessors/measdata.tar.bz2
 #    - "echo 'measures.directory: '${PWD}'/data' > ${CASARCFILES}"
 #    - cat $CASARCFILES
+    - rm CMakeCache.txt
+    - rm DartConfiguration.tcl
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-coverage" -DCMAKE_EXE_LINKER_FLAGS="-coverage"
     - ctest -C DartConfiguration.tcl -T test --verbose --no-compress-output
   after_script:
     - cd build
