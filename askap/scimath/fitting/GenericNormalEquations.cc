@@ -635,7 +635,6 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
     }
 }
 
-/// DDCALTAG
 void GenericNormalEquations::DDupdate(const ComplexDiffMatrix &cdm1,
                                       const ComplexDiffMatrix &cdm2, const PolXProducts &pxp2,
                                       const casa::uInt doConj, size_t columnOffset, size_t chan)
@@ -652,7 +651,9 @@ void GenericNormalEquations::DDupdate(const ComplexDiffMatrix &cdm1,
     std::vector<casacore::DComplex> modelProductMatrix(nDataPoints * nDataPoints);
     for (casacore::uInt p1 = 0; p1 < nDataPoints; ++p1) {
         for (casacore::uInt p2 = 0; p2 < nDataPoints; ++p2) {
-            // not sure about this, but presumably it should be Hermitian transposed
+            // DDCALTAG check with polarised data and check terms in the main loops below
+            // DDCALTAG double chec that the transpose is corrent (looks right, see PreAvgDDCalBuffer::accumulate)
+            // DDCALTAG in the main loop, p1 and p2 are only used with modelProductMatrix and data vectors cdm & cdm2
             if ( doConj ) {
                 modelProductMatrix[p2 + nDataPoints * p1] = conj(pxp2.getModelProduct(p2,p1));
             } else {

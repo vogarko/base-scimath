@@ -42,7 +42,7 @@ namespace askap {
 
 namespace scimath {
 
-/// DDCALTAG -- itsNDir added to all constructors and class operators
+/// DDCALTAG -- itsNDir added to all constructors and class operators and a number of functions
 /// @brief basic constructor, uninitialised arrays
 /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
 /// @note The arrays are left uninitialised after this constructor, their size have to be changed 
@@ -66,7 +66,6 @@ PolXProducts::PolXProducts(const casacore::uInt npol, const casacore::IPosition 
   }
 }
 
-/// DDCALTAG
 /// @brief constructor initialising arrays
 /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
 /// @param[in] ndir number of separate calibration directions (i.e. dimension of visibility model vector)
@@ -184,8 +183,7 @@ PolXProducts PolXProducts::roSlice(const casacore::IPosition &pos) const
   return result;  
 }
 
-/// DDCALTAG -- explain why this is needed
-/// @brief obtain the slice at the given position
+/// @brief obtain the slice of the model at the given position
 /// @details This method makes a slice of the underlying arrays along the polarisation axis 
 /// at the given position for other dimensions. Note, unlike slice, this method makes a copy, so
 /// it needs a read-only access to the original buffer. 
@@ -240,7 +238,6 @@ void PolXProducts::resize(const casacore::IPosition &shape, const bool doZero)
   }  
 }
    
-/// DDCALTAG
 /// @brief resize the arrays storing products, including direction-dependent calibration coupling temrs
 /// @details After a call to this method the class is put to the same state as after the call
 /// to the constructor with array initialisation.
