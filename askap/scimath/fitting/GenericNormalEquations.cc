@@ -430,7 +430,8 @@ casacore::uInt GenericNormalEquations::parameterDimension(const MapOfMatrices &n
   return dim;
 }
 
-void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset, size_t chan)
+void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp,
+                                 size_t columnOffset, size_t chan)
 {
     if (pxp.nPol() == 0) {
         return; // nothing to process
@@ -510,15 +511,16 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
 
                 // Adding partial data vector.
                 if (itsIndexedDataVector.initialized()) {
-                // new matrix format (indexed)
+                    // new matrix format (indexed)
                     size_t rowIndex = getParameterIndexByName(rowName);
                     std::complex<double> el = std::complex<double>(dataVector[0], dataVector[1]);
                     itsIndexedDataVector.addValue(rowIndex, chan, el);
 
                 } else {
-                // old matrix format
+                    // old matrix format
                     addDataVector(rowName, dataVector);
                 }
+
             }
         }
     }
@@ -605,12 +607,12 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                         const std::string &colName = itRe2->first;
 
                         if (itsIndexedNormalMatrix.initialized()) {
-                        // new matrix format (indexed)
+                            // new matrix format (indexed)
                             size_t colIndex = getParameterIndexByName(colName);
                             itsIndexedNormalMatrix.addValue(colIndex, rowIndex, chan, nmElementBuf);
 
                         } else {
-                        // old matrix format
+                            // old matrix format
                             casacore::Matrix<casacore::Double> nmElementBuf_casa(2, 2, 0.);
                             for (size_t i = 0; i < 2; i++) {
                                 for (size_t j = 0; j < 2; j++) {
@@ -627,7 +629,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
                     }
                 }
                 if (!itsIndexedNormalMatrix.initialized()) {
-                // old matrix format
+                    // old matrix format
                     addParameterSparselyToMatrix(rowName, normalMatrix);
                 }
             }
