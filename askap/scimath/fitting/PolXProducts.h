@@ -78,6 +78,7 @@ public:
    /// fills them with zeros.
    PolXProducts(const casacore::uInt npol, const casacore::IPosition &shape, const bool doZero = true);
    
+   /// DDCALTAG
    /// @brief constructor initialising arrays with support for multiple directions
    /// @param[in] npol number of polarisations (i.e. dimension of visibility vector)
    /// @param[in] ndir number of separate calibration directions (i.e. dimension of visibility model vector)
@@ -115,16 +116,6 @@ public:
    /// should be the dimension of arrays minus 1.
    /// @return the one dimensional slice at the given position
    PolXProducts roSlice(const casacore::IPosition &pos) const;   
-   
-   /// DDCALTAG
-   /// @brief obtain the slice of the model at the given position
-   /// @details This method makes a slice of the underlying arrays along the polarisation axis 
-   /// at the given position for other dimensions. Note, unlike slice, this method makes a copy, so
-   /// it needs a read-only access to the original buffer. 
-   /// @param[in] pos position vector for all axes except the last one (polarisation). The vector size
-   /// should be the dimension of arrays minus 1.
-   /// @return the one dimensional slice at the given position
-   PolXProducts roModelSlice(const casacore::IPosition &pos) const;   
 
    /// @brief obtain the slice at the given position
    /// @details This is a specialisation of the method which makes a slice of the underlying arrays along 
@@ -144,8 +135,18 @@ public:
    /// @return the one dimensional slice at the given position
    inline PolXProducts roSlice(const casacore::uInt x, const casacore::uInt y) const
      { return roSlice(casacore::IPosition(2, casacore::Int(x), casacore::Int(y)));}
+   
+   /// DDCALTAG -- used when subtracting models from other directions
+   /// @brief obtain the slice of the model only at the given position
+   /// @details This method makes a slice of the model array along the polarisation axis 
+   /// at the given position for other dimensions. Note, unlike slice, this method makes a copy, so
+   /// it needs a read-only access to the original buffer. 
+   /// @param[in] pos position vector for all axes except the last one (polarisation). The vector size
+   /// should be the dimension of arrays minus 1.
+   /// @return the one dimensional slice at the given position
+   PolXProducts roModelSlice(const casacore::IPosition &pos) const;   
   
-   /// DDCALTAG -- explain why this is needed
+   /// DDCALTAG
    /// @brief obtain the slice at the given position
    /// @details This specialisation works with 3-dimensional buffers (x,y + polarisation dimension) and takes
    /// the coordinates of the slice position explicitly. 
@@ -155,6 +156,7 @@ public:
    inline PolXProducts roModelSlice(const casacore::uInt x, const casacore::uInt y) const
      { return roModelSlice(casacore::IPosition(2, casacore::Int(x), casacore::Int(y)));}
    
+   /// DDCALTAG
    /// @brief resize the arrays storing products
    /// @details After a call to this method the class is put to the same state as after the call
    /// to the constructor with array initialisation.
@@ -309,6 +311,7 @@ public:
    /// @return the number of polarisations
    inline casacore::uInt nPol() const { return itsNPol; }
 
+   /// DDCALTAG
    /// @brief obtain number of separate calibration directions
    /// @return the number of separate calibration directions
    inline casacore::uInt nDir() const { return itsNDir; }

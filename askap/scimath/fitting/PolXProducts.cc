@@ -183,8 +183,9 @@ PolXProducts PolXProducts::roSlice(const casacore::IPosition &pos) const
   return result;  
 }
 
+/// DDCALTAG -- used when subtracting models from other directions
 /// @brief obtain the slice of the model at the given position
-/// @details This method makes a slice of the underlying arrays along the polarisation axis 
+/// @details This method makes a slice of the model array along the polarisation axis 
 /// at the given position for other dimensions. Note, unlike slice, this method makes a copy, so
 /// it needs a read-only access to the original buffer. 
 /// @param[in] pos position vector for all axes except the last one (polarisation). The vector size
@@ -238,6 +239,7 @@ void PolXProducts::resize(const casacore::IPosition &shape, const bool doZero)
   }  
 }
    
+/// DDCALTAG
 /// @brief resize the arrays storing products, including direction-dependent calibration coupling temrs
 /// @details After a call to this method the class is put to the same state as after the call
 /// to the constructor with array initialisation.

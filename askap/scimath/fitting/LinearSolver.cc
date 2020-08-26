@@ -223,10 +223,8 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquations(Params &para
     gsl_vector * B = gsl_vector_alloc(nParameters);
     gsl_vector * X = gsl_vector_alloc(nParameters);
 
-    for (std::vector<std::pair<std::string, int> >::const_iterator
-            indit2=indices.begin();indit2!=indices.end(); ++indit2)  {
-        for (std::vector<std::pair<std::string, int> >::const_iterator
-                indit1=indices.begin();indit1!=indices.end(); ++indit1)  {
+    for (std::vector<std::pair<std::string, int> >::const_iterator indit2=indices.begin();indit2!=indices.end(); ++indit2)  {
+        for (std::vector<std::pair<std::string, int> >::const_iterator indit1=indices.begin();indit1!=indices.end(); ++indit1)  {
 
              // Axes are dof, dof for each parameter.
              // Take a deep breath for const-safe indexing into the double layered map.

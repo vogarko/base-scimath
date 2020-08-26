@@ -141,6 +141,7 @@ struct GenericNormalEquations : public INormalEquations {
   /// @param[in] chan channel number (on the current worker)
   void add(const ComplexDiffMatrix &cdm, const PolXProducts &pxp, size_t columnOffset = 0, size_t chan = 0);
     
+  /// DDCALTAG
   /// @brief update matrix-product data vectors to remove contribution from another directions
   /// @details 
   /// @param[in] cdm1 matrix with derivatives and values for the main direction (to be multiplied to a 
@@ -152,7 +153,6 @@ struct GenericNormalEquations : public INormalEquations {
   /// measured is the vector cdm is multiplied to).
   /// @param[in] columnOffset column offset
   /// @param[in] chan channel number (on the current worker)
-  // DAM could keep the columnOffset and chan support.
   void DDupdate(const ComplexDiffMatrix &cdm1, const ComplexDiffMatrix &cdm2, const PolXProducts &pxp2,
                 const casa::uInt doConj, size_t columnOffset = 0, size_t chan = 0);
     

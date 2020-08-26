@@ -637,6 +637,7 @@ void GenericNormalEquations::add(const ComplexDiffMatrix &cdm, const PolXProduct
     }
 }
 
+/// DDCALTAG
 void GenericNormalEquations::DDupdate(const ComplexDiffMatrix &cdm1,
                                       const ComplexDiffMatrix &cdm2, const PolXProducts &pxp2,
                                       const casa::uInt doConj, size_t columnOffset, size_t chan)
