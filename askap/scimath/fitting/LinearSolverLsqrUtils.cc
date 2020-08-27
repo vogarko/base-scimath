@@ -31,10 +31,10 @@
 #include <askap/scimath/fitting/CalParamNameHelper.h>
 #include <askap/scimath/lsqr_solver/ParallelTools.h>
 
-#include <askap/AskapError.h>
-#include <profile/AskapProfiler.h>
+#include <askap/askap/AskapError.h>
+#include <askap/profile/AskapProfiler.h>
 
-#include <askap/AskapLogging.h>
+#include <askap/askap/AskapLogging.h>
 ASKAP_LOGGER(logger, ".lsqrutils");
 
 #include <iostream>
