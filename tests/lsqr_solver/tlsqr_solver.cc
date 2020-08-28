@@ -25,8 +25,8 @@
 #include <ModelDampingTest.h>
 #include <SparseMatrixTest.h>
 
-#include <askap/AskapLogging.h>
-#include <askapparallel/AskapParallel.h>
+#include <askap/askap/AskapLogging.h>
+#include <askap/askapparallel/AskapParallel.h>
 
 int main(int argc, char *argv[])
 {
