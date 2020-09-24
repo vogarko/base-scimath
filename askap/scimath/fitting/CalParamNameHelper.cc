@@ -94,6 +94,11 @@ bool CalParamNameHelper::bpParam(const std::string &name)
   return name.find(bpPrefix()) == 0;
 }
 
+bool CalParamNameHelper::ionoParam(const std::string &name)
+{
+  return name.find(ionoPrefix()) == 0;
+}
+
 std::string CalParamNameHelper::addChannelInfo(const std::string &name, casacore::uInt chan)
 {
   return name + "." + utility::toString<casacore::uInt>(chan);

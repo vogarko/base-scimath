@@ -58,6 +58,10 @@ struct CalParamNameHelper {
   /// @return name prefix
   static std::string bpPrefix() { return "bp.";}
 
+  /// @brief prefix of ionospheric DTEC gradient parameters
+  /// @return name prefix
+  static std::string ionoPrefix() { return "ionosphere.";}
+
   /// @brief form the name of the parameter
   /// @details This method converts index and polarisation descriptor into a string name
   /// @param[in] index antenna/beam index
@@ -93,6 +97,9 @@ struct CalParamNameHelper {
   /// @param[in] name full name of the parameter
   /// @return true, if it is a bandpass parameter
   static bool bpParam(const std::string &name);
+ 
+  /// @brief check whether the parameter corresponds to ionospheric phase shifts
+  static bool ionoParam(const std::string &name);
   
   /// @brief adds spectral channel to the name
   /// @details It seems easier to carry bandpass parameters as vectors, but we need to extract individual
