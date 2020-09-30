@@ -55,8 +55,21 @@ std::string CalParamNameHelper::paramName(const JonesIndex &index, casacore::Sto
    return (isBP ? bpPrefix() + res : res) + utility::toString<casacore::Short>(index.antenna()) +"."+ utility::toString<casacore::Short>(index.beam());
 }
 
+std::string CalParamNameHelper::ionoParamName(const JonesIndex &index, const int paramType)
+{
+   std::string res;   
+   if (paramType == 0) {
+       res = "ionosphere.linear."; 
+   } else {
+       ASKAPTHROW(AskapError,  "Unsupported parameterisation type, only type 0 is allowed (linear)");
+   }
+   
+   return res+utility::toString<casacore::Short>(index.antenna())+"."+utility::toString<casacore::Short>(index.beam());
+}
+
 std::pair<JonesIndex, casacore::Stokes::StokesTypes> CalParamNameHelper::parseParam(const std::string &name)
 {
+
   size_t startPos = 0;
   if (bpParam(name)) {
       // to ignore bandpass prefix
@@ -66,18 +79,22 @@ std::pair<JonesIndex, casacore::Stokes::StokesTypes> CalParamNameHelper::parsePa
   ASKAPCHECK((pos != std::string::npos) && (pos + 1 != name.size()), 
              "Parameter name should be in the form something.something.ant.beam; you have "<<name);
   const std::string what = name.substr(startPos,pos - startPos);
-  ASKAPCHECK((what == "gain") || (what == "leakage"), "Only gain and leakage parameters are supported, you have "<<name);
+  ASKAPCHECK((what == "gain") || (what == "leakage") || (what == "ionosphere"),
+             "Only gain, leakage and ionospheric parameters are supported, you have "<<name);
   const size_t pos2 = name.find(".", pos + 1);
   ASKAPCHECK((pos2 != std::string::npos) && (pos2 + 1 != name.size()) && (pos + 1 != pos2), 
              "Parameter name should be in the form something.something.ant.beam; you have "<<name);
-  const std::string pol = name.substr(pos + 1, pos2 - pos - 1);
+  const std::string type = name.substr(pos + 1, pos2 - pos - 1);
   casacore::Stokes::StokesTypes polDescriptor;
   if (what  == "gain") {
-      ASKAPCHECK((pol == "g11") || (pol == "g22"), "Unrecognised polarisation product "<<pol<<" in "<<name);
-      polDescriptor = (pol == "g11" ? casacore::Stokes::XX : casacore::Stokes::YY);
+      ASKAPCHECK((type == "g11") || (type == "g22"), "Unrecognised polarisation product "<<type<<" in "<<name);
+      polDescriptor = (type == "g11" ? casacore::Stokes::XX : casacore::Stokes::YY);
   } else if (what == "leakage") {
-      ASKAPCHECK((pol == "d12") || (pol == "d21"), "Unrecognised polarisation product "<<pol<<" in "<<name);
-      polDescriptor = (pol == "d12" ? casacore::Stokes::XY : casacore::Stokes::YX);
+      ASKAPCHECK((type == "d12") || (type == "d21"), "Unrecognised polarisation product "<<type<<" in "<<name);
+      polDescriptor = (type == "d12" ? casacore::Stokes::XY : casacore::Stokes::YX);
+  } else if (what == "ionosphere") {
+      ASKAPCHECK(type == "linear", "Unrecognised coefficient type "<<type<<" in "<<name);
+      polDescriptor = casacore::Stokes::Undefined;
   } else {
      ASKAPTHROW(AskapError, "This line should never be executed!");
   }

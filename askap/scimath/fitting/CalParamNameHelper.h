@@ -82,6 +82,13 @@ struct CalParamNameHelper {
   inline static std::string paramName(const casacore::uInt ant, const casacore::uInt beam, casacore::Stokes::StokesTypes par, bool isBP = false)
       { return paramName(JonesIndex(ant,beam), par, isBP); }  
 
+  /// @brief form the name of the parameter
+  /// @details This method converts index into a string name
+  /// @param[in] index antenna/beam index
+  /// @param[in] paramType type of parameterisation
+  /// @return string name of the parameter
+  static std::string ionoParamName(const JonesIndex &index, const int paramType = 0);
+
   /// @brief parse the name of the parameter
   /// @details This method is a reverse of paramName. It receive the string with the parameter
   /// name and parses it to extract antenna/beam indices and polarisation descriptor 
