@@ -546,6 +546,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                               size_t nParameters,
                               size_t nChannels,
                               double smoothingWeight,
+                              double smoothingLevel,
                               int smoothingType,
                               bool addSpectralDiscont,
                               size_t spectralDiscontStep,
@@ -571,7 +572,9 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         nParametersTotal = nParameters;
     }
 
-    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding smoothness constraints, with weight = " << smoothingWeight << ", smoothingType = " << smoothingType);
+    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding smoothness constraints, with smoothingWeight = " << smoothingWeight <<
+                                               ", smoothingLevel = " << smoothingLevel <<
+                                               ", smoothingType = " << smoothingType);
 
     //-----------------------------------------------------------------------------
     // Assume the same number of channels at every CPU.
@@ -684,8 +687,8 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
             }
         }
 
-        // b = - F(x0) = - A.x0.
-        double b_RHS_value = - Ax0;
+        // b = - w (F(x0) - smoothingLevel), with w F(x0) = A.x0.
+        double b_RHS_value = - (Ax0 - smoothingWeight * smoothingLevel);
 
         size_t b_index = b_size0 + i;
         b_RHS[b_index] = b_RHS_value;

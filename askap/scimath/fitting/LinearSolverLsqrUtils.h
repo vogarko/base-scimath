@@ -92,6 +92,7 @@ namespace askap { namespace scimath { namespace lsqrutils {
     /// @param[in] nParameters Local number of parameters (at the current worker).
     /// @param[in] nChannels The total number of channels.
     /// @param[in] smoothingWeight The smoothing weight.
+    /// @param[in] smoothingLevel The (minimum) smoothing level (zero corresponds to maximum smoothing, and higher values to less smooth solutions).
     /// @param[in] smoothingType The type of gradient approximation (0 - forward difference, 1- central difference, 2 - Laplacian).
     /// @param[in] addSpectralDiscont Flag for adding spectral discontinuities (skipping smoothing constraints at some channels).
     /// @param[in] spectralDiscontStep Spectral discontinuities step.
@@ -102,6 +103,7 @@ namespace askap { namespace scimath { namespace lsqrutils {
                                   size_t nParameters,
                                   size_t nChannels,
                                   double smoothingWeight,
+                                  double smoothingLevel,
                                   int smoothingType,
                                   bool addSpectralDiscont,
                                   size_t spectralDiscontStep,
