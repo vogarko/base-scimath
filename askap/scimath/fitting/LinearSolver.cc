@@ -485,15 +485,10 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
     bool addSmoothing = solverutils::getParameter("smoothing", parameters(), false);
 
     if (addSmoothing) {
+    // Adding smoothing constraints into the system of equations.
         ASKAPCHECK(matrixIsParallel, "Smoothing constraints should be used in the parallel matrix mode!");
         // TODO: Remove non indexed normal matrix branches below, after all tests are passing.
         ASKAPCHECK(gne.indexedNormalMatrixInitialized(), "Smoothing constraints should be used with indexed normal matrix format!");
-
-        // Reading the number of channels.
-        size_t nChannels = solverutils::getParameter("nChan", parameters(), 0);
-
-        // Calculate the smoothing weight.
-        double smoothingWeight = lsqrutils::getSmoothingWeight(parameters(), itsMajorLoopIterationNumber);
 
         //--------------------------------------------------------------
         // Extract the solution at the current major iteration (before the update).
@@ -511,6 +506,9 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         lsqr::ParallelTools::get_full_array_in_place(nParameters, x0, true, myrank, nbproc, itsWorkersComm);
 #endif
 
+        // Reading the number of channels.
+        size_t nChannels = solverutils::getParameter("nChan", parameters(), 0);
+
         if (!gne.indexedNormalMatrixInitialized()) {
         // Sanity check (for channel order consistency) for old matrix format.
             // Assume the same number of channels at every CPU.
@@ -520,14 +518,15 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
         }
 
         //--------------------------------------------------------------
-        // Adding smoothing constraints into the system of equations.
+        double smoothingWeight = lsqrutils::getSmoothingWeight(parameters(), itsMajorLoopIterationNumber);
+        double smoothingLevel = solverutils::getParameter("smoothingLevel", parameters(), 0.);
         int smoothingType = solverutils::getParameter("smoothingType", parameters(), 2);
         bool addSpectralDiscont = solverutils::getParameter("spectralDiscont", parameters(), false);
         size_t spectralDiscontStep = (size_t)solverutils::getParameter("spectralDiscontStep", parameters(), 40);
 
         bool indexedNormalMatrixFormat = gne.indexedNormalMatrixInitialized();
         lsqrutils::addSmoothnessConstraints(matrix, b_RHS, x0, nParameters, nChannels,
-                                            smoothingWeight, smoothingType,
+                                            smoothingWeight, smoothingLevel, smoothingType,
                                             addSpectralDiscont, spectralDiscontStep,
                                             indexedNormalMatrixFormat);
     }
