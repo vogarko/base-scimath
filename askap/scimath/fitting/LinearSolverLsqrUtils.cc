@@ -592,10 +592,6 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         throw std::invalid_argument("Unknown smoothing type!");
     }
 
-    if (addSpectralDiscont) {
-        ASKAPCHECK(smoothingType == 2, "Spectral discontinuities are supported only for Laplacian smoothing!");
-    }
-
     std::vector<std::vector<int> > columnIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
     std::vector<double> matrixValue(nDiag);
     {
@@ -604,7 +600,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
 
         if (smoothingType == 0 || smoothingType == 1) {
             if (smoothingType == 0) {
-            // Forawrd difference scheme.
+            // Forward difference scheme.
                 calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
             }
             else if (smoothingType == 1) {
@@ -635,26 +631,6 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
                 }
             }
 
-            if (addSpectralDiscont) {
-                if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding spectral discontinuities, with step = " << spectralDiscontStep);
-                //-----------------------------------------------------------------------------------------
-                // Skipping constraints every several channels to account for spectral discontinuities.
-                //-----------------------------------------------------------------------------------------
-                // Number of parameters per channel.
-                size_t paramPerChannel = nParametersTotal / nChannels;
-                for (size_t ch = 0; ch < nChannels - 1; ch++) {
-                    if ((ch + 1) % spectralDiscontStep == 0) {
-                        // Loop over all parameters at the current channel.
-                        for (size_t i = ch * paramPerChannel; i < (ch + 2) * paramPerChannel; i++) {
-                            leftIndexGlobal[i] = -1;
-                            middleIndexGlobal[i] = -1;
-                            rightIndexGlobal[i] = -1;
-                        }
-                    }
-                }
-            }
-            //-----------------------------------------------------------------------------------------
-
             columnIndexGlobal[0] = leftIndexGlobal;
             columnIndexGlobal[1] = middleIndexGlobal;
             columnIndexGlobal[2] = rightIndexGlobal;
@@ -663,6 +639,26 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
             matrixValue[0] = smoothingWeight;
             matrixValue[1] = - 2. * smoothingWeight;
             matrixValue[2] = smoothingWeight;
+        }
+    }
+
+    //-----------------------------------------------------------------------------
+    // Adding spectral discontinuities.
+    //-----------------------------------------------------------------------------
+    if (addSpectralDiscont) {
+        if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Adding spectral discontinuities, with step = " << spectralDiscontStep);
+        // Number of parameters per channel.
+        size_t paramPerChannel = nParametersTotal / nChannels;
+        // Skipping constraints every several channels to account for spectral discontinuities.
+        for (size_t ch = 0; ch < nChannels - 1; ch++) {
+            if ((ch + 1) % spectralDiscontStep == 0) {
+                // Loop over all parameters at the current channel.
+                for (size_t i = ch * paramPerChannel; i < (ch + 2) * paramPerChannel; i++) {
+                    for (size_t j = 0; j < nDiag; j++) {
+                        columnIndexGlobal[j][i] = -1;
+                    }
+                }
+            }
         }
     }
 

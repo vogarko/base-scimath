@@ -530,7 +530,7 @@ std::pair<double,double> LinearSolver::solveSubsetOfNormalEquationsLSQR(Params &
                                             addSpectralDiscont, spectralDiscontStep,
                                             indexedNormalMatrixFormat);
     }
-    if (myrank == 0) ASKAPLOG_DEBUG_STR(logger, "Matrix nelements = " << matrix.GetNumberElements());
+    if (myrank == 0) ASKAPLOG_INFO_STR(logger, "Matrix nelements = " << matrix.GetNumberElements());
 
     // A simple approximation for the upper bound of the rank of the  A'A matrix.
     size_t rank_approx = matrix.GetNumberNonemptyRows();
