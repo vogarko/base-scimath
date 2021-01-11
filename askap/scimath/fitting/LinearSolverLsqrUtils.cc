@@ -492,14 +492,15 @@ void calculateIndexesCD_new(size_t nParametersTotal,
                             size_t nParametersLocal,
                             size_t nChannelsLocal,
                             std::vector<int>& leftIndexGlobal,
-                            std::vector<int>& rightIndexGlobal)
+                            std::vector<int>& rightIndexGlobal,
+                            size_t nChannelsShift)
 {
     size_t nextChannelIndexShift = nParametersLocal / nChannelsLocal;
 
     for (size_t i = 0; i < nParametersTotal; i += 2) {
 
-        int shiftedLeftIndex = i - nextChannelIndexShift;
-        size_t shiftedRightIndex = i + nextChannelIndexShift;
+        int shiftedLeftIndex = i - nextChannelIndexShift * nChannelsShift;
+        size_t shiftedRightIndex = i + nextChannelIndexShift * nChannelsShift;
 
         if (shiftedLeftIndex >= 0 && shiftedRightIndex < nParametersTotal) {
             // Real part.
@@ -527,15 +528,37 @@ void calculateIndexesCD(size_t nParametersTotal,
                          size_t nChannelsLocal,
                          std::vector<int>& leftIndexGlobal,
                          std::vector<int>& rightIndexGlobal,
-                         bool indexedNormalMatrixFormat)
+                         bool indexedNormalMatrixFormat,
+                         size_t nChannelsShift = 1)
 {
     ASKAPCHECK(nParametersTotal == leftIndexGlobal.size()
                && nParametersTotal == rightIndexGlobal.size(), "Wrong vector size in calculateIndexesCD!");
 
     if (indexedNormalMatrixFormat) {
-        calculateIndexesCD_new(nParametersTotal, nParametersLocal, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+        calculateIndexesCD_new(nParametersTotal, nParametersLocal, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, nChannelsShift);
     } else {
+        if (nChannelsShift != 1) {
+            throw std::invalid_argument("Not supported channels shift!");
+        }
         calculateIndexesCD_old(nParametersTotal, nParametersLocal, nChannelsLocal, leftIndexGlobal, rightIndexGlobal);
+    }
+}
+
+// Calculates matrix middle index for the (high order) Central Difference (CD) gradient operator.
+void calculateMiddleIndex(size_t nParametersTotal,
+                          const std::vector<int>& leftIndexGlobal,
+                          const std::vector<int>& rightIndexGlobal,
+                          std::vector<int>& middleIndexGlobal)
+{
+    for (size_t i = 0; i < nParametersTotal; i++) {
+        if (leftIndexGlobal[i] >= 0) {
+            assert(rightIndexGlobal[i] >= 0);
+            middleIndexGlobal[i] = i;
+        } else {
+            assert(leftIndexGlobal[i] == -1);
+            assert(rightIndexGlobal[i] == -1);
+            middleIndexGlobal[i] = -1;
+        }
     }
 }
 
@@ -588,13 +611,17 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         nDiag = 2;
     } else if (smoothingType == 2) {
         nDiag = 3;
+    } else if (smoothingType == 4) {
+        nDiag = 5;
     } else {
         throw std::invalid_argument("Unknown smoothing type!");
     }
 
     std::vector<std::vector<int> > columnIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
     std::vector<double> matrixValue(nDiag);
+
     if (smoothingType == 0 || smoothingType == 1) {
+    // First order.
         auto &leftIndexGlobal = columnIndexGlobal[0];
         auto &rightIndexGlobal = columnIndexGlobal[1];
 
@@ -618,22 +645,42 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
 
         // Utilize that the left and right indexes in Laplacian are the same as in the Central Difference (CD) scheme.
         calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
-
-        for (size_t i = 0; i < nParametersTotal; i++) {
-            if (leftIndexGlobal[i] >= 0) {
-                assert(rightIndexGlobal[i] >= 0);
-                middleIndexGlobal[i] = i;
-            } else {
-                assert(leftIndexGlobal[i] == -1);
-                assert(rightIndexGlobal[i] == -1);
-                middleIndexGlobal[i] = -1;
-            }
-        }
+        calculateMiddleIndex(nParametersTotal, leftIndexGlobal, rightIndexGlobal, middleIndexGlobal);
 
         // 1D Laplacian kernel = [1 -2 1].
         matrixValue[0] = smoothingWeight;
         matrixValue[1] = - 2. * smoothingWeight;
         matrixValue[2] = smoothingWeight;
+    }
+    else if (smoothingType == 4) {
+    // Fourth order.
+        auto &leftIndexGlobal = columnIndexGlobal[0];
+        auto &leftMiddleIndexGlobal = columnIndexGlobal[1];
+        auto &middleIndexGlobal = columnIndexGlobal[2];
+        auto &rightMiddleIndexGlobal = columnIndexGlobal[3];
+        auto &rightIndexGlobal = columnIndexGlobal[4];
+
+        calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat, 2);
+        calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftMiddleIndexGlobal, rightMiddleIndexGlobal, indexedNormalMatrixFormat, 1);
+        calculateMiddleIndex(nParametersTotal, leftIndexGlobal, rightIndexGlobal, middleIndexGlobal);
+
+        // Completing building the leftMiddleIndexGlobal and rightMiddleIndexGlobal.
+        for (size_t i = 0; i < nParametersTotal; i++) {
+            if (leftIndexGlobal[i] < 0) {
+                assert(leftIndexGlobal[i] == -1);
+                assert(rightIndexGlobal[i] == -1);
+                assert(middleIndexGlobal[i] == -1);
+                leftMiddleIndexGlobal[i] = -1;
+                rightMiddleIndexGlobal[i] = -1;
+            }
+        }
+
+        // 1D 4th order kernel = [1 -4 6 -4 1].
+        matrixValue[0] = smoothingWeight;
+        matrixValue[1] = - 4. * smoothingWeight;
+        matrixValue[2] = + 6. * smoothingWeight;
+        matrixValue[3] = - 4. * smoothingWeight;
+        matrixValue[4] = smoothingWeight;
     }
 
     //-----------------------------------------------------------------------------
