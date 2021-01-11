@@ -594,52 +594,46 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
 
     std::vector<std::vector<int> > columnIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
     std::vector<double> matrixValue(nDiag);
-    {
-        std::vector<int> leftIndexGlobal(nParametersTotal);
-        std::vector<int> rightIndexGlobal(nParametersTotal);
+    if (smoothingType == 0 || smoothingType == 1) {
+        auto &leftIndexGlobal = columnIndexGlobal[0];
+        auto &rightIndexGlobal = columnIndexGlobal[1];
 
-        if (smoothingType == 0 || smoothingType == 1) {
-            if (smoothingType == 0) {
-            // Forward difference scheme.
-                calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
-            }
-            else if (smoothingType == 1) {
-            // Central difference scheme.
-                calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
-            }
-
-            columnIndexGlobal[0] = leftIndexGlobal;
-            columnIndexGlobal[1] = rightIndexGlobal;
-
-            matrixValue[0] = - smoothingWeight;
-            matrixValue[1] = + smoothingWeight;
+        if (smoothingType == 0) {
+        // Forward difference scheme.
+            calculateIndexesFWD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
         }
-        else if (smoothingType == 2) {
-        // Laplacian.
-            // Utilize that the left and right indexes in Laplacian are the same as in the Central Difference (CD) scheme.
+        else if (smoothingType == 1) {
+        // Central difference scheme.
             calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
-
-            std::vector<int> middleIndexGlobal(nParametersTotal);
-            for (size_t i = 0; i < nParametersTotal; i++) {
-                if (leftIndexGlobal[i] >= 0) {
-                    assert(rightIndexGlobal[i] >= 0);
-                    middleIndexGlobal[i] = i;
-                } else {
-                    assert(leftIndexGlobal[i] == -1);
-                    assert(rightIndexGlobal[i] == -1);
-                    middleIndexGlobal[i] = -1;
-                }
-            }
-
-            columnIndexGlobal[0] = leftIndexGlobal;
-            columnIndexGlobal[1] = middleIndexGlobal;
-            columnIndexGlobal[2] = rightIndexGlobal;
-
-            // 1D Laplacian kernel = [1 -2 1].
-            matrixValue[0] = smoothingWeight;
-            matrixValue[1] = - 2. * smoothingWeight;
-            matrixValue[2] = smoothingWeight;
         }
+
+        matrixValue[0] = - smoothingWeight;
+        matrixValue[1] = + smoothingWeight;
+    }
+    else if (smoothingType == 2) {
+    // Laplacian.
+        auto &leftIndexGlobal = columnIndexGlobal[0];
+        auto &middleIndexGlobal = columnIndexGlobal[1];
+        auto &rightIndexGlobal = columnIndexGlobal[2];
+
+        // Utilize that the left and right indexes in Laplacian are the same as in the Central Difference (CD) scheme.
+        calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
+
+        for (size_t i = 0; i < nParametersTotal; i++) {
+            if (leftIndexGlobal[i] >= 0) {
+                assert(rightIndexGlobal[i] >= 0);
+                middleIndexGlobal[i] = i;
+            } else {
+                assert(leftIndexGlobal[i] == -1);
+                assert(rightIndexGlobal[i] == -1);
+                middleIndexGlobal[i] = -1;
+            }
+        }
+
+        // 1D Laplacian kernel = [1 -2 1].
+        matrixValue[0] = smoothingWeight;
+        matrixValue[1] = - 2. * smoothingWeight;
+        matrixValue[2] = smoothingWeight;
     }
 
     //-----------------------------------------------------------------------------
