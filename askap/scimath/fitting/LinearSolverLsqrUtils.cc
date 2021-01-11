@@ -723,14 +723,22 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     double cost = 0.;
     for (size_t i = 0; i < nParametersTotal; i++) {
         double Ax0 = 0.;
+        bool noMatrixElements = true;
         for (size_t k = 0; k < nDiag; k++) {
             if (columnIndexGlobal[k][i] >= 0) {
+                noMatrixElements = false;
                 Ax0 += matrixValue[k] * x0.at(columnIndexGlobal[k][i]);
             }
         }
 
-        // b = - w (F(x0) - smoothingLevel), with w F(x0) = A.x0.
-        double b_RHS_value = - (Ax0 - smoothingWeight * smoothingLevel);
+        double b_RHS_value;
+        if (!noMatrixElements) {
+            // b = - w (F(x0) - smoothingLevel), with w F(x0) = A.x0.
+            b_RHS_value = - (Ax0 - smoothingWeight * smoothingLevel);
+        } else {
+            // Set zero right-hand side for the empty matrix row.
+            b_RHS_value = 0.;
+        }
 
         size_t b_index = b_size0 + i;
         b_RHS[b_index] = b_RHS_value;
