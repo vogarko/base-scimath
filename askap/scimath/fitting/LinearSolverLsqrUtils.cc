@@ -618,7 +618,7 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
     }
 
     std::vector<std::vector<int> > columnIndexGlobal(nDiag, std::vector<int>(nParametersTotal));
-    std::vector<double> matrixValue(nDiag);
+    std::vector<double> kernel(nDiag);
 
     if (smoothingType == 0 || smoothingType == 1) {
     // First order.
@@ -634,8 +634,8 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
             calculateIndexesCD(nParametersTotal, nParameters, nChannelsLocal, leftIndexGlobal, rightIndexGlobal, indexedNormalMatrixFormat);
         }
 
-        matrixValue[0] = - smoothingWeight;
-        matrixValue[1] = + smoothingWeight;
+        kernel[0] = - 1.;
+        kernel[1] = 1.;
     }
     else if (smoothingType == 2) {
     // Laplacian.
@@ -648,9 +648,9 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
         calculateMiddleIndex(nParametersTotal, leftIndexGlobal, rightIndexGlobal, middleIndexGlobal);
 
         // 1D Laplacian kernel = [1 -2 1].
-        matrixValue[0] = smoothingWeight;
-        matrixValue[1] = - 2. * smoothingWeight;
-        matrixValue[2] = smoothingWeight;
+        kernel[0] = 1.;
+        kernel[1] = - 2.;
+        kernel[2] = 1.;
     }
     else if (smoothingType == 4) {
     // Fourth order.
@@ -675,12 +675,17 @@ void addSmoothnessConstraints(lsqr::SparseMatrix& matrix,
             }
         }
 
-        // 1D 4th order kernel = [1 -4 6 -4 1].
-        matrixValue[0] = smoothingWeight;
-        matrixValue[1] = - 4. * smoothingWeight;
-        matrixValue[2] = + 6. * smoothingWeight;
-        matrixValue[3] = - 4. * smoothingWeight;
-        matrixValue[4] = smoothingWeight;
+        // 1D 4th-order kernel = [1 -4 6 -4 1].
+        kernel[0] = 1.;
+        kernel[1] = - 4.;
+        kernel[2] = 6.;
+        kernel[3] = - 4.;
+        kernel[4] = 1.;
+    }
+
+    std::vector<double> matrixValue(nDiag);
+    for (size_t i = 0; i < nDiag; i++) {
+        matrixValue[i] = kernel[i] * smoothingWeight;
     }
 
     //-----------------------------------------------------------------------------
